@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacebar Spam Challenge</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e272e, #05c46b);
+            color: #ffffff;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        p {
+            font-size: 1.1rem;
+            color: #d2dae2;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 30px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #05c46b;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .spacebar-hitbox {
+            width: 80%;
+            max-width: 500px;
+            height: 100px;
+            background: #485460;
+            border-bottom: 12px solid #1e272e;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.05s, border-bottom-width 0.05s, background-color 0.2s;
+        }
+
+        /* Class added dynamically when keys or clicks happen */
+        .spacebar-hitbox.pressed {
+            transform: translateY(8px);
+            border-bottom-width: 4px;
+            background: #0be881;
+            color: #1e272e;
+        }
+
+        .instructions {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #808e9b;
+        }
+
+        .btn-restart {
+            margin-top: 20px;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #ff5e57;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .btn-restart:hover {
+            background-color: #ff3f34;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Spacebar Speed Test</h1>
+    <p>How many times can you mash the spacebar in 10 seconds?</p>
+    
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-label">Time Left</div>
+            <div class="stat-value" id="timer">10.0s</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+    </div>
+
+    <div class="spacebar-hitbox" id="spacebar">
+        PRESS SPACEBAR TO START
+    </div>
+
+    <button class="btn-restart" id="restart-btn" onclick="resetGame()">Try Again</button>
+
+    <div class="instructions">
+        Works with both the <b>Spacebar key</b> and <b>Mouse clicks / Screen taps</b>!
+    </div>
+
+    <script>
+        const spacebar = document.getElementById('spacebar');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let score = 0;
+        let timeLeft = 10;
+        let gameActive = false;
+        let gameStarted = false;
+        let timerInterval;
+
+        // Core action logic
+        function registerPress() {
+            if (!gameStarted) {
+                startGame();
+            }
+
+            if (gameActive) {
+                score++;
+                scoreDisplay.textContent = score;
+                
+                // Visual feedback triggers
+                spacebar.classList.add('pressed');
+                spacebar.textContent = "SPAM IT!";
+            }
+        }
+
+        function releasePress() {
+            spacebar.classList.remove('pressed');
+        }
+
+        // Event Listeners (Keyboard)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault(); // Prevents page from scrolling down
+                if (!e.repeat) registerPress(); // Prevents holding down the key
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                releasePress();
+            }
+        });
+
+        // Event Listeners (Mouse / Touch support)
+        spacebar.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            registerPress();
+        });
+        window.addEventListener('mouseup', releasePress);
+
+        spacebar.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            registerPress();
+        });
+        window.addEventListener('touchend', releasePress);
+
+        // Game Loop Logic
+        function startGame() {
+            gameStarted = true;
+            gameActive = true;
+            let totalMilliseconds = 10000;
+
+            timerInterval = setInterval(() => {
+                totalMilliseconds -= 100;
+                timeLeft = (totalMilliseconds / 1000).toFixed(1);
+                timerDisplay.textContent = timeLeft + "s";
+
+                if (totalMilliseconds <= 0) {
+                    endGame();
+                }
+            }, 100);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            timerDisplay.textContent = "0.0s";
+            
+            // Calculate Keys Per Second (KPS)
+            const kps = (score / 10).toFixed(1);
+            
+            spacebar.textContent = `FINISHED! KPS: ${kps}`;
+            restartBtn.style.display = 'block';
+        }
+
+        function resetGame() {
+            score = 0;
+            timeLeft = 10;
+            gameActive = false;
+            gameStarted = false;
+            scoreDisplay.textContent = "0";
+            timerDisplay.textContent = "10.0s";
+            spacebar.textContent = "PRESS SPACEBAR TO START";
+            restartBtn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
