@@ -2104,4 +2104,589 @@ toast.textContent = message;
 toast.classList.add('show');
 setTimeout(() => { toast.classList.remove('show'); }, 2500);
 }
+
+
+
+<FollowUp>
+Let me know if you would like to expand this project further with features like:
+* A **mini gambling game** (like a coin flipper or wheel spin) to risk gems for bigger payouts?
+* Adding **retro music and pop sound effects** whenever the button gets slammed?
+* Adding an **Auto-Spammer worker bot** that automatically clicks and generates scores while you sit back?
+</FollowUp>
+
+
+
+
+this si the whack a mole game
+Ah, my apologies! It looks like there was a mix-up in my last response. You are completely right—the code block I just gave you was for the spacebar speed game, not the Whack-a-Mole game!
+Here is the complete, self-contained Whack-a-Mole Tycoon code block. It has the Gem currency, 3x New Best score rewards, the Upgrade Shop (to buy bigger point multipliers), and unlocked custom themes all bundled together.
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Mole Tycoon</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(to bottom, #74b9ff, #a29bfe);
+            --hole-color: #636e72;
+            --mole-color: #e17055;
+            --mole-active-color: #e17055;
+            --cursor-style: default;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            color: #2d3436;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            user-select: none;
+            padding: 20px;
+            box-sizing: border-box;
+            cursor: var(--cursor-style);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin: 10px 0 5px 0;
+            text-shadow: 1px 1px 2px white;
+        }
+
+        /* Top UI Panels */
+        .top-ui {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 650px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .ui-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .gem-display {
+            color: #0984e3;
+            font-weight: bold;
+            font-size: 1.3rem !important;
+        }
+
+        /* Main Game Panel */
+        .stats-container {
+            display: flex;
+            gap: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 450px;
+            justify-content: space-around;
+        }
+
+        .stat-box { text-align: center; }
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c5ce7;
+        }
+        .stat-value { font-size: 1.8rem; font-weight: bold; }
+
+        /* Whack-A-Mole Grid */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 450px;
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .hole {
+            background-color: var(--hole-color);
+            height: 90px;
+            border-radius: 50% / 30%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 10px 0 rgba(0,0,0,0.5), 0 4px 6px rgba(0,0,0,0.2);
+            border-bottom: 10px solid #2d3436;
+        }
+
+        .mole {
+            width: 80%;
+            height: 85%;
+            background: var(--mole-color);
+            border-radius: 50% 50% 0 0;
+            position: absolute;
+            bottom: -100%;
+            left: 10%;
+            transition: bottom 0.08s ease-out;
+            cursor: var(--cursor-style);
+            border: 3px solid #2d3436;
+            box-sizing: border-box;
+        }
+
+        .mole::before {
+            content: '• •';
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            color: #2d3436;
+            letter-spacing: 3px;
+        }
+
+        .mole::after {
+            content: '';
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 7px;
+            background: #2d3436;
+            border-radius: 50%;
+        }
+
+        .hole.up .mole {
+            bottom: 0;
+        }
+
+        /* Menu Systems */
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            color: white;
+            transition: transform 0.1s;
+        }
+        .btn-action:active { transform: scale(0.98); }
+        #start-btn { background-color: #00b894; }
+        #save-btn { background-color: #0984e3; }
+
+        /* Multiplier and Shop Panel */
+        .shop-wrapper {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 650px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .shop-container {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            border-radius: 15px;
+            flex: 1;
+            min-width: 280px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .shop-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            border-bottom: 2px solid rgba(0,0,0,0.05);
+            padding-bottom: 5px;
+            color: #2d3436;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .shop-item {
+            background: rgba(255,255,255,0.7);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            border: 2px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 75px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .shop-item.locked { opacity: 0.5; background: #dfe6e9; }
+        .shop-item.unlocked { border-color: #b2bec3; cursor: pointer; }
+        .shop-item.active { border-color: #6c5ce7; background: rgba(108,92,231,0.1); }
+        
+        .buy-btn {
+            background: #00b894;
+            border: none;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            margin-top: 6px;
+            cursor: pointer;
+        }
+        .buy-btn:hover { background: #55efc4; }
+        .buy-btn:disabled { background: #b2bec3; cursor: not-allowed; }
+
+        .item-req {
+            font-size: 0.75rem;
+            color: #d63031;
+            margin-top: 4px;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            background: #2d3436;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            font-weight: bold;
+            border-left: 5px solid #00b894;
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+        .notification.show { transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- Top UI Panels -->
+    <div class="top-ui">
+        <div class="ui-card">
+            <div>💎 Gems Owned</div>
+            <div id="gem-val" class="gem-display">0</div>
+        </div>
+        <div class="ui-card">
+            <div>📅 Daily Streak</div>
+            <div id="streak-val" style="font-size: 1.1rem; font-weight: bold; margin-top:2px;">0 Days</div>
+            <div id="daily-btn-container"></div>
+        </div>
+        <div class="ui-card">
+            <div>🏆 Personal Best</div>
+            <div id="high-score-val" style="font-size: 1.1rem; font-weight: bold; color: #e67e22; margin-top:2px;">0</div>
+        </div>
+    </div>
+
+    <h1>Whack-a-Mole Tycoon</h1>
+    <p style="margin: 0 0 15px 0; color:#636e72; text-align: center;">Smash moles! Beating your Personal Best triples your earned gems!</p>
+    
+    <!-- Game Indicators -->
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="stat-label">Timer</div>
+            <div class="stat-value" id="timer">30s</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Moles Whacked</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Total Score</div>
+            <div class="stat-value" id="multiplied-score" style="color:#6c5ce7;">0</div>
+        </div>
+    </div>
+
+    <!-- Grid Layout -->
+    <div class="game-grid">
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+        <div class="hole"><div class="mole" onclick="whack(this)"></div></div>
+    </div>
+
+    <div class="controls-row">
+        <button class="btn-action" id="start-btn" onclick="startGame()">Start Game</button>
+Use code with caution.
+💾 Save Game
+🚀 Hammer Multipliers
+🎨 Custom Visual Themes
+Progress Loaded!
+// Game Engine Variables
+let score = 0;
+let lastHole;
+let timeUp = false;
+let countdown;
+let moleTimer;
+let gameDuration = 30; // seconds
+// Persistent System State
+let playerProfile = {
+gems: 0,
+highScore: 0,
+streak: 0,
+lastClaimDate: null,
+activeTheme: 'default',
+multiplierLevel: 1
+};
+// Custom Skins and Themes (Milestones scale dynamically)
+const themes = {
+default: { name: 'Classic Garden', req: 0, bg: 'linear-gradient(to bottom, #74b9ff, #a29bfe)', hole: '#636e72', mole: '#e17055', cursor: 'default' },
+ruby: { name: 'Ruby Volcano', req: 10, bg: 'linear-gradient(to bottom, #2d3436, #ff7675)', hole: '#2d3436', mole: '#d63031', cursor: 'crosshair' },
+cyber: { name: 'Cyber Grid', req: 30, bg: 'linear-gradient(to bottom, #000000, #6c5ce7)', hole: '#2d3436', mole: '#00cec9', cursor: 'pointer' },
+gold: { name: 'Midas Gold', req: 50, bg: 'linear-gradient(to bottom, #ffeaa7, #fdcb6e)', hole: '#636e72', mole: '#e1b12c', cursor: 'help' }
+};
+// Multiplier Purchasing Array
+const multiplierUpgrades = [
+{ level: 2, multiplier: 2, cost: 15, name: 'Sledge Hammer' },
+{ level: 3, multiplier: 3, cost: 40, name: 'Golden Mallet' },
+{ level: 4, multiplier: 5, cost: 100, name: 'Rocket Mallet' },
+{ level: 5, multiplier: 10, cost: 250, name: 'Laser Obliterator' }
+];
+window.onload = function() {
+loadData();
+checkDailyStatus();
+renderEverything();
+applyTheme(playerProfile.activeTheme);
+};
+function renderEverything() {
+document.getElementById('gem-val').textContent = Math.floor(playerProfile.gems);
+document.getElementById('high-score-val').textContent = playerProfile.highScore;
+renderRewardsShop();
+renderUpgradeShop();
+}
+function getCurrentMultiplier() {
+const activeUpgrade = multiplierUpgrades.find(u => u.level === playerProfile.multiplierLevel);
+return activeUpgrade ? activeUpgrade.multiplier : 1;
+}
+// --- Core Mechanical Logic ---
+function randomTime(min, max) {
+return Math.round(Math.random() * (max - min) + min);
+}
+function randomHole(holes) {
+const idx = Math.floor(Math.random() * holes.length);
+const hole = holes[idx];
+if (hole === lastHole) return randomHole(holes);
+lastHole = hole;
+return hole;
+}
+function peep() {
+const holes = document.querySelectorAll('.hole');
+const time = randomTime(500, 1000); // Speed scales nicely
+const hole = randomHole(holes);
+hole.classList.add('up');
+moleTimer = setTimeout(() => {
+hole.classList.remove('up');
+if (!timeUp) peep();
+}, time);
+}
+function startGame() {
+score = 0;
+timeUp = false;
+document.getElementById('score').textContent = "0";
+document.getElementById('multiplied-score').textContent = "0";
+const startBtn = document.getElementById('start-btn');
+startBtn.disabled = true;
+startBtn.style.backgroundColor = '#b2bec3';
+startBtn.textContent = "Whacking...";
+let timeLeft = gameDuration;
+document.getElementById('timer').textContent = timeLeft + "s";
+peep();
+countdown = setInterval(() => {
+timeLeft--;
+document.getElementById('timer').textContent = timeLeft + "s";
+if (timeLeft <= 0) {
+clearInterval(countdown);
+clearTimeout(moleTimer);
+timeUp = true;
+document.querySelectorAll('.hole').forEach(h => h.classList.remove('up'));
+startBtn.disabled = false;
+startBtn.style.backgroundColor = '#00b894';
+startBtn.textContent = "Play Again";
+endGame();
+}
+}, 1000);
+}
+function whack(moleElement) {
+const holeElement = moleElement.parentElement;
+if (!holeElement.classList.contains('up')) return;
+score++;
+holeElement.classList.remove('up');
+document.getElementById('score').textContent = score;
+document.getElementById('multiplied-score').textContent = score * getCurrentMultiplier();
+}
+function endGame() {
+const finalScore = score * getCurrentMultiplier();
+let gemsEarned = finalScore * 0.5;
+let isNewBest = false;
+if (finalScore > playerProfile.highScore) {
+isNewBest = true;
+playerProfile.highScore = finalScore;
+gemsEarned *= 3; // Triple payout bonus
+}
+gemsEarned = Math.max(1, Math.floor(gemsEarned));
+playerProfile.gems += gemsEarned;
+if (isNewBest) {
+alert(🏆 NEW PERSONAL BEST! Total Score: ${finalScore} \nGenerated 💎 ${gemsEarned} Gems! (3x Record Payout!));
+} else {
+alert(Game Over! Total Score: ${finalScore} \nYou earned 💎 ${gemsEarned} Gems.);
+}
+autoSave();
+renderEverything();
+}
+// --- Upgrades & Economy Panels ---
+function renderUpgradeShop() {
+const grid = document.getElementById('upgrades-grid');
+grid.innerHTML = '';
+multiplierUpgrades.forEach(upgrade => {
+const isOwned = playerProfile.multiplierLevel >= upgrade.level;
+const canAfford = playerProfile.gems >= upgrade.cost;
+const isNextUnlock = playerProfile.multiplierLevel + 1 === upgrade.level;
+const card = document.createElement('div');
+card.className = shop-item;
+if (isOwned) {
+card.style.borderColor = "#00b894";
+card.innerHTML = <strong>${upgrade.name}</strong><div>Active (x${upgrade.multiplier})</div>;
+} else if (isNextUnlock) {
+card.innerHTML = <strong>${upgrade.name} (x${upgrade.multiplier})</strong> <div>Cost: 💎 ${upgrade.cost}</div> <button class="buy-btn" ${canAfford ? '' : 'disabled'} onclick="buyUpgrade(${upgrade.level}, ${upgrade.cost})">Upgrade</button>;
+} else {
+card.className += " locked";
+card.innerHTML = <strong>${upgrade.name}</strong><div class="item-req">Lvl ${upgrade.level - 1} Required</div>;
+}
+grid.appendChild(card);
+});
+}
+function buyUpgrade(level, cost) {
+if (playerProfile.gems >= cost) {
+playerProfile.gems -= cost;
+playerProfile.multiplierLevel = level;
+showToast(🚀 Hammer upgraded to Level ${level}!);
+autoSave();
+renderEverything();
+}
+}
+function renderRewardsShop() {
+const grid = document.getElementById('rewards-grid');
+grid.innerHTML = '';
+Object.keys(themes).forEach(key => {
+const item = themes[key];
+const isUnlocked = playerProfile.highScore >= item.req;
+const isActive = playerProfile.activeTheme === key;
+const card = document.createElement('div');
+card.className = shop-item ${isUnlocked ? 'unlocked' : 'locked'} ${isActive ? 'active' : ''};
+let innerHTML = <strong>${item.name}</strong>;
+if (isUnlocked) {
+innerHTML += <div class='item-req' style='color:#00b894;'>Unlocked</div>;
+card.onclick = () => {
+playerProfile.activeTheme = key;
+applyTheme(key);
+renderRewardsShop();
+autoSave();
+};
+} else {
+innerHTML += <div class='item-req'>Requires ${item.req} PB</div>;
+}
+card.innerHTML = innerHTML;
+grid.appendChild(card);
+});
+}
+function applyTheme(themeKey) {
+const theme = themes[themeKey] || themes.default;
+document.documentElement.style.setProperty('--bg-gradient', theme.bg);
+document.documentElement.style.setProperty('--hole-color', theme.hole);
+document.documentElement.style.setProperty('--mole-color', theme.mole);
+document.documentElement.style.setProperty('--cursor-style', theme.cursor);
+}
+// --- Calendar System ---
+function checkDailyStatus() {
+document.getElementById('streak-val').textContent = ${playerProfile.streak} Days;
+const container = document.getElementById('daily-btn-container');
+if (!playerProfile.lastClaimDate) {
+container.innerHTML = <button class="buy-btn" onclick="claimDaily()">Claim Reward</button>;
+return;
+}
+const todayStr = new Date().toDateString();
+if (playerProfile.lastClaimDate === todayStr) {
+container.innerHTML = <span style="color:#00b894; font-size:0.8rem; font-weight:bold;">Claimed Today</span>;
+} else {
+const lastClaim = new Date(playerProfile.lastClaimDate);
+const yesterday = new Date();
+yesterday.setDate(yesterday.getDate() - 1);
+if (lastClaim.toDateString() !== yesterday.toDateString()) {
+playerProfile.streak = 0;
+document.getElementById('streak-val').textContent = 0 Days;
+}
+container.innerHTML = <button class="buy-btn" onclick="claimDaily()">Claim Reward</button>;
+}
+}
+function claimDaily() {
+playerProfile.streak++;
+playerProfile.lastClaimDate = new Date().toDateString();
+const bonusGems = playerProfile.streak * 5;
+playerProfile.gems += bonusGems;
+showToast(🎁 Claimed Daily Bonus! +💎 ${bonusGems} Gems!);
+checkDailyStatus();
+autoSave();
+renderEverything();
+}
+// --- Storage Management ---
+function manualSave() {
+localStorage.setItem('whack_tycoon_profile', JSON.stringify(playerProfile));
+showToast("💾 Progress saved securely!");
+}
+function autoSave() {
+localStorage.setItem('whack_tycoon_profile', JSON.stringify(playerProfile));
+}
+function loadData() {
+const savedData = localStorage.getItem('whack_tycoon_profile');
+if (savedData) {
+try {
+playerProfile = JSON.parse(savedData);
+if (!playerProfile.multiplierLevel) playerProfile.multiplierLevel = 1;
+if (playerProfile.gems === undefined) playerProfile.gems = 0;
+} catch(e) {
+console.error("Error configuration setup loop", e);
+}
+}
+}
+function showToast(message) {
+const toast = document.getElementById('toast');
+toast.textContent = message;
+toast.classList.add('show');
+setTimeout(() => { toast.classList.remove('show'); }, 2500);
+}
         
