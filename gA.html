@@ -1,66 +1,148 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Wheel Game</title><style>
-body{margin:0;background:linear-gradient(135deg,#1e1e2f,#111119);color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;transition:0.5s;}
-.panel{background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;margin:10px;width:300px;text-align:center;}
-canvas{border-radius:50%;box-shadow:0 0 15px #000;transition:transform 4s cubic-bezier(0.1,0.8,0.1,1);}
-button{background:#ffd700;border:none;padding:10px;font-weight:bold;border-radius:5px;cursor:pointer;width:100%;margin-top:10px;}
-button:disabled{background:#555;}
-.shop-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);padding:8px;margin:5px 0;border-radius:5px;}
-</style></head><body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Clicker Game</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2d2d44);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-    <h2>💰 Gold: <span id="gold">1000</span></h2>
-    <div style="position:relative;"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid red;z-index:2;"></div><canvas id="wheel" width="300" height="300"></canvas></div>
+        .game-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
 
-    <div class="panel">
-        <input id="num" type="number" min="1" max="100" value="7" style="width:45%;">
-        <input id="bet" type="number" min="1" value="100" style="width:45%;">
-        <button id="spin" onclick="spin()">SPIN WHEEL</button>
-        <div id="msg" style="margin-top:10px;font-weight:bold;"></div>
+        h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            color: #a5a5db;
+        }
+
+        .score-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 1rem 0 2rem 0;
+            color: #00ffcc;
+            text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            transition: transform 0.05s ease;
+        }
+
+        .click-btn {
+            background: linear-gradient(135deg, #00ffcc, #0099ff);
+            border: none;
+            color: #12121c;
+            padding: 1.2rem 2.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            outline: none;
+            width: 100%;
+        }
+
+        .click-btn:作业-active, .click-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 255, 204, 0.5);
+        }
+
+        .instructions {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #8a8ab0;
+            line-height: 1.4;
+        }
+
+        .key-indicator {
+            display: inline-block;
+            background: #3d3d5c;
+            color: #fff;
+            padding: 0.2rem 0.5rem;
+            border-radius: 5px;
+            font-family: monospace;
+            border-bottom: 3px solid #28283d;
+            margin: 0 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>Score</h1>
+        <div class="score-display" id="score">0</div>
+        
+        <button class="click-btn" id="clickBtn">TAP / CLICK ME</button>
+        
+        <div class="instructions">
+            Tap the button OR press <span class="key-indicator">ANY KEY</span> on your keyboard to gain points!
+        </div>
     </div>
 
-    <div class="panel">
-        <h3>Background Shop</h3>
-        <div id="shop"></div>
-    </div>
+    <script>
+        // Game Logic State
+        let points = 0;
 
-<script>
-let gold=1000, deg=0, spinning=false;
-const cvs=document.getElementById('wheel'), ctx=cvs.getContext('2d');
-const themes=[{n:'Default',v:'linear-gradient(135deg,#1e1e2f,#111119)',p:0,b:true},{n:'Neon',v:'linear-gradient(135deg,#2b004a,#00103a)',p:200,b:false},{n:'Sunset',v:'linear-gradient(135deg,#410616,#140107)',p:500,b:false}];
+        // DOM Elements
+        const scoreDisplay = document.getElementById('score');
+        const clickButton = document.getElementById('clickBtn');
 
-function draw() {
-    for(let i=0;i<100;i++){
-        ctx.beginPath();ctx.moveTo(150,150);ctx.arc(150,150,140,i*0.0628,(i+1)*0.0628);
-        ctx.fillStyle=i%2==0?(i%10==0?'#ffd700':'#222'):'#111';ctx.fill();
-        ctx.save();ctx.translate(150,150);ctx.rotate(i*0.0628+0.0314);
-        ctx.fillStyle=i%10==0?'#000':'#fff';ctx.font='7px Arial';ctx.fillText(i+1,115,3);ctx.restore();
-    }
-}
-function spin() {
-    let n=parseInt(document.getElementById('num').value), b=parseInt(document.getElementById('bet').value);
-    if(spinning||n<1||n>100||b>gold||b<=0) return;
-    gold-=b; spinning=true; update();
-    let win=Math.floor(Math.random()*100)+1;
-    deg+=3600+(270-((win-1)*3.6)-1.8);
-    cvs.style.transform=`rotate(${deg}deg)`;
-    setTimeout(()=>{
-        spinning=false;
-        if(n===win){ gold+=b*85; msg.textContent=`🎉 Won ${b*85}!`; msg.style.color='#4c1'; }
-        else{ msg.textContent=`❌ Landed on ${win}`; msg.style.color='#f47'; }
-        update();
-    },4000);
-}
-function update() {
-    document.getElementById('gold').textContent=gold;
-    document.getElementById('spin').disabled=spinning;
-    document.getElementById('shop').innerHTML='';
-    themes.forEach(t=>{
-        let row=document.createElement('div'); row.className='shop-item';
-        row.innerHTML=`<span>${t.n}</span>`;
-        let btn=document.createElement('button'); btn.style.width='auto'; btn.style.margin='0';
-        btn.textContent=t.b?'Apply':`$${t.p}`; btn.disabled=!t.b&&gold<t.p;
-        btn.onclick=()=>{ if(!t.b){gold-=t.p;t.b=true;} document.body.style.background=t.v; update(); };
-        row.appendChild(btn); document.getElementById('shop').appendChild(row);
-    });
-}
-draw(); update();
-</script></body></html>
+        // Function to increment score and update UI
+        function increasePoints() {
+            points++;
+            scoreDisplay.textContent = points;
+            
+            // Visual feedback effect on the score numbers
+            scoreDisplay.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+                scoreDisplay.style.transform = 'scale(1)';
+            }, 50);
+        }
+
+        // Event Listener 1: Button Click / Mobile Tap
+        clickButton.addEventListener('click', (e) => {
+            increasePoints();
+            // Prevents spacebar/enter from double-triggering when button has focus
+            clickButton.blur(); 
+        });
+
+        // Event Listener 2: Any Keyboard Key Press
+        window.addEventListener('keydown', (e) => {
+            increasePoints();
+            
+            // Visually trigger the button state for keyboard users
+            clickButton.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                clickButton.style.transform = '';
+            }, 50);
+        });
+    </script>
+
+</body>
+</html>
