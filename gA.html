@@ -1,102 +1,66 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>RPS</title>
-    <style>
-        :root { --bg: linear-gradient(135deg, #1e272e, #34495e); }
-        body { font-family: system-ui; background: var(--bg); color: #fff; text-align: center; user-select: none; }
-        .box { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; max-width: 400px; margin: 10px auto; }
-        .btn { background: #485460; border: none; border-bottom: 4px solid #111; border-radius: 50%; width: 70px; height: 70px; font-size: 2rem; margin: 5px; cursor: pointer; }
-        .btn:hover { background: #0be881; }
-        .btn:active { transform: translateY(2px); border-bottom-width: 1px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; }
-        .item { background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; font-size: 0.75rem; border: 2px solid transparent; cursor: pointer; }
-        .item.active { border-color: #00d2d3; }
-    </style>
-</head>
-<body>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Wheel Game</title><style>
+body{margin:0;background:linear-gradient(135deg,#1e1e2f,#111119);color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;transition:0.5s;}
+.panel{background:rgba(255,255,255,0.05);padding:15px;border-radius:10px;margin:10px;width:300px;text-align:center;}
+canvas{border-radius:50%;box-shadow:0 0 15px #000;transition:transform 4s cubic-bezier(0.1,0.8,0.1,1);}
+button{background:#ffd700;border:none;padding:10px;font-weight:bold;border-radius:5px;cursor:pointer;width:100%;margin-top:10px;}
+button:disabled{background:#555;}
+.shop-item{display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.3);padding:8px;margin:5px 0;border-radius:5px;}
+</style></head><body>
 
-    <h2>💰 <span id="c">100</span> | <span id="d"></span></h2>
-    
-    <div class="box">
-        <input type="checkbox" id="st" onchange="tg(this.checked)"> <label id="sl" for="st">🛡️ Safe Mode</label>
+    <h2>💰 Gold: <span id="gold">1000</span></h2>
+    <div style="position:relative;"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:20px solid red;z-index:2;"></div><canvas id="wheel" width="300" height="300"></canvas></div>
+
+    <div class="panel">
+        <input id="num" type="number" min="1" max="100" value="7" style="width:45%;">
+        <input id="bet" type="number" min="1" value="100" style="width:45%;">
+        <button id="spin" onclick="spin()">SPIN WHEEL</button>
+        <div id="msg" style="margin-top:10px;font-weight:bold;"></div>
     </div>
 
-    <div class="box">
-        Bet: 💰<span id="bd">10</span><br>
-        <input type="range" min="1" max="100" value="10" id="sd" oninput="ub(this.value)" style="width:90%">
+    <div class="panel">
+        <h3>Background Shop</h3>
+        <div id="shop"></div>
     </div>
 
-    <div>
-        <button class="btn" onclick="p('✊')">✊</button>
-        <button class="btn" onclick="p('✋')">✋</button>
-        <button class="btn" onclick="p('✌️')">✌️</button>
-    </div>
+<script>
+let gold=1000, deg=0, spinning=false;
+const cvs=document.getElementById('wheel'), ctx=cvs.getContext('2d');
+const themes=[{n:'Default',v:'linear-gradient(135deg,#1e1e2f,#111119)',p:0,b:true},{n:'Neon',v:'linear-gradient(135deg,#2b004a,#00103a)',p:200,b:false},{n:'Sunset',v:'linear-gradient(135deg,#410616,#140107)',p:500,b:false}];
 
-    <div class="box" id="m">Pick a move!</div>
-
-    <div class="box">
-        <div>🎨 Background Paint</div>
-        <div class="grid" id="sg"></div>
-    </div>
-
-    <script>
-        let co = 100, ab = 10, sm = false, cd = null, inv = ['d'], th = 'd';
-        const tms = {
-            d: { n: 'Slate', c: 0, s: 'linear-gradient(135deg, #1e272e, #34495e)' },
-            r: { n: 'Ruby', c: 50, s: 'linear-gradient(135deg, #2c3e50, #ea2027)' },
-            n: { n: 'Neon', c: 150, s: 'linear-gradient(135deg, #000, #a55eea)' },
-            g: { n: 'Gold', c: 400, s: 'linear-gradient(135deg, #2c3e50, #f1c40f)' }
-        }, nm = { '✊': 'Rock', '✋': 'Paper', '✌️': 'Scissors' }, ch = ['✊', '✋', '✌️'];
-
-        window.onload = () => { ld(); ui(); };
-
-        function ub(v) { ab = Math.min(parseInt(v), co); document.getElementById('bd').textContent = ab; }
-        
-        function tg(c) { if (co < 5000) { sm = c; sv(); } else document.getElementById('st').checked = false; }
-
-        function ui() {
-            document.getElementById('c').textContent = co;
-            const s = document.getElementById('sd'); s.max = co; if (parseInt(s.value) > co) ub(co);
-            const t = document.getElementById('st'), l = document.getElementById('sl');
-            if (co >= 5000) { sm = false; t.checked = false; t.disabled = true; l.innerHTML = "🔒 Closed (5000+)"; }
-            else { t.disabled = false; t.checked = sm; l.innerHTML = "🛡️ Safe Mode"; }
-            
-            const d = document.getElementById('d');
-            if (cd === new Date().toDateString()) d.innerHTML = "Claimed";
-            else d.innerHTML = `<button onclick="cl()" style="cursor:pointer">🎁 +50</button>`;
-            
-            const g = document.getElementById('sg'); g.innerHTML = '';
-            Object.keys(tms).forEach(k => {
-                const i = tms[k], ow = inv.includes(k), ac = th === k;
-                const d = document.createElement('div'); d.className = `item ${ac?'active':''}`;
-                d.innerHTML = `<b>${i.n}</b><br>${ac?'Equipped':ow?'Equip':'💰'+i.c}`;
-                d.onclick = () => {
-                    if (ac) return;
-                    if (ow) { th = k; } 
-                    else if (co >= i.c) { co -= i.c; inv.push(k); th = k; }
-                    document.documentElement.style.setProperty('--bg', tms[th].s); ui(); sv();
-                };
-                g.appendChild(d);
-            });
-        }
-
-        function cl() { co += 50; cd = new Date().toDateString(); ui(); sv(); }
-
-        function p(pl) {
-            if (co <= 0) { alert("Gifted 💰20!"); co = 20; ui(); return; }
-            const cp = ch[Math.floor(Math.random() * 3)];
-            let res = "";
-            if (pl === cp) res = "Draw!";
-            else if ((pl==='✊'&&cp==='✌️')||(pl==='✋'&&cp==='✊')||(pl==='✌️'&&cp==='✋')) { co += ab; res = `Win! +💰${ab}`; } 
-            else if (sm) res = "Protected!"; else { co -= ab; res = `Lose! -💰${ab}`; }
-            document.getElementById('m').innerHTML = `You [${nm[pl]}] vs Comp [${nm[cp]}]<br><b>${res}</b>`;
-            ui(); sv();
-        }
-
-        function sv() { localStorage.setItem('rps_mini', JSON.stringify({ co, sm, cd, inv, th })); }
-        function ld() { const sa = localStorage.getItem('rps_mini'); if (sa) { try { const p = JSON.parse(sa); co=p.co??100; sm=p.sm??false; cd=p.cd; inv=p.inv??['d']; th=p.th??'d'; document.documentElement.style.setProperty('--bg', tms[th].s); } catch(e){} } }
-    </script>
-</body>
-</html>
+function draw() {
+    for(let i=0;i<100;i++){
+        ctx.beginPath();ctx.moveTo(150,150);ctx.arc(150,150,140,i*0.0628,(i+1)*0.0628);
+        ctx.fillStyle=i%2==0?(i%10==0?'#ffd700':'#222'):'#111';ctx.fill();
+        ctx.save();ctx.translate(150,150);ctx.rotate(i*0.0628+0.0314);
+        ctx.fillStyle=i%10==0?'#000':'#fff';ctx.font='7px Arial';ctx.fillText(i+1,115,3);ctx.restore();
+    }
+}
+function spin() {
+    let n=parseInt(document.getElementById('num').value), b=parseInt(document.getElementById('bet').value);
+    if(spinning||n<1||n>100||b>gold||b<=0) return;
+    gold-=b; spinning=true; update();
+    let win=Math.floor(Math.random()*100)+1;
+    deg+=3600+(270-((win-1)*3.6)-1.8);
+    cvs.style.transform=`rotate(${deg}deg)`;
+    setTimeout(()=>{
+        spinning=false;
+        if(n===win){ gold+=b*85; msg.textContent=`🎉 Won ${b*85}!`; msg.style.color='#4c1'; }
+        else{ msg.textContent=`❌ Landed on ${win}`; msg.style.color='#f47'; }
+        update();
+    },4000);
+}
+function update() {
+    document.getElementById('gold').textContent=gold;
+    document.getElementById('spin').disabled=spinning;
+    document.getElementById('shop').innerHTML='';
+    themes.forEach(t=>{
+        let row=document.createElement('div'); row.className='shop-item';
+        row.innerHTML=`<span>${t.n}</span>`;
+        let btn=document.createElement('button'); btn.style.width='auto'; btn.style.margin='0';
+        btn.textContent=t.b?'Apply':`$${t.p}`; btn.disabled=!t.b&&gold<t.p;
+        btn.onclick=()=>{ if(!t.b){gold-=t.p;t.b=true;} document.body.style.background=t.v; update(); };
+        row.appendChild(btn); document.getElementById('shop').appendChild(row);
+    });
+}
+draw(); update();
+</script></body></html>
