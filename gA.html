@@ -1,44 +1,207 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Arcade</title><style>
-body{background:#111;color:#fff;font-family:sans-serif;text-align:center;margin:10px}
-.b{background:#0fcc;border:0;padding:6px 12px;font-weight:bold;border-radius:4px;cursor:pointer}
-.b:disabled{background:#555;cursor:not-allowed}
-.s{background:#222;padding:8px;margin:8px auto;max-width:380px;border-radius:6px;display:flex;justify-content:space-between;align-items:center}
-</style></head><body>
-<div style="font-size:18px;margin-bottom:5px">Pts: 🪙<span id="pt">0</span> | Scr: <span id="sc">0</span> | Lvs: <span id="lv">3</span></div>
-<canvas id="c" width="380" height="380" style="background:#222;border:3px solid #0fcc;border-radius:6px"></canvas>
-<div class="s"><button class="b" onclick="sv(1)">💾 Save</button><span id="bt"></span></div>
-<div class="s"><span>🎁 Daily (100pt)</span><button id="db" class="b" onclick="cl()">Claim</button></div>
-<div class="s"><span>🛒 2x Next Run (50pt)</span><button id="b2" class="b" onclick="by(2,50)">Buy</button></div>
-<div class="s"><span>🛒 Perm +1x (<span id="pc">150</span>pt)</span><button id="bp" class="b" onclick="bp()">Buy <span id="pm">1</span>x</button></div>
-<script>
-let el=id=>document.getElementById(id),cv=el('c'),x=cv.getContext('2d'),scr=0,lv=3,go=false;
-let pts=0,dl=0,rm=1,pm=1,pc=150,g=[],bt={x:160,y:355,w:60,h:12},tm=0,spd=2.5;
-window.onload=()=>{ld();up();setInterval(ck,10000);loop();};
-window.addEventListener("keydown",e=>{if(e.code=="ArrowLeft"&&bt.x>0)bt.x-=15;if(e.code=="ArrowRight"&&bt.x<320)bt.x+=15});
-cv.addEventListener("mousemove",e=>bt.x=Math.max(0,Math.min(320,e.clientX-cv.getBoundingClientRect().left-30)));
-cv.addEventListener("click",e=>{if(go){let r=cv.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;if(cx>115&&cx<265&&cy>210&&cy<250)rs();}});
-function loop(){
-    x.fillStyle="#222";x.fillRect(0,0,380,380);x.fillStyle="#0fcc";x.fillRect(bt.x,bt.y,bt.w,bt.h);
-    if(!go){
-        if(++tm>35){g.push({x:Math.random()*360+10,y:0,s:spd+Math.random()*2,c:`hsl(${Math.random()*360},90%,60%)`});tm=0;}
-        for(let i=g.length-1;i>=0;i--){
-            let o=g[i];o.y+=o.s;x.fillStyle=o.c;x.fillRect(o.x-5,o.y-5,10,10);
-            if(o.y>=bt.y&&o.x>=bt.x&&o.x<=bt.x+bt.w){scr++;spd+=0.04;g.splice(i,1);}
-            else if(o.y>380){lv--;g.splice(i,1);if(lv<=0){go=true;pts+=Math.floor(scr*pm*rm);rm=1;up();sv();}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spacebar Spam Challenge</title>
+    <style>
+        :root { --bg: linear-gradient(135deg, #1e272e, #05c46b); --btn: #485460; --act: #0be881; }
+        body { font-family: system-ui; background: var(--bg); color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 15px; user-select: none; }
+        .top-ui { display: flex; gap: 10px; width: 100%; max-width: 600px; justify-content: space-between; margin-bottom: 10px; }
+        .ui-card { background: rgba(0,0,0,0.4); padding: 8px; border-radius: 8px; text-align: center; flex: 1; font-size: 0.85rem; }
+        .stats { display: flex; gap: 15px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 12px; margin-bottom: 15px; width: 100%; max-width: 400px; justify-content: space-around; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; }
+        .hitbox { width: 100%; max-width: 500px; height: 100px; background: var(--btn); border-bottom: 8px solid rgba(0,0,0,0.4); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: bold; cursor: pointer; position: relative; }
+        .hitbox.pressed { transform: translateY(4px); border-bottom-width: 4px; background: var(--act); color: #1e272e; }
+        .power-gem { position: absolute; width: 35px; height: 35px; background: #ff007f; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 0 15px #ff007f; cursor: pointer; transition: transform 0.1s; animation: float 1s infinite alternate; }
+        @keyframes float { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+        .controls { display: flex; gap: 10px; margin: 15px 0; }
+        .btn-action { padding: 8px 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; color: #fff; }
+        .shop-wrapper { display: flex; gap: 15px; width: 100%; max-width: 600px; flex-wrap: wrap; }
+        .shop { background: rgba(255,255,255,0.08); padding: 12px; border-radius: 12px; flex: 1; min-width: 260px; }
+        .shop-title { font-weight: bold; margin-bottom: 8px; color: #ffdd59; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+        .item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; font-size: 0.8rem; display: flex; flex-direction: column; justify-content: space-between; min-height: 80px; }
+        .buy-btn { background: #05c46b; border: none; color: #fff; padding: 4px; border-radius: 4px; font-weight: bold; margin-top: 5px; cursor: pointer; font-size: 0.75rem; }
+        .buy-btn:disabled { background: #555; cursor: not-allowed; }
+        #toast { position: fixed; bottom: 15px; background: #34495e; padding: 10px 20px; border-radius: 20px; font-weight: bold; transform: translateY(100px); transition: transform 0.2s; }
+        #toast.show { transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <div class="top-ui">
+        <div class="ui-card">💎 Gems: <span id="gem-val" style="color:#00d2d3; font-weight:bold;">0</span></div>
+        <div class="ui-card">❤️ Max Hearts: <span id="heart-val">3</span></div>
+        <div class="ui-card">🏆 PB: <span id="high-val" style="color:#ffdd59;">0</span></div>
+    </div>
+
+    <h1>Spacebar Spam Tycoon</h1>
+    
+    <div class="stats">
+        <div>Timer<div class="stat-val" id="timer">10.0s</div></div>
+        <div>Raw Clicks<div class="stat-val" id="score">0</div></div>
+        <div>Hearts<div class="stat-val" id="current-hearts" style="color:#ff4757;">❤️❤️❤️</div></div>
+    </div>
+
+    <div class="hitbox" id="spacebar">
+        <div>PRESS SPACEBAR TO START</div>
+        <div id="multi-sub" style="font-size:0.8rem; opacity:0.8;">Mult: x1</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-action" id="restart-btn" onclick="resetGame()" style="background:#ff5e57; display:none;">Try Again</button>
+        <button class="btn-action" onclick="manualSave()" style="background:#3c6382;">💾 Save</button>
+    </div>
+
+    <div class="shop-wrapper">
+        <div class="shop">
+            <div class="shop-title">🚀 Permanent Upgrades</div>
+            <div class="shop-grid" id="upgrades-grid"></div>
+        </div>
+        <div class="shop">
+            <div class="shop-title">❤️ Consumables & Customization</div>
+            <div class="shop-grid" id="consumables-grid"></div>
+        </div>
+    </div>
+
+    <div id="toast">Saved!</div>
+
+    <script>
+        let score = 0, timeLeft = 10, gameActive = false, gameStarted = false, timerInterval, gemInterval, powerGemActive = false;
+        let profile = { gems: 0, highScore: 0, maxHearts: 3, tempHearts: 3, permX2: 0, activeTheme: 'default', level: 1 };
+
+        const themes = {
+            default: { name: 'Emerald', req: 0, bg: 'linear-gradient(135deg, #1e272e, #05c46b)', btn: '#485460', act: '#0be881' },
+            crimson: { name: 'Ruby', req: 10, bg: 'linear-gradient(135deg, #2c3e50, #ea2027)', btn: '#7f8c8d', act: '#ee5253' }
+        };
+        const levels = [
+            { lvl: 2, m: 2, cost: 15, name: 'Double Tap' }, { lvl: 3, m: 3, cost: 40, name: 'Hyper Drive' },
+            { lvl: 4, m: 5, cost: 100, name: 'Sonic Blast' }, { lvl: 5, m: 10, cost: 250, name: 'Quantum Spam' }
+        ];
+
+        window.onload = () => { loadData(); updateUI(); applyTheme(profile.activeTheme); };
+
+        function updateUI() {
+            document.getElementById('gem-val').textContent = profile.gems;
+            document.getElementById('heart-val').textContent = profile.maxHearts;
+            document.getElementById('high-val').textContent = profile.highScore;
+            document.getElementById('multi-sub').textContent = `Mult: x${getMult()}`;
+            updateHeartsDisplay();
+            renderShops();
         }
-    }else{
-        x.fillStyle="rgba(0,0,0,0.8)";x.fillRect(0,0,380,380);x.fillStyle="#ff3366";x.font="24px sans-serif";x.fillText("GAME OVER",120,160);
-        x.fillStyle="#fff";x.font="14px sans-serif";x.fillText("Score: "+scr,165,190);x.fillStyle="#0fcc";x.fillRect(115,210,150,40);
-        x.fillStyle="#111";font="14px sans-serif";x.fillText("RESTART",160,235);
-    }
-    el('sc').innerText=scr;el('lv').innerText=lv;requestAnimationFrame(loop);
+
+        function getMult() {
+            let base = levels.find(l => l.lvl === profile.level)?.m || 1;
+            if (profile.permX2) base *= 2;
+            return base;
+        }
+
+        function updateHeartsDisplay() {
+            document.getElementById('current-hearts').textContent = '❤️'.repeat(gameActive ? profile.tempHearts : profile.maxHearts);
+        }
+
+        function registerPress() {
+            if (!gameStarted && !gameActive) startGame();
+            if (gameActive) {
+                score++;
+                document.getElementById('score').textContent = score;
+                spacebar.classList.add('pressed');
+            }
+        }
+
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) registerPress(); } });
+        window.addEventListener('keyup', (e) => { if (e.code === 'Space') spacebar.classList.remove('pressed'); });
+        spacebar.addEventListener('mousedown', (e) => { e.preventDefault(); registerPress(); });
+        window.addEventListener('mouseup', () => spacebar.classList.remove('pressed'));
+
+        function startGame() {
+            gameStarted = true; gameActive = true; score = 0; profile.tempHearts = profile.maxHearts;
+            updateHeartsDisplay();
+            let ms = 10000;
+            timerInterval = setInterval(() => {
+                ms -= 100; timeLeft = (ms / 1000).toFixed(1);
+                document.getElementById('timer').textContent = timeLeft + "s";
+                if (ms <= 0) endGame();
+            }, 100);
+            gemInterval = setInterval(spawnPowerGem, Math.random() * 2000 + 1500);
+        }
+
+        function spawnPowerGem() {
+            if (powerGemActive || !gameActive) return;
+            powerGemActive = true;
+            const gem = document.createElement('div');
+            gem.className = 'power-gem'; gem.textContent = '💎';
+            gem.style.left = Math.random() * 70 + 15 + '%'; gem.style.top = Math.random() * 40 + 20 + 'px';
+            
+            let clicked = false;
+            gem.onclick = (e) => {
+                e.stopPropagation(); clicked = true; score += 10;
+                document.getElementById('score').textContent = score;
+                gem.remove(); powerGemActive = false; showToast("+10 Power Score!");
+            };
+            spacebar.appendChild(gem);
+
+            setTimeout(() => {
+                if (!clicked && gameActive) {
+                    gem.remove(); powerGemActive = false; profile.tempHearts--;
+                    updateHeartsDisplay();
+                    if (profile.tempHearts <= 0) endGame();
+                }
+            }, 700); // Hyper fast despawn window
+        }
+
+        function endGame() {
+            gameActive = false; clearInterval(timerInterval); clearInterval(gemInterval);
+            document.querySelectorAll('.power-gem').forEach(g => g.remove()); powerGemActive = false;
+            document.getElementById('timer').textContent = "0.0s";
+            
+            let final = score * getMult(), gemsGained = Math.max(1, Math.floor(final * 0.5)), best = false;
+            if (final > profile.highScore) { best = true; profile.highScore = final; gemsGained *= 3; }
+            profile.gems += gemsGained;
+            spacebar.innerHTML = best ? `🏆 NEW BEST! +💎${gemsGained}` : `DONE! Score: ${final} +💎${gemsGained}`;
+            document.getElementById('restart-btn').style.display = 'block';
+            autoSave(); updateUI();
+        }
+
+        function resetGame() {
+            score = 0; timeLeft = 10; gameActive = false; gameStarted = false;
+            document.getElementById('score').textContent = "0"; document.getElementById('timer').textContent = "10.0s";
+            spacebar.innerHTML = `<div>PRESS SPACEBAR TO START</div><div style="font-size:0.8rem; opacity:0.8;">Mult: x${getMult()}</div>`;
+document.getElementById('restart-btn').style.display = 'none'; updateHeartsDisplay();
 }
-function rs(){scr=0;lv=3;spd=2.5;g=[];go=false;}
-function by(f,c){if(pts>=c){pts-=c;rm*=f;up();sv();}}
-function bp(){if(pts>=pc){pts-=pc;pm++;pc=Math.floor(pc*1.6);up();sv();}}
-function cl(){if(!dl||Date.now()-dl>=86400000){pts+=100;dl=Date.now();up();sv();}}
-function ck(){let a=!dl||Date.now()-dl>=86400000;el('db').disabled=!a;el('db').innerText=a?"Claim":"Locked";}
-function sv(f){localStorage.setItem("gCP",{pts,dl,pm,pc});if(f){alert("Saved!");}}
-function ld(){let s=localStorage.getItem("gCP");if(s){try{let p=JSON.parse(s);pts=p.pts||0;dl=p.dl||0;pm=p.pm||1;pc=p.pc||150;}catch(e){}}ck();}
-function up(){el('pt').innerText=pts;el('pm').innerText=pm;el('pc').innerText=pc;el('b2').disabled=pts<50;el('bp').disabled=pts<pc;el('bt').innerText=rm>1?`🔥 ${rm}x Active`:"";}
-</script></body></html>
+function renderShops() {
+const upGrid = document.getElementById('upgrades-grid'); upGrid.innerHTML = '';
+levels.forEach(u => {
+const owned = profile.level >= u.lvl, next = profile.level + 1 === u.lvl;
+const card = document.createElement('div'); card.className = 'item';
+card.innerHTML = owned ? <strong>${u.name}</strong><div>Active (x${u.m})</div> : next ? <strong>${u.name} (x${u.m})</strong><div>💎${u.cost}</div><button class="buy-btn" ${profile.gems>=u.cost?'':'disabled'} onclick="buyLvl(${u.lvl},${u.cost})">Buy</button> : <strong>Locked</strong>;
+upGrid.appendChild(card);
+});
+const conGrid = document.getElementById('consumables-grid'); conGrid.innerHTML = '';
+// Perm 2x Item
+const p2x = document.createElement('div'); p2x.className = 'item';
+p2x.innerHTML = profile.permX2 ? <strong>Perm x2</strong><div>Owned</div> : <strong>Perm x2 Score</strong><div>💎1000</div><button class="buy-btn" ${profile.gems>=1000?'':'disabled'} onclick="buyPermX2()">Buy</button>;
+conGrid.appendChild(p2x);
+// Extra Perm Life
+const pLife = document.createElement('div'); pLife.className = 'item';
+pLife.innerHTML = <strong>Perm Heart</strong><div>Count: ${profile.maxHearts}/10</div><div>💎500</div><button class="buy-btn" ${profile.gems>=500 && profile.maxHearts<10?'':'disabled'} onclick="buyPermLife()">Buy</button>;
+conGrid.appendChild(pLife);
+// Visual Theme Unlocks
+Object.keys(themes).forEach(k => {
+if(k==='default') return;
+const card = document.createElement('div'); card.className = 'item';
+const open = profile.highScore >= themes[k].req;
+card.innerHTML = <strong>${themes[k].name} Skin</strong> + (open ? <div>Unlocked</div><button class="buy-btn" onclick="setTheme('${k}')">Equip</button> : <div>Req ${themes[k].req} PB</div>);
+conGrid.appendChild(card);
+});
+}
+function buyLvl(l, c) { if(profile.gems>=c) { profile.gems-=c; profile.level=l; autoSave(); updateUI(); resetGame(); } }
+function buyPermX2() { if(profile.gems>=1000) { profile.gems-=1000; profile.permX2=1; autoSave(); updateUI(); resetGame(); } }
+function buyPermLife() { if(profile.gems>=500 && profile.maxHearts<10) { profile.gems-=500; profile.maxHearts++; autoSave(); updateUI(); resetGame(); } }
+function setTheme(k) { profile.activeTheme = k; applyTheme(k); autoSave(); }
+function applyTheme(k) { const t = themes[k]||themes.default; document.documentElement.style.setProperty('--bg', t.bg); document.documentElement.style.setProperty('--btn', t.btn); document.documentElement.style.setProperty('--act', t.act); }
+function manualSave() { localStorage.setItem('sp_tycoon', JSON.stringify(profile)); showToast("Securely Saved!"); }
+function autoSave() { localStorage.setItem('sp_tycoon', JSON.stringify(profile)); }
+function loadData() { const d = localStorage.getItem('sp_tycoon'); if(d) { try { profile = JSON.parse(d); } catch(e){} } }
+function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
