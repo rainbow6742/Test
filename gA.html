@@ -3,311 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spacebar Speed Clicker</title>
+    <title>Gem Catcher Arcade</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            text-align: center;
-            padding: 20px;
             margin: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #2d2d2d;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-        }
-        h1 { color: #00ffcc; margin-top: 0; }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            background: #3d3d3d;
-            padding: 15px;
-            border-radius: 10px;
-        }
-        .click-area {
-            border: 3px dashed #00ffcc;
-            padding: 40px 20px;
-            border-radius: 10px;
-            font-size: 1.5em;
-            margin: 20px 0;
-            background-color: #252525;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.1s;
-        }
-        .click-area:active, .click-area.active {
-            background-color: #353535;
-            border-color: #ff00ff;
-        }
-        button {
-            background-color: #00ffcc;
-            color: #1a1a1a;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1em;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-            transition: transform 0.1s, background 0.2s;
-        }
-        button:hover { background-color: #00ccff; transform: scale(1.05); }
-        button:disabled { background-color: #555; color: #aaa; cursor: not-allowed; transform: none; }
-        .shop, .rewards {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 2px solid #444;
-        }
-        .shop-item {
+            background: #111;
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            background: #3a3a3a;
-            padding: 10px 15px;
-            border-radius: 5px;
-            margin: 10px 0;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #ui {
+            display: flex;
+            gap: 20px;
+            font-size: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #00ffcc;
+        }
+        #gameCanvas {
+            background: #222;
+            border: 4px solid #00ffcc;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+            max-width: 100%;
+        }
+        #controls {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Spacebar Clicker (10s)</h1>
+    <div id="ui">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+    </div>
     
-    <div class="stats-grid">
-        <div>High Score: <span id="high-score">0</span></div>
-        <div>Gems: 💎<span id="gem-count">0</span></div>
-        <div>Current Score: <span id="current-score">0</span></div>
-        <div>Time Left: <span id="time-left">10.0</span>s</div>
-    </div>
-
-    <div id="active-multipliers" style="margin-bottom: 15px; font-weight: bold; color: #ff00ff;"></div>
-
-    <button id="start-btn" onclick="startGame()">Start Game</button>
-    <button id="save-btn" onclick="saveGame()">💾 Save Game</button>
-
-    <div id="click-zone" class="click-area">
-        Press <strong>SPACEBAR</strong> or Click Here to Score!
-    </div>
-
-    <div class="rewards">
-        <h3>🎁 Daily Rewards</h3>
-        <button id="daily-btn" onclick="claimDaily()">Claim Daily Reward (50 Gems)</button>
-        <p id="daily-status" style="font-size: 0.9em; color: #aaa;"></p>
-    </div>
-
-    <div class="shop">
-        <h3>🛒 Multiplier Shop</h3>
-        <div class="shop-item">
-            <div>
-                <strong>2x Gem Multiplier</strong><br>
-                <small>Lasts for 1 game room</small>
-            </div>
-            <button id="buy-x2" onclick="buyMultiplier(2, 50)">Cost: 50 💎</button>
-        </div>
-        <div class="shop-item">
-            <div>
-                <strong>5x Gem Multiplier</strong><br>
-                <small>Lasts for 1 game room</small>
-            </div>
-            <button id="buy-x5" onclick="buyMultiplier(5, 200)">Cost: 200 💎</button>
-        </div>
-    </div>
-</div>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    
+    <div id="controls">Use ⬅️ and ➡️ Arrow Keys or Click/Drag to move the bucket!</div>
 
 <script>
-    // Game State variables
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const livesEl = document.getElementById("lives");
+
+    // Game variables
     let score = 0;
-    let highScore = 0;
-    let gems = 0;
-    let timeLeft = 10.0;
-    let isPlaying = false;
-    let timerInterval = null;
-    let lastDailyClaim = 0;
-    let activeMultipliers = []; 
+    let lives = 3;
+    let gameOver = false;
 
-    // Core Setup Execution
-    window.addEventListener('DOMContentLoaded', () => {
-        loadGame();
-        updateUI();
-        checkDailyAvailability();
+    // Player Basket
+    const basket = {
+        x: 175,
+        y: 460,
+        width: 60,
+        height: 15,
+        speed: 7
+    };
+
+    // Falling Gems
+    let gems = [];
+    const gemSize = 12;
+    let spawnTimer = 0;
+    let baseSpeed = 2.5;
+
+    // Keyboard inputs
+    let keys = {};
+    window.addEventListener("keydown", e => keys[e.code] = true);
+    window.addEventListener("keyup", e => keys[e.code] = false);
+
+    // Mouse / Touch inputs
+    canvas.addEventListener("mousemove", e => {
+        const rect = canvas.getBoundingClientRect();
+        const root = document.documentElement;
+        const mouseX = e.clientX - rect.left - root.scrollLeft;
+        basket.x = mouseX - basket.width / 2;
     });
 
-    // Keyboard Listeners
-    window.addEventListener('keydown', function(e) {
-        if (e.code === 'Space') {
-            e.preventDefault(); 
-            registerClick();
+    function spawnGem() {
+        gems.push({
+            x: Math.random() * (canvas.width - gemSize * 2) + gemSize,
+            y: 0,
+            speed: baseSpeed + Math.random() * 2,
+            color: `hsl(${Math.random() * 360}, 100%, 60%)`
+        });
+    }
+
+    function update() {
+        if (gameOver) return;
+
+        // Move basket with keyboard
+        if (keys["ArrowLeft"] && basket.x > 0) basket.x -= basket.speed;
+        if (keys["ArrowRight"] && basket.x < canvas.width - basket.width) basket.x += basket.speed;
+
+        // Keep basket in screen bounds
+        if (basket.x < 0) basket.x = 0;
+        if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
+
+        // Spawn gems
+        spawnTimer++;
+        if (spawnTimer > 40) {
+            spawnGem();
+            spawnTimer = 0;
         }
-    });
 
-    // Touch/Mouse Area Listener
-    document.getElementById('click-zone').addEventListener('mousedown', function() {
-        registerClick();
-    });
+        // Update gems
+        for (let i = gems.length - 1; i >= 0; i--) {
+            let g = gems[i];
+            g.y += g.speed;
 
-    function registerClick() {
-        if (!isPlaying) return;
-        score++;
-        document.getElementById('current-score').innerText = score;
-        
-        const zone = document.getElementById('click-zone');
-        zone.classList.add('active');
-        setTimeout(() => zone.classList.remove('active'), 50);
-    }
-
-    function startGame() {
-        if (isPlaying) return;
-        
-        isPlaying = true;
-        score = 0;
-        timeLeft = 10.0;
-        
-        document.getElementById('current-score').innerText = score;
-        document.getElementById('start-btn').disabled = true;
-        document.getElementById('click-zone').innerHTML = "<strong>GO! GO! GO!</strong>";
-        
-        timerInterval = setInterval(() => {
-            timeLeft -= 0.1;
-            if (timeLeft <= 0) {
-                timeLeft = 0;
-                endGame();
-            }
-            document.getElementById('time-left').innerText = timeLeft.toFixed(1);
-        }, 100);
-    }
-
-    function endGame() {
-        isPlaying = false;
-        clearInterval(timerInterval);
-        document.getElementById('start-btn').disabled = false;
-        document.getElementById('click-zone').innerHTML = "Game Over! Press Start to play again.";
-
-        let gemsEarned = 0;
-        let isNewBest = false;
-
-        if (score > 10) {
-            gemsEarned = score; 
-            
-            if (score > highScore) {
-                highScore = score;
-                isNewBest = true;
-                gemsEarned *= 2; 
+            // Catch collision
+            if (g.y + gemSize >= basket.y && 
+                g.x >= basket.x && 
+                g.x <= basket.x + basket.width) {
+                score++;
+                scoreEl.innerText = score;
+                baseSpeed += 0.05; // Make game progressively faster
+                gems.splice(i, 1);
+                continue;
             }
 
-            if (activeMultipliers.length > 0) {
-                let shopMultiplierTotal = activeMultipliers.reduce((a, b) => a * b, 1);
-                gemsEarned *= shopMultiplierTotal;
-            }
+            // Miss check
+            if (g.y > canvas.height) {
+                lives--;
+                livesEl.innerText = lives;
+                gems.splice(i, 1);
 
-            gems += gemsEarned;
-        }
-
-        let message = `You got ${score} clicks!`;
-        if (score > 10) {
-            message += `\nEarned ${gemsEarned} Gems! ` + 
-                       (isNewBest ? "🔥 NEW BEST BONUS!" : "") +
-                       (activeMultipliers.length > 0 ? " 🛒 Shop Multiplier Applied!" : "");
-        } else {
-            message += `\nScore 11 or higher to earn gems!`;
-        }
-        alert(message);
-
-        activeMultipliers = [];
-        updateUI();
-        saveGame(); 
-    }
-
-    function buyMultiplier(factor, cost) {
-        if (gems >= cost) {
-            gems -= cost;
-            activeMultipliers.push(factor);
-            alert(`Successfully purchased ${factor}x Gem Multiplier! Valid for your NEXT game run.`);
-            updateUI();
-        } else {
-            alert("Not enough Gems!");
-        }
-    }
-
-    function claimDaily() {
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
-
-        if (!lastDailyClaim || (now - lastDailyClaim >= oneDay)) {
-            gems += 50;
-            lastDailyClaim = now;
-            alert("Claimed 50 Daily Gems!");
-            updateUI();
-            checkDailyAvailability();
-            saveGame();
-        }
-    }
-
-    function checkDailyAvailability() {
-        const dailyBtn = document.getElementById('daily-btn');
-        const dailyStatus = document.getElementById('daily-status');
-        const now = Date.now();
-        const oneDay = 24 * 60 * 60 * 1000;
-
-        if (!lastDailyClaim || (now >= lastDailyClaim + oneDay)) {
-            dailyBtn.disabled = false;
-            dailyStatus.innerText = "Available to claim now!";
-        } else {
-            dailyBtn.disabled = true;
-            let timeLeftMs = (lastDailyClaim + oneDay) - now;
-            let hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
-            let minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
-            dailyStatus.innerText = `Next reward available in: ${hours}h ${minutes}m`;
-        }
-    }
-
-    function saveGame() {
-        const saveState = {
-            highScore: highScore,
-            gems: gems,
-            lastDailyClaim: lastDailyClaim
-        };
-        localStorage.setItem('spacebarClickerSave', JSON.stringify(saveState));
-        
-        const saveBtn = document.getElementById('save-btn');
-        saveBtn.innerText = "✅ Saved!";
-        setTimeout(() => saveBtn.innerText = "💾 Save Game", 1500);
-    }
-
-    function loadGame() {
-        const savedData = localStorage.getItem('spacebarClickerSave');
-        if (savedData) {
-            try {
-                const parsed = JSON.parse(savedData);
-                highScore = parsed.highScore || 0;
-                gems = parsed.gems || 0;
-                lastDailyClaim = parsed.lastDailyClaim || 0;
-            } catch(e) {
-                console.error("Save state corrupt, resetting default profile variables.", e);
+                if (lives <= 0) {
+                    gameOver = true;
+                }
             }
         }
     }
 
-    function updateUI() {
-        document.getElementById('high-score').innerText = highScore;
-        document.getElementById('gem-count').innerText = gems;
-        document.getElementById('buy-x2').disabled = (gems < 50);
-        document.getElementById('buy-x5').disabled = (gems < 200);
+    function draw() {
+        // Clear background
+        ctx.fillStyle = "#222";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const multDisplay = document.getElementById('active-multipliers');
-        if (activeMultipliers.length > 0) {
-            let combined = activeMultipliers.reduce((a,b) => a * b, 1);
-multDisplay.innerText = 🛒 Active Shop Boost for next run: ${combined}x Gems;
-} else {
-multDisplay.innerText = "";
-}
-}
-setInterval(checkDailyAvailability, 30000);
+        // Draw Basket
+        ctx.fillStyle = "#00ffcc";
+        ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+
+        // Draw Gems
+        gems.forEach(g => {
+            ctx.fillStyle = g.color;
+            ctx.beginPath();
+            ctx.moveTo(g.x, g.y - gemSize);
+            ctx.lineTo(g.x + gemSize, g.y);
+            ctx.lineTo(g.x, g.y + gemSize);
+            ctx.lineTo(g.x - gemSize, g.y);
+            ctx.closePath();
+            ctx.fill();
+        });
+
+        // Game Over screen
+        if (gameOver) {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#ff3366";
+            ctx.font = "30px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
+            ctx.fillStyle = "#fff";
+            ctx.font = "16px sans-serif";
+            ctx.fillText("Refresh the page to play again!", canvas.width / 2, canvas.height / 2 + 30);
+        }
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Fire up loop
+    gameLoop();
+</script>
+</body>
+</html>
