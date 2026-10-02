@@ -2,157 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RPS Betting</title>
+    <title>RPS</title>
     <style>
-        :root { --cur: default; }
-        body { font-family: system-ui; background: linear-gradient(135deg, #1e272e, #34495e); color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; user-select: none; cursor: var(--cur); }
-        .top-ui { display: flex; gap: 15px; margin-bottom: 20px; width: 100%; max-width: 450px; }
-        .card { background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 10px; text-align: center; flex: 1; }
-        .coins { color: #ffdd59; font-size: 1.6rem; font-weight: bold; }
-        .bet-box, .safe-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; margin-bottom: 15px; box-sizing: border-box; }
-        .safe-box { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; }
-        .slider { width: 80%; accent-color: #ffdd59; }
-        .choices { display: flex; gap: 20px; margin-bottom: 20px; }
-        
-        /* Force cursor style over buttons and interactables */
-        .btn, .cur-item, input, label { cursor: inherit !important; }
-        
-        .btn { background: #485460; border: none; border-bottom: 5px solid #1e272e; border-radius: 50%; width: 80px; height: 80px; font-size: 2.2rem; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
+        :root { --bg: linear-gradient(135deg, #1e272e, #34495e); }
+        body { font-family: system-ui; background: var(--bg); color: #fff; text-align: center; user-select: none; }
+        .box { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; max-width: 400px; margin: 10px auto; }
+        .btn { background: #485460; border: none; border-bottom: 4px solid #111; border-radius: 50%; width: 70px; height: 70px; font-size: 2rem; margin: 5px; cursor: pointer; }
         .btn:hover { background: #0be881; }
-        .btn:active { transform: translateY(3px); border-bottom-width: 2px; }
-        
-        .display { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; min-height: 80px; box-sizing: border-box; }
-        .win { color: #0be881; font-weight: bold; font-size: 1.5rem; }
-        .lose { color: #ff5e57; font-weight: bold; font-size: 1.5rem; }
-        .draw { color: #ffdd59; font-weight: bold; font-size: 1.5rem; }
-        .cur-box { margin-top: 25px; background: rgba(255,255,255,0.07); padding: 12px; border-radius: 12px; width: 100%; max-width: 450px; box-sizing: border-box; }
-        .cur-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
-        .cur-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; font-size: 0.8rem; border: 2px solid transparent; }
-        .cur-item.active { border-color: #00d2d3; background: rgba(0,210,211,0.15); }
+        .btn:active { transform: translateY(2px); border-bottom-width: 1px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 5px; }
+        .item { background: rgba(0,0,0,0.3); padding: 5px; border-radius: 4px; font-size: 0.75rem; border: 2px solid transparent; cursor: pointer; }
+        .item.active { border-color: #00d2d3; }
     </style>
 </head>
 <body>
 
-    <div class="top-ui">
-        <div class="card">💰 Wealth<div id="coin-val" class="coins">100</div></div>
-        <div class="card">Record<div id="record-val" style="font-size:1.3rem; font-weight:bold; margin-top:5px; color:#0be881;">0 - 0</div></div>
-    </div>
-
-    <h1>RPS Tycoon</h1>
+    <h2>💰 <span id="c">100</span> | <span id="d"></span></h2>
     
-    <div class="safe-box">
-        <input type="checkbox" id="safe-toggle" onchange="toggleSafeMode(this.checked)" style="transform: scale(1.3);">
-        <label for="safe-toggle" id="safe-label">🛡️ Safe Mode (No Loss)</label>
-    </div>
-    
-    <div class="bet-box">
-        <div>Bet: <b style="color:#ffdd59;">💰 <span id="bet-display">10</span></b></div>
-        <input type="range" min="1" max="100" value="10" class="slider" id="slider" oninput="updateBet(this.value)">
+    <div class="box">
+        <input type="checkbox" id="st" onchange="tg(this.checked)"> <label id="sl" for="st">🛡️ Safe Mode</label>
     </div>
 
-    <div class="choices">
-        <button class="btn" onclick="play('✊')">✊</button>
-        <button class="btn" onclick="play('✋')">✋</button>
-        <button class="btn" onclick="play('✌️')">✌️</button>
+    <div class="box">
+        Bet: 💰<span id="bd">10</span><br>
+        <input type="range" min="1" max="100" value="10" id="sd" oninput="ub(this.value)" style="width:90%">
     </div>
 
-    <div class="display">
-        <div id="matchup" style="color:#d2dae2;">Set your bet and pick a move!</div>
-        <div id="result" style="margin-top:5px;"></div>
+    <div>
+        <button class="btn" onclick="p('✊')">✊</button>
+        <button class="btn" onclick="p('✋')">✋</button>
+        <button class="btn" onclick="p('✌️')">✌️</button>
     </div>
 
-    <div class="cur-box">
-        <div style="font-weight:bold; margin-bottom:8px; color:#ffdd59; text-align:center;">🖱️ Free Cursors</div>
-        <div class="cur-grid">
-            <div class="cur-item active" id="c-default" onclick="setCur('default')">Normal</div>
-            <div class="cur-item" id="c-crosshair" onclick="setCur('crosshair')">Crosshair</div>
-            <div class="cur-item" id="c-laser" onclick="setCur('laser')">🔴 Laser Dot</div>
-        </div>
+    <div class="box" id="m">Pick a move!</div>
+
+    <div class="box">
+        <div>🎨 Background Paint</div>
+        <div class="grid" id="sg"></div>
     </div>
 
     <script>
-        let coins = 100, wins = 0, losses = 0, activeBet = 10, chosenCur = 'default', safeMode = false;
-        const name = { '✊': 'Rock', '✋': 'Paper', '✌️': 'Scissors' }, choices = ['✊', '✋', '✌️'];
+        let co = 100, ab = 10, sm = false, cd = null, inv = ['d'], th = 'd';
+        const tms = {
+            d: { n: 'Slate', c: 0, s: 'linear-gradient(135deg, #1e272e, #34495e)' },
+            r: { n: 'Ruby', c: 50, s: 'linear-gradient(135deg, #2c3e50, #ea2027)' },
+            n: { n: 'Neon', c: 150, s: 'linear-gradient(135deg, #000, #a55eea)' },
+            g: { n: 'Gold', c: 400, s: 'linear-gradient(135deg, #2c3e50, #f1c40f)' }
+        }, nm = { '✊': 'Rock', '✋': 'Paper', '✌️': 'Scissors' }, ch = ['✊', '✋', '✌️'];
 
-        window.onload = () => { load(); updateUI(); setCur(chosenCur); };
+        window.onload = () => { ld(); ui(); };
 
-        function updateBet(val) {
-            if (val > coins) { val = Math.max(1, coins); document.getElementById('slider').value = val; }
-            activeBet = parseInt(val);
-            document.getElementById('bet-display').textContent = activeBet;
+        function ub(v) { ab = Math.min(parseInt(v), co); document.getElementById('bd').textContent = ab; }
+        
+        function tg(c) { if (co < 5000) { sm = c; sv(); } else document.getElementById('st').checked = false; }
+
+        function ui() {
+            document.getElementById('c').textContent = co;
+            const s = document.getElementById('sd'); s.max = co; if (parseInt(s.value) > co) ub(co);
+            const t = document.getElementById('st'), l = document.getElementById('sl');
+            if (co >= 5000) { sm = false; t.checked = false; t.disabled = true; l.innerHTML = "🔒 Closed (5000+)"; }
+            else { t.disabled = false; t.checked = sm; l.innerHTML = "🛡️ Safe Mode"; }
+            
+            const d = document.getElementById('d');
+            if (cd === new Date().toDateString()) d.innerHTML = "Claimed";
+            else d.innerHTML = `<button onclick="cl()" style="cursor:pointer">🎁 +50</button>`;
+            
+            const g = document.getElementById('sg'); g.innerHTML = '';
+            Object.keys(tms).forEach(k => {
+                const i = tms[k], ow = inv.includes(k), ac = th === k;
+                const d = document.createElement('div'); d.className = `item ${ac?'active':''}`;
+                d.innerHTML = `<b>${i.n}</b><br>${ac?'Equipped':ow?'Equip':'💰'+i.c}`;
+                d.onclick = () => {
+                    if (ac) return;
+                    if (ow) { th = k; } 
+                    else if (co >= i.c) { co -= i.c; inv.push(k); th = k; }
+                    document.documentElement.style.setProperty('--bg', tms[th].s); ui(); sv();
+                };
+                g.appendChild(d);
+            });
         }
 
-        function toggleSafeMode(checked) {
-            if (coins >= 5000) {
-                document.getElementById('safe-toggle').checked = false;
-                return;
-            }
-            safeMode = checked;
-            save();
+        function cl() { co += 50; cd = new Date().toDateString(); ui(); sv(); }
+
+        function p(pl) {
+            if (co <= 0) { alert("Gifted 💰20!"); co = 20; ui(); return; }
+            const cp = ch[Math.floor(Math.random() * 3)];
+            let res = "";
+            if (pl === cp) res = "Draw!";
+            else if ((pl==='✊'&&cp==='✌️')||(pl==='✋'&&cp==='✊')||(pl==='✌️'&&cp==='✋')) { co += ab; res = `Win! +💰${ab}`; } 
+            else if (sm) res = "Protected!"; else { co -= ab; res = `Lose! -💰${ab}`; }
+            document.getElementById('m').innerHTML = `You [${nm[pl]}] vs Comp [${nm[cp]}]<br><b>${res}</b>`;
+            ui(); sv();
         }
 
-        function updateUI() {
-            document.getElementById('coin-val').textContent = coins;
-            document.getElementById('record-val').textContent = `${wins} - ${losses}`;
-            document.getElementById('slider').max = Math.max(1, coins);
-            if (parseInt(document.getElementById('slider').value) > coins) updateBet(coins);
-
-            const toggle = document.getElementById('safe-toggle');
-            const label = document.getElementById('safe-label');
-            if (coins >= 5000) {
-                safeMode = false;
-                toggle.checked = false;
-                toggle.disabled = true;
-                label.innerHTML = "🔒 Safe Mode (Disabled at 5000+)";
-                label.style.color = "#ff5e57";
-            } else {
-                toggle.disabled = false;
-                toggle.checked = safeMode;
-                label.innerHTML = "🛡️ Safe Mode (No Loss)";
-                label.style.color = "#fff";
-            }
-        }
-
-        function play(player) {
-            if (coins <= 0) { alert("Bankrupt! Gifting 💰 20 to keep playing!"); coins = 20; updateUI(); return; }
-            if (activeBet > coins) updateBet(coins);
-
-            const comp = choices[Math.floor(Math.random() * 3)];
-            document.getElementById('matchup').innerHTML = `You [${name[player]}] vs Computer [${name[comp]}]`;
-            const res = document.getElementById('result');
-
-            if (player === comp) { 
-                res.textContent = "Draw!"; res.className = "draw"; 
-            } 
-            else if ((player==='✊' && comp==='✌️') || (player==='✋' && comp==='✊') || (player==='✌️' && comp==='✋')) {
-                coins += activeBet; wins++; res.textContent = `Win! +💰${activeBet}`; res.className = "win";
-            } else {
-                losses++;
-                if (safeMode) {
-                    res.textContent = `Lose! Saved by Safe Mode! (💰0)`; res.className = "draw";
-                } else {
-                    coins -= activeBet; res.textContent = `Lose! -💰${activeBet}`; res.className = "lose";
-                }
-            }
-            updateUI(); save();
-        }
-
-        function setCur(type) {
-            chosenCur = type;
-            if (type === 'laser') {
-                // Injects a high-vis standalone pixel-perfect red circle SVG asset
-                document.documentElement.style.setProperty('--cur', `url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="%23ff0055" stroke="%23ffffff" stroke-width="1.5"/></svg>') 8 8, auto`);
-            } else {
-                document.documentElement.style.setProperty('--cur', type);
-            }
-            document.querySelectorAll('.cur-item').forEach(i => i.classList.remove('active'));
-            document.getElementById(`c-${type}`).classList.add('active');
-            save();
-        }
-
-        function save() { localStorage.setItem('rps_s_laser', JSON.stringify({ coins, wins, losses, chosenCur, safeMode })); }
-        function load() { const d = localStorage.getItem('rps_s_laser'); if (d) { try { const p = JSON.parse(d); coins = p.coins??100; wins = p.wins??0; losses = p.losses??0; chosenCur = p.chosenCur??'default'; safeMode = p.safeMode??false; } catch(e){} } }
+        function sv() { localStorage.setItem('rps_mini', JSON.stringify({ co, sm, cd, inv, th })); }
+        function ld() { const sa = localStorage.getItem('rps_mini'); if (sa) { try { const p = JSON.parse(sa); co=p.co??100; sm=p.sm??false; cd=p.cd; inv=p.inv??['d']; th=p.th??'d'; document.documentElement.style.setProperty('--bg', tms[th].s); } catch(e){} } }
     </script>
 </body>
 </html>
