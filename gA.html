@@ -1,193 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gem Catcher Arcade</title>
-    <style>
-        body {
-            margin: 0;
-            background: #111;
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-        #ui {
-            display: flex;
-            gap: 20px;
-            font-size: 20px;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #00ffcc;
-        }
-        #gameCanvas {
-            background: #222;
-            border: 4px solid #00ffcc;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
-            max-width: 100%;
-        }
-        #controls {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #888;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="ui">
-        <div>Score: <span id="score">0</span></div>
-        <div>Lives: <span id="lives">3</span></div>
-    </div>
-    
-    <canvas id="gameCanvas" width="400" height="500"></canvas>
-    
-    <div id="controls">Use ⬅️ and ➡️ Arrow Keys or Click/Drag to move the bucket!</div>
-
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Arcade</title><style>
+body{background:#111;color:#fff;font-family:sans-serif;text-align:center;margin:10px}
+.b{background:#0fcc;border:0;padding:6px 12px;font-weight:bold;border-radius:4px;cursor:pointer}
+.b:disabled{background:#555;cursor:not-allowed}
+.s{background:#222;padding:8px;margin:8px auto;max-width:380px;border-radius:6px;display:flex;justify-content:space-between;align-items:center}
+</style></head><body>
+<div style="font-size:18px;margin-bottom:5px">Pts: 🪙<span id="pt">0</span> | Scr: <span id="sc">0</span> | Lvs: <span id="lv">3</span></div>
+<canvas id="c" width="380" height="380" style="background:#222;border:3px solid #0fcc;border-radius:6px"></canvas>
+<div class="s"><button class="b" onclick="sv(1)">💾 Save</button><span id="bt"></span></div>
+<div class="s"><span>🎁 Daily (100pt)</span><button id="db" class="b" onclick="cl()">Claim</button></div>
+<div class="s"><span>🛒 2x Next Run (50pt)</span><button id="b2" class="b" onclick="by(2,50)">Buy</button></div>
+<div class="s"><span>🛒 Perm +1x (<span id="pc">150</span>pt)</span><button id="bp" class="b" onclick="bp()">Buy <span id="pm">1</span>x</button></div>
 <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const scoreEl = document.getElementById("score");
-    const livesEl = document.getElementById("lives");
-
-    // Game variables
-    let score = 0;
-    let lives = 3;
-    let gameOver = false;
-
-    // Player Basket
-    const basket = {
-        x: 175,
-        y: 460,
-        width: 60,
-        height: 15,
-        speed: 7
-    };
-
-    // Falling Gems
-    let gems = [];
-    const gemSize = 12;
-    let spawnTimer = 0;
-    let baseSpeed = 2.5;
-
-    // Keyboard inputs
-    let keys = {};
-    window.addEventListener("keydown", e => keys[e.code] = true);
-    window.addEventListener("keyup", e => keys[e.code] = false);
-
-    // Mouse / Touch inputs
-    canvas.addEventListener("mousemove", e => {
-        const rect = canvas.getBoundingClientRect();
-        const root = document.documentElement;
-        const mouseX = e.clientX - rect.left - root.scrollLeft;
-        basket.x = mouseX - basket.width / 2;
-    });
-
-    function spawnGem() {
-        gems.push({
-            x: Math.random() * (canvas.width - gemSize * 2) + gemSize,
-            y: 0,
-            speed: baseSpeed + Math.random() * 2,
-            color: `hsl(${Math.random() * 360}, 100%, 60%)`
-        });
-    }
-
-    function update() {
-        if (gameOver) return;
-
-        // Move basket with keyboard
-        if (keys["ArrowLeft"] && basket.x > 0) basket.x -= basket.speed;
-        if (keys["ArrowRight"] && basket.x < canvas.width - basket.width) basket.x += basket.speed;
-
-        // Keep basket in screen bounds
-        if (basket.x < 0) basket.x = 0;
-        if (basket.x > canvas.width - basket.width) basket.x = canvas.width - basket.width;
-
-        // Spawn gems
-        spawnTimer++;
-        if (spawnTimer > 40) {
-            spawnGem();
-            spawnTimer = 0;
+let el=id=>document.getElementById(id),cv=el('c'),x=cv.getContext('2d'),scr=0,lv=3,go=false;
+let pts=0,dl=0,rm=1,pm=1,pc=150,g=[],bt={x:160,y:355,w:60,h:12},tm=0,spd=2.5;
+window.onload=()=>{ld();up();setInterval(ck,10000);loop();};
+window.addEventListener("keydown",e=>{if(e.code=="ArrowLeft"&&bt.x>0)bt.x-=15;if(e.code=="ArrowRight"&&bt.x<320)bt.x+=15});
+cv.addEventListener("mousemove",e=>bt.x=Math.max(0,Math.min(320,e.clientX-cv.getBoundingClientRect().left-30)));
+cv.addEventListener("click",e=>{if(go){let r=cv.getBoundingClientRect(),cx=e.clientX-r.left,cy=e.clientY-r.top;if(cx>115&&cx<265&&cy>210&&cy<250)rs();}});
+function loop(){
+    x.fillStyle="#222";x.fillRect(0,0,380,380);x.fillStyle="#0fcc";x.fillRect(bt.x,bt.y,bt.w,bt.h);
+    if(!go){
+        if(++tm>35){g.push({x:Math.random()*360+10,y:0,s:spd+Math.random()*2,c:`hsl(${Math.random()*360},90%,60%)`});tm=0;}
+        for(let i=g.length-1;i>=0;i--){
+            let o=g[i];o.y+=o.s;x.fillStyle=o.c;x.fillRect(o.x-5,o.y-5,10,10);
+            if(o.y>=bt.y&&o.x>=bt.x&&o.x<=bt.x+bt.w){scr++;spd+=0.04;g.splice(i,1);}
+            else if(o.y>380){lv--;g.splice(i,1);if(lv<=0){go=true;pts+=Math.floor(scr*pm*rm);rm=1;up();sv();}}
         }
-
-        // Update gems
-        for (let i = gems.length - 1; i >= 0; i--) {
-            let g = gems[i];
-            g.y += g.speed;
-
-            // Catch collision
-            if (g.y + gemSize >= basket.y && 
-                g.x >= basket.x && 
-                g.x <= basket.x + basket.width) {
-                score++;
-                scoreEl.innerText = score;
-                baseSpeed += 0.05; // Make game progressively faster
-                gems.splice(i, 1);
-                continue;
-            }
-
-            // Miss check
-            if (g.y > canvas.height) {
-                lives--;
-                livesEl.innerText = lives;
-                gems.splice(i, 1);
-
-                if (lives <= 0) {
-                    gameOver = true;
-                }
-            }
-        }
+    }else{
+        x.fillStyle="rgba(0,0,0,0.8)";x.fillRect(0,0,380,380);x.fillStyle="#ff3366";x.font="24px sans-serif";x.fillText("GAME OVER",120,160);
+        x.fillStyle="#fff";x.font="14px sans-serif";x.fillText("Score: "+scr,165,190);x.fillStyle="#0fcc";x.fillRect(115,210,150,40);
+        x.fillStyle="#111";font="14px sans-serif";x.fillText("RESTART",160,235);
     }
-
-    function draw() {
-        // Clear background
-        ctx.fillStyle = "#222";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw Basket
-        ctx.fillStyle = "#00ffcc";
-        ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
-
-        // Draw Gems
-        gems.forEach(g => {
-            ctx.fillStyle = g.color;
-            ctx.beginPath();
-            ctx.moveTo(g.x, g.y - gemSize);
-            ctx.lineTo(g.x + gemSize, g.y);
-            ctx.lineTo(g.x, g.y + gemSize);
-            ctx.lineTo(g.x - gemSize, g.y);
-            ctx.closePath();
-            ctx.fill();
-        });
-
-        // Game Over screen
-        if (gameOver) {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#ff3366";
-            ctx.font = "30px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 10);
-            ctx.fillStyle = "#fff";
-            ctx.font = "16px sans-serif";
-            ctx.fillText("Refresh the page to play again!", canvas.width / 2, canvas.height / 2 + 30);
-        }
-    }
-
-    function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-
-    // Fire up loop
-    gameLoop();
-</script>
-</body>
-</html>
+    el('sc').innerText=scr;el('lv').innerText=lv;requestAnimationFrame(loop);
+}
+function rs(){scr=0;lv=3;spd=2.5;g=[];go=false;}
+function by(f,c){if(pts>=c){pts-=c;rm*=f;up();sv();}}
+function bp(){if(pts>=pc){pts-=pc;pm++;pc=Math.floor(pc*1.6);up();sv();}}
+function cl(){if(!dl||Date.now()-dl>=86400000){pts+=100;dl=Date.now();up();sv();}}
+function ck(){let a=!dl||Date.now()-dl>=86400000;el('db').disabled=!a;el('db').innerText=a?"Claim":"Locked";}
+function sv(f){localStorage.setItem("gCP",{pts,dl,pm,pc});if(f){alert("Saved!");}}
+function ld(){let s=localStorage.getItem("gCP");if(s){try{let p=JSON.parse(s);pts=p.pts||0;dl=p.dl||0;pm=p.pm||1;pc=p.pc||150;}catch(e){}}ck();}
+function up(){el('pt').innerText=pts;el('pm').innerText=pm;el('pc').innerText=pc;el('b2').disabled=pts<50;el('bp').disabled=pts<pc;el('bt').innerText=rm>1?`🔥 ${rm}x Active`:"";}
+</script></body></html>
