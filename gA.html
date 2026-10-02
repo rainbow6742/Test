@@ -2,147 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Clicker Game</title>
+    <title>Clicker Game Mini</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e1e2f, #2d2d44);
-            color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .game-container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            max-width: 400px;
-            width: 90%;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 0.5rem;
-            color: #a5a5db;
-        }
-
-        .score-display {
-            font-size: 4rem;
-            font-weight: bold;
-            margin: 1rem 0 2rem 0;
-            color: #00ffcc;
-            text-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-            transition: transform 0.05s ease;
-        }
-
-        .click-btn {
-            background: linear-gradient(135deg, #00ffcc, #0099ff);
-            border: none;
-            color: #12121c;
-            padding: 1.2rem 2.5rem;
-            font-size: 1.5rem;
-            font-weight: bold;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0, 255, 204, 0.3);
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
-            outline: none;
-            width: 100%;
-        }
-
-        .click-btn:作业-active, .click-btn:active {
-            transform: scale(0.95);
-            box-shadow: 0 2px 8px rgba(0, 255, 204, 0.5);
-        }
-
-        .instructions {
-            margin-top: 2rem;
-            font-size: 0.9rem;
-            color: #8a8ab0;
-            line-height: 1.4;
-        }
-
-        .key-indicator {
-            display: inline-block;
-            background: #3d3d5c;
-            color: #fff;
-            padding: 0.2rem 0.5rem;
-            border-radius: 5px;
-            font-family: monospace;
-            border-bottom: 3px solid #28283d;
-            margin: 0 2px;
-        }
+        body { font-family: sans-serif; background: #12121c; color: #fff; text-align: center; padding: 20px; }
+        .box { background: #1e1e2f; padding: 15px; border-radius: 10px; margin: 10px auto; max-width: 420px; }
+        button { background: #00ffcc; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 4px; }
+        button:disabled { background: #444; color: #888; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        <h1>Score</h1>
-        <div class="score-display" id="score">0</div>
-        
-        <button class="click-btn" id="clickBtn">TAP / CLICK ME</button>
-        
-        <div class="instructions">
-            Tap the button OR press <span class="key-indicator">ANY KEY</span> on your keyboard to gain points!
-        </div>
+    <div class="box">
+        <h1>Score: <span id="score">0</span></h1>
+        <p>Auto-clicking: <span id="cps">0</span>/sec <span id="badge" style="color:#ff007f"></span></p>
+        <button id="clickBtn" style="width:100%; height:50px;">TAP / CLICK OR PRESS ANY KEY</button>
+        <hr>
+        <div id="dailyText">Day 1: +10 Pts</div>
+        <button id="dailyBtn">Claim Daily Reward</button>
+    </div>
+
+    <div class="box">
+        <h3>🏪 Shop</h3>
+        <p><b>Auto-Clickers:</b><br>
+            <button class="shop-btn" onclick="buyAuto(1, 50)">+1/s (50pt)</button>
+            <button class="shop-btn" onclick="buyAuto(5, 100)">+5/s (100pt)</button>
+            <button class="shop-btn" onclick="buyAuto(10, 200)">+10/s (200pt)</button>
+            <button class="shop-btn" onclick="buyAuto(25, 500)">+25/s (500pt)</button>
+            <button class="shop-btn" onclick="buyAuto(50, 1000)">+50/s (1k pt)</button>
+        </p>
+        <p><b>1-Min Multipliers:</b><br>
+            <button class="shop-btn" onclick="buyMult(2, 50)">2x (50pt)</button>
+            <button class="shop-btn" onclick="buyMult(5, 200)">5x (200pt)</button>
+        </p>
     </div>
 
     <script>
-        // Game Logic State
-        let points = 0;
+        let pts = parseInt(localStorage.getItem('pts')) || 0;
+        let cps = parseInt(localStorage.getItem('cps')) || 0;
+        let streak = parseInt(localStorage.getItem('streak')) || 1;
+        let lastClaim = localStorage.getItem('lastClaim') || "";
+        let mult = 1, multTimer, cdTimer;
 
-        // DOM Elements
-        const scoreDisplay = document.getElementById('score');
-        const clickButton = document.getElementById('clickBtn');
+        const el = (id) => document.getElementById(id);
 
-        // Function to increment score and update UI
-        function increasePoints() {
-            points++;
-            scoreDisplay.textContent = points;
-            
-            // Visual feedback effect on the score numbers
-            scoreDisplay.style.transform = 'scale(1.1)';
-            setTimeout(() => {
-                scoreDisplay.style.transform = 'scale(1)';
-            }, 50);
+        function clickAction() { pts += mult; saveAndUpdate(); }
+
+        window.addEventListener('keydown', (e) => { if (!e.repeat) clickAction(); });
+        el('clickBtn').addEventListener('click', () => { clickAction(); el('clickBtn').blur(); });
+
+        setInterval(() => { if (cps > 0) { pts += (cps * mult); saveAndUpdate(); } }, 1000);
+
+        function buyAuto(val, cost) { if (pts >= cost) { pts -= cost; cps += val; saveAndUpdate(); } }
+
+        function buyMult(val, cost) {
+            if (pts >= cost) {
+                pts -= cost; mult = val; saveAndUpdate();
+                clearTimeout(multTimer); clearInterval(cdTimer);
+                let left = 60;
+                el('badge').textContent = `(${val}x - ${left}s)`;
+                cdTimer = setInterval(() => { left--; el('badge').textContent = left > 0 ? `(${val}x - ${left}s)` : ""; }, 1000);
+                multTimer = setTimeout(() => { mult = 1; clearInterval(cdTimer); el('badge').textContent = ""; }, 60000);
+            }
         }
 
-        // Event Listener 1: Button Click / Mobile Tap
-        clickButton.addEventListener('click', (e) => {
-            increasePoints();
-            // Prevents spacebar/enter from double-triggering when button has focus
-            clickButton.blur(); 
-        });
-
-        // Event Listener 2: Any Keyboard Key Press
-        window.addEventListener('keydown', (e) => {
-            increasePoints();
+        function checkDaily() {
+            let today = new Date().toDateString();
+            let amt = 10 * Math.pow(2, streak - 1);
+            el('dailyText').textContent = `Day ${streak} Reward: +${amt} Points`;
             
-            // Visually trigger the button state for keyboard users
-            clickButton.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                clickButton.style.transform = '';
-            }, 50);
-        });
-    </script>
+            if (lastClaim === today) {
+                el('dailyBtn').disabled = true;
+                el('dailyBtn').textContent = "Claimed Today";
+            } else {
+                el('dailyBtn').disabled = false;
+                el('dailyBtn').textContent = "Claim";
+                if (lastClaim && Math.ceil(Math.abs(new Date(today) - new Date(lastClaim)) / 86400000) > 1) {
+                    streak = 1;
+                    checkDaily();
+                }
+            }
+        }
 
+        el('dailyBtn').addEventListener('click', () => {
+            pts += 10 * Math.pow(2, streak - 1);
+            lastClaim = new Date().toDateString();
+            streak++;
+            saveAndUpdate();
+            checkDaily();
+        });
+
+        function saveAndUpdate() {
+            localStorage.setItem('pts', pts); localStorage.setItem('cps', cps);
+            localStorage.setItem('streak', streak); localStorage.setItem('lastClaim', lastClaim);
+            el('score').textContent = pts; el('cps').textContent = cps;
+            
+            const costs =;
+            document.querySelectorAll('.shop-btn').forEach((b, i) => {
+                b.disabled = pts < costs[i];
+            });
+        }
+
+        saveAndUpdate();
+        checkDaily();
+    </script>
 </body>
 </html>
