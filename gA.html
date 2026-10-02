@@ -8,9 +8,10 @@
         :root { --cur: default; }
         body { font-family: system-ui; background: linear-gradient(135deg, #1e272e, #34495e); color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; user-select: none; cursor: var(--cur); }
         .top-ui { display: flex; gap: 15px; margin-bottom: 20px; width: 100%; max-width: 450px; }
-        .card { background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 10px; text-align: center; flex: 1; }
+        .card { background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 10px; text-align: center; flex: 1; position: relative; }
         .coins { color: #ffdd59; font-size: 1.6rem; font-weight: bold; }
-        .bet-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; margin-bottom: 20px; }
+        .bet-box, .safe-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; margin-bottom: 15px; box-sizing: border-box; }
+        .safe-box { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; }
         .slider { width: 80%; accent-color: #ffdd59; }
         .choices { display: flex; gap: 20px; margin-bottom: 20px; }
         .btn { background: #485460; border: none; border-bottom: 5px solid #1e272e; border-radius: 50%; width: 80px; height: 80px; font-size: 2.2rem; cursor: var(--cur); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
@@ -24,6 +25,9 @@
         .cur-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
         .cur-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; font-size: 0.8rem; cursor: pointer; border: 2px solid transparent; }
         .cur-item.active { border-color: #00d2d3; background: rgba(0,210,211,0.15); }
+        
+        /* Laser Custom Cursor Rendering Engine Override */
+        [style*="--cur: url"] .btn, [style*="--cur: url"] .cur-item { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24"><circle cx="5" cy="5" r="4" stroke="%23ff0055" stroke-width="2" fill="none"/><circle cx="5" cy="5" r="1.5" fill="%23ff0055"/></svg>') 5 5, pointer !important; }
     </style>
 </head>
 <body>
@@ -34,6 +38,12 @@
     </div>
 
     <h1>RPS Tycoon</h1>
+    
+    <!-- Safe Mode Toggle Container -->
+    <div class="safe-box">
+        <input type="checkbox" id="safe-toggle" onchange="toggleSafeMode(this.checked)" style="transform: scale(1.3); cursor: pointer;">
+        <label for="safe-toggle" id="safe-label" style="cursor: pointer;">🛡️ Safe Mode (No Loss)</label>
+    </div>
     
     <div class="bet-box">
         <div>Bet: <b style="color:#ffdd59;">💰 <span id="bet-display">10</span></b></div>
@@ -57,12 +67,12 @@
             <div class="cur-item active" id="c-default" onclick="setCur('default')">Normal</div>
             <div class="cur-item" id="c-crosshair" onclick="setCur('crosshair')">Crosshair</div>
             <div class="cur-item" id="c-pointer" onclick="setCur('pointer')">Link</div>
-            <div class="cur-item" id="c-help" onclick="setCur('help')">Help</div>
+            <div class="cur-item" id="c-laser" onclick="setCur('laser')">🔴 Laser</div>
         </div>
     </div>
 
     <script>
-        let coins = 100, wins = 0, losses = 0, activeBet = 10, chosenCur = 'default';
+        let coins = 100, wins = 0, losses = 0, activeBet = 10, chosenCur = 'default', safeMode = false;
         const name = { '✊': 'Rock', '✋': 'Paper', '✌️': 'Scissors' }, choices = ['✊', '✋', '✌️'];
 
         window.onload = () => { load(); updateUI(); setCur(chosenCur); };
@@ -73,11 +83,36 @@
             document.getElementById('bet-display').textContent = activeBet;
         }
 
+        function toggleSafeMode(checked) {
+            if (coins >= 500) {
+                document.getElementById('safe-toggle').checked = false;
+                return;
+            }
+            safeMode = checked;
+            save();
+        }
+
         function updateUI() {
             document.getElementById('coin-val').textContent = coins;
             document.getElementById('record-val').textContent = `${wins} - ${losses}`;
             document.getElementById('slider').max = Math.max(1, coins);
             if (parseInt(document.getElementById('slider').value) > coins) updateBet(coins);
+
+            // Safe Mode enforcement threshold checks
+            const toggle = document.getElementById('safe-toggle');
+            const label = document.getElementById('safe-label');
+            if (coins >= 500) {
+                safeMode = false;
+                toggle.checked = false;
+                toggle.disabled = true;
+                label.innerHTML = "🔒 Safe Mode (Disabled at 500+)";
+                label.style.color = "#ff5e57";
+            } else {
+                toggle.disabled = false;
+                toggle.checked = safeMode;
+                label.innerHTML = "🛡️ Safe Mode (No Loss)";
+                label.style.color = "#fff";
+            }
         }
 
         function play(player) {
@@ -88,24 +123,37 @@
             document.getElementById('matchup').innerHTML = `You [${name[player]}] vs Computer [${name[comp]}]`;
             const res = document.getElementById('result');
 
-            if (player === comp) { res.textContent = "Draw!"; res.className = "draw"; } 
+            if (player === comp) { 
+                res.textContent = "Draw!"; res.className = "draw"; 
+            } 
             else if ((player==='✊' && comp==='✌️') || (player==='✋' && comp==='✊') || (player==='✌️' && comp==='✋')) {
                 coins += activeBet; wins++; res.textContent = `Win! +💰${activeBet}`; res.className = "win";
             } else {
-                coins -= activeBet; losses--; res.textContent = `Lose! -💰${activeBet}`; res.className = "lose";
+                losses++;
+                if (safeMode) {
+                    res.textContent = `Lose! Protected by Safe Mode! (💰0)`; res.className = "draw";
+                } else {
+                    coins -= activeBet; res.textContent = `Lose! -💰${activeBet}`; res.className = "lose";
+                }
             }
             updateUI(); save();
         }
 
         function setCur(type) {
-            chosenCur = type; document.documentElement.style.setProperty('--cur', type);
+            chosenCur = type;
+            if (type === 'laser') {
+                // Injects an SVG custom target directly into CSS variables mapping pointer properties
+                document.documentElement.style.setProperty('--cur', `url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24"><circle cx="5" cy="5" r="4" stroke="%23ff0055" stroke-width="2" fill="none"/><circle cx="5" cy="5" r="1.5" fill="%23ff0055"/></svg>') 5 5, auto`);
+            } else {
+                document.documentElement.style.setProperty('--cur', type);
+            }
             document.querySelectorAll('.cur-item').forEach(i => i.classList.remove('active'));
             document.getElementById(`c-${type}`).classList.add('active');
             save();
         }
 
-        function save() { localStorage.setItem('rps_s', JSON.stringify({ coins, wins, losses, chosenCur })); }
-        function load() { const d = localStorage.getItem('rps_s'); if (d) { try { const p = JSON.parse(d); coins = p.coins??100; wins = p.wins??0; losses = p.losses??0; chosenCur = p.chosenCur??'default'; } catch(e){} } }
+        function save() { localStorage.setItem('rps_s_safe', JSON.stringify({ coins, wins, losses, chosenCur, safeMode })); }
+        function load() { const d = localStorage.getItem('rps_s_safe'); if (d) { try { const p = JSON.parse(d); coins = p.coins??100; wins = p.wins??0; losses = p.losses??0; chosenCur = p.chosenCur??'default'; safeMode = p.safeMode??false; } catch(e){} } }
     </script>
 </body>
 </html>
