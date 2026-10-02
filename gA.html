@@ -8,26 +8,28 @@
         :root { --cur: default; }
         body { font-family: system-ui; background: linear-gradient(135deg, #1e272e, #34495e); color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; user-select: none; cursor: var(--cur); }
         .top-ui { display: flex; gap: 15px; margin-bottom: 20px; width: 100%; max-width: 450px; }
-        .card { background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 10px; text-align: center; flex: 1; position: relative; }
+        .card { background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 10px; text-align: center; flex: 1; }
         .coins { color: #ffdd59; font-size: 1.6rem; font-weight: bold; }
         .bet-box, .safe-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; margin-bottom: 15px; box-sizing: border-box; }
         .safe-box { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: bold; }
         .slider { width: 80%; accent-color: #ffdd59; }
         .choices { display: flex; gap: 20px; margin-bottom: 20px; }
-        .btn { background: #485460; border: none; border-bottom: 5px solid #1e272e; border-radius: 50%; width: 80px; height: 80px; font-size: 2.2rem; cursor: var(--cur); transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
+        
+        /* Force cursor style over buttons and interactables */
+        .btn, .cur-item, input, label { cursor: inherit !important; }
+        
+        .btn { background: #485460; border: none; border-bottom: 5px solid #1e272e; border-radius: 50%; width: 80px; height: 80px; font-size: 2.2rem; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
         .btn:hover { background: #0be881; }
         .btn:active { transform: translateY(3px); border-bottom-width: 2px; }
+        
         .display { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; min-height: 80px; box-sizing: border-box; }
         .win { color: #0be881; font-weight: bold; font-size: 1.5rem; }
         .lose { color: #ff5e57; font-weight: bold; font-size: 1.5rem; }
         .draw { color: #ffdd59; font-weight: bold; font-size: 1.5rem; }
         .cur-box { margin-top: 25px; background: rgba(255,255,255,0.07); padding: 12px; border-radius: 12px; width: 100%; max-width: 450px; box-sizing: border-box; }
-        .cur-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; }
-        .cur-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; font-size: 0.8rem; cursor: pointer; border: 2px solid transparent; }
+        .cur-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+        .cur-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; text-align: center; font-size: 0.8rem; border: 2px solid transparent; }
         .cur-item.active { border-color: #00d2d3; background: rgba(0,210,211,0.15); }
-        
-        /* Laser Custom Cursor Rendering Engine Override */
-        [style*="--cur: url"] .btn, [style*="--cur: url"] .cur-item { cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24"><circle cx="5" cy="5" r="4" stroke="%23ff0055" stroke-width="2" fill="none"/><circle cx="5" cy="5" r="1.5" fill="%23ff0055"/></svg>') 5 5, pointer !important; }
     </style>
 </head>
 <body>
@@ -39,10 +41,9 @@
 
     <h1>RPS Tycoon</h1>
     
-    <!-- Safe Mode Toggle Container -->
     <div class="safe-box">
-        <input type="checkbox" id="safe-toggle" onchange="toggleSafeMode(this.checked)" style="transform: scale(1.3); cursor: pointer;">
-        <label for="safe-toggle" id="safe-label" style="cursor: pointer;">🛡️ Safe Mode (No Loss)</label>
+        <input type="checkbox" id="safe-toggle" onchange="toggleSafeMode(this.checked)" style="transform: scale(1.3);">
+        <label for="safe-toggle" id="safe-label">🛡️ Safe Mode (No Loss)</label>
     </div>
     
     <div class="bet-box">
@@ -66,8 +67,7 @@
         <div class="cur-grid">
             <div class="cur-item active" id="c-default" onclick="setCur('default')">Normal</div>
             <div class="cur-item" id="c-crosshair" onclick="setCur('crosshair')">Crosshair</div>
-            <div class="cur-item" id="c-pointer" onclick="setCur('pointer')">Link</div>
-            <div class="cur-item" id="c-laser" onclick="setCur('laser')">🔴 Laser</div>
+            <div class="cur-item" id="c-laser" onclick="setCur('laser')">🔴 Laser Dot</div>
         </div>
     </div>
 
@@ -84,7 +84,7 @@
         }
 
         function toggleSafeMode(checked) {
-            if (coins >= 500) {
+            if (coins >= 5000) {
                 document.getElementById('safe-toggle').checked = false;
                 return;
             }
@@ -98,14 +98,13 @@
             document.getElementById('slider').max = Math.max(1, coins);
             if (parseInt(document.getElementById('slider').value) > coins) updateBet(coins);
 
-            // Safe Mode enforcement threshold checks
             const toggle = document.getElementById('safe-toggle');
             const label = document.getElementById('safe-label');
-            if (coins >= 500) {
+            if (coins >= 5000) {
                 safeMode = false;
                 toggle.checked = false;
                 toggle.disabled = true;
-                label.innerHTML = "🔒 Safe Mode (Disabled at 500+)";
+                label.innerHTML = "🔒 Safe Mode (Disabled at 5000+)";
                 label.style.color = "#ff5e57";
             } else {
                 toggle.disabled = false;
@@ -131,7 +130,7 @@
             } else {
                 losses++;
                 if (safeMode) {
-                    res.textContent = `Lose! Protected by Safe Mode! (💰0)`; res.className = "draw";
+                    res.textContent = `Lose! Saved by Safe Mode! (💰0)`; res.className = "draw";
                 } else {
                     coins -= activeBet; res.textContent = `Lose! -💰${activeBet}`; res.className = "lose";
                 }
@@ -142,8 +141,8 @@
         function setCur(type) {
             chosenCur = type;
             if (type === 'laser') {
-                // Injects an SVG custom target directly into CSS variables mapping pointer properties
-                document.documentElement.style.setProperty('--cur', `url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="24" height="24" viewBox="0 0 24 24"><circle cx="5" cy="5" r="4" stroke="%23ff0055" stroke-width="2" fill="none"/><circle cx="5" cy="5" r="1.5" fill="%23ff0055"/></svg>') 5 5, auto`);
+                // Injects a high-vis standalone pixel-perfect red circle SVG asset
+                document.documentElement.style.setProperty('--cur', `url('data:image/svg+xml;utf8,<svg xmlns="http://w3.org" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="%23ff0055" stroke="%23ffffff" stroke-width="1.5"/></svg>') 8 8, auto`);
             } else {
                 document.documentElement.style.setProperty('--cur', type);
             }
@@ -152,8 +151,8 @@
             save();
         }
 
-        function save() { localStorage.setItem('rps_s_safe', JSON.stringify({ coins, wins, losses, chosenCur, safeMode })); }
-        function load() { const d = localStorage.getItem('rps_s_safe'); if (d) { try { const p = JSON.parse(d); coins = p.coins??100; wins = p.wins??0; losses = p.losses??0; chosenCur = p.chosenCur??'default'; safeMode = p.safeMode??false; } catch(e){} } }
+        function save() { localStorage.setItem('rps_s_laser', JSON.stringify({ coins, wins, losses, chosenCur, safeMode })); }
+        function load() { const d = localStorage.getItem('rps_s_laser'); if (d) { try { const p = JSON.parse(d); coins = p.coins??100; wins = p.wins??0; losses = p.losses??0; chosenCur = p.chosenCur??'default'; safeMode = p.safeMode??false; } catch(e){} } }
     </script>
 </body>
 </html>
