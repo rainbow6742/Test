@@ -75,8 +75,6 @@
             border-radius: 5px;
             margin: 10px 0;
         }
-        .timer-alert { color: #ff3366; font-weight: bold; }
-        .success-text { color: #00ffcc; }
     </style>
 </head>
 <body>
@@ -97,7 +95,7 @@
     <button id="save-btn" onclick="saveGame()">💾 Save Game</button>
 
     <div id="click-zone" class="click-area">
-        Press <strong>SPACEBAR</strong> or Click Here to Start!
+        Press <strong>SPACEBAR</strong> or Click Here to Score!
     </div>
 
     <div class="rewards">
@@ -134,30 +132,25 @@
     let isPlaying = false;
     let timerInterval = null;
     let lastDailyClaim = 0;
-    
-    // Shop multipliers (array of modifiers that expire after use)
     let activeMultipliers = []; 
 
-    const clickZone = document.getElementById('click-zone');
-    const startBtn = document.getElementById('start-btn');
-
-    // Load game automatically on launch
-    window.onload = function() {
+    // Core Setup Execution
+    window.addEventListener('DOMContentLoaded', () => {
         loadGame();
         updateUI();
         checkDailyAvailability();
-    };
+    });
 
     // Keyboard Listeners
     window.addEventListener('keydown', function(e) {
         if (e.code === 'Space') {
-            e.preventDefault(); // Stop page scrolling
+            e.preventDefault(); 
             registerClick();
         }
     });
 
-    // Touch/Click listener for accessibility
-    clickZone.addEventListener('mousedown', function() {
+    // Touch/Mouse Area Listener
+    document.getElementById('click-zone').addEventListener('mousedown', function() {
         registerClick();
     });
 
@@ -166,9 +159,9 @@
         score++;
         document.getElementById('current-score').innerText = score;
         
-        // Brief visual flash
-        clickZone.classList.add('active');
-        setTimeout(() => clickZone.classList.remove('active'), 50);
+        const zone = document.getElementById('click-zone');
+        zone.classList.add('active');
+        setTimeout(() => zone.classList.remove('active'), 50);
     }
 
     function startGame() {
@@ -179,8 +172,8 @@
         timeLeft = 10.0;
         
         document.getElementById('current-score').innerText = score;
-        startBtn.disabled = true;
-        clickZone.innerHTML = "<strong>GO! GO! GO!</strong>";
+        document.getElementById('start-btn').disabled = true;
+        document.getElementById('click-zone').innerHTML = "<strong>GO! GO! GO!</strong>";
         
         timerInterval = setInterval(() => {
             timeLeft -= 0.1;
@@ -195,24 +188,21 @@
     function endGame() {
         isPlaying = false;
         clearInterval(timerInterval);
-        startBtn.disabled = false;
-        clickZone.innerHTML = "Game Over! Press Start to play again.";
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('click-zone').innerHTML = "Game Over! Press Start to play again.";
 
         let gemsEarned = 0;
         let isNewBest = false;
 
-        // Gem Logic
         if (score > 10) {
-            gemsEarned = score; // Base rewards match score amounts
+            gemsEarned = score; 
             
-            // Check Highscore / New Best
             if (score > highScore) {
                 highScore = score;
                 isNewBest = true;
-                gemsEarned *= 2; // High score double multiplier rule
+                gemsEarned *= 2; 
             }
 
-            // Apply Shop Multipliers
             if (activeMultipliers.length > 0) {
                 let shopMultiplierTotal = activeMultipliers.reduce((a, b) => a * b, 1);
                 gemsEarned *= shopMultiplierTotal;
@@ -221,7 +211,6 @@
             gems += gemsEarned;
         }
 
-        // Output breakdown alert
         let message = `You got ${score} clicks!`;
         if (score > 10) {
             message += `\nEarned ${gemsEarned} Gems! ` + 
@@ -232,14 +221,11 @@
         }
         alert(message);
 
-        // Reset temporary multipliers
         activeMultipliers = [];
-        
         updateUI();
-        saveGame(); // Auto-save at completion
+        saveGame(); 
     }
 
-    // Shop functions
     function buyMultiplier(factor, cost) {
         if (gems >= cost) {
             gems -= cost;
@@ -251,12 +237,11 @@
         }
     }
 
-    // Daily rewards setup
     function claimDaily() {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
 
-        if (now - lastDailyClaim >= oneDay) {
+        if (!lastDailyClaim || (now - lastDailyClaim >= oneDay)) {
             gems += 50;
             lastDailyClaim = now;
             alert("Claimed 50 Daily Gems!");
@@ -271,23 +256,19 @@
         const dailyStatus = document.getElementById('daily-status');
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
-        const nextAvailable = lastDailyClaim + oneDay;
 
-        if (now >= nextAvailable) {
+        if (!lastDailyClaim || (now >= lastDailyClaim + oneDay)) {
             dailyBtn.disabled = false;
             dailyStatus.innerText = "Available to claim now!";
         } else {
             dailyBtn.disabled = true;
-            
-            // Countdown function
-            let timeLeftMs = nextAvailable - now;
+            let timeLeftMs = (lastDailyClaim + oneDay) - now;
             let hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
             let minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
             dailyStatus.innerText = `Next reward available in: ${hours}h ${minutes}m`;
         }
     }
 
-    // Data Save and UI handlers
     function saveGame() {
         const saveState = {
             highScore: highScore,
@@ -296,7 +277,6 @@
         };
         localStorage.setItem('spacebarClickerSave', JSON.stringify(saveState));
         
-        // Show status feedback on button text
         const saveBtn = document.getElementById('save-btn');
         saveBtn.innerText = "✅ Saved!";
         setTimeout(() => saveBtn.innerText = "💾 Save Game", 1500);
@@ -305,32 +285,29 @@
     function loadGame() {
         const savedData = localStorage.getItem('spacebarClickerSave');
         if (savedData) {
-            const parsed = JSON.parse(savedData);
-            highScore = parsed.highScore || 0;
-            gems = parsed.gems || 0;
-            lastDailyClaim = parsed.lastDailyClaim || 0;
+            try {
+                const parsed = JSON.parse(savedData);
+                highScore = parsed.highScore || 0;
+                gems = parsed.gems || 0;
+                lastDailyClaim = parsed.lastDailyClaim || 0;
+            } catch(e) {
+                console.error("Save state corrupt, resetting default profile variables.", e);
+            }
         }
     }
 
     function updateUI() {
-document.getElementById('high-score').innerText = highScore;
-document.getElementById('gem-count').innerText = gems;
-// Shop button restrictions
-document.getElementById('buy-x2').disabled = (gems < 50);
-document.getElementById('buy-x5').disabled = (gems < 200);
-// Display Active temporary status
-const multDisplay = document.getElementById('active-multipliers');
-if (activeMultipliers.length > 0) {
-let combined = activeMultipliers.reduce((a,b) => a * b, 1);
+        document.getElementById('high-score').innerText = highScore;
+        document.getElementById('gem-count').innerText = gems;
+        document.getElementById('buy-x2').disabled = (gems < 50);
+        document.getElementById('buy-x5').disabled = (gems < 200);
+
+        const multDisplay = document.getElementById('active-multipliers');
+        if (activeMultipliers.length > 0) {
+            let combined = activeMultipliers.reduce((a,b) => a * b, 1);
 multDisplay.innerText = 🛒 Active Shop Boost for next run: ${combined}x Gems;
 } else {
 multDisplay.innerText = "";
 }
 }
-// Auto-update daily countdown every minute
-setInterval(checkDailyAvailability, 60000);
-
-
-
-AI Mode response is ready
-Ask about 
+setInterval(checkDailyAvailability, 30000);
