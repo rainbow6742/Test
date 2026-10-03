@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Typing Fun</title>
+    <title>Type Campaign</title>
     <style>
         body { font-family: monospace; background: #1e1e2e; color: #cdd6f4; text-align: center; padding-top: 15px; }
-        #bar, #menu, #box, #stats { background: #252538; padding: 15px; border-radius: 8px; max-width: 600px; margin: 10px auto; }
+        #bar, #menu, #box, #stats { background: #252538; padding: 25px; border-radius: 8px; max-width: 600px; margin: 10px auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         #game, #stats { display: none; }
-        #box { font-size: 1.4rem; text-align: left; min-height: 80px; }
+        #box { font-size: 1.4rem; text-align: left; min-height: 80px; background: #1e1e2e; padding: 15px; border-radius: 4px; }
         .letter { color: #6c7086; } .correct { color: #a6e3a1; } .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); } .current { border-left: 2px solid #cba6f7; color: #fff; }
         input[type="text"], input[type="password"] { background: #1e1e2e; border: 1px solid #45475a; color: #fff; padding: 5px; margin: 2px; }
         #in { position: absolute; opacity: 0; pointer-events: none; }
         button { background: #cba6f7; color: #1e1e2e; border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; }
         #logout-btn { display: none; background: #f38ba8; color: #fff; }
         .info { color: #f9e2af; font-size: 1.2rem; font-weight: bold; }
+        .dashboard-metric { background: #1e1e2e; padding: 15px; margin: 10px auto; border-radius: 6px; width: 60%; border: 1px solid #45475a; }
     </style>
 </head>
 <body>
@@ -35,18 +36,28 @@
 
     <div id="game">
         <div class="info" id="cam-disp">Module 1: Tech | Level 1/10</div>
-        <h3>Target: <span id="tg">120</span>s (<span id="md"></span>) | Time: <span id="t">120</span>s | WPM: <span id="w">0</span></h3>
+        <h3>Target Time: <span id="tg">120</span>s (<span id="md"></span>) | Clock Left: <span id="t">120</span>s | Live WPM: <span id="w">0</span></h3>
         <input type="text" id="in" autocomplete="off">
         <div id="box" onclick="document.getElementById('in').focus()"></div>
         <button onclick="exitMenu()">Exit to Menu</button>
     </div>
 
+    <!-- The Accuracy & WPM Summary Dashboard Screen -->
     <div id="stats">
-        <h2 id="res-title">Summary</h2>
+        <h2 id="res-title" style="font-size: 2rem;">📊 PERFORMANCE DASHBOARD</h2>
         <p class="info" id="res-info"></p>
-        <p>⚡ <b>WPM:</b> <span id="res-wpm">0</span></p>
-        <p>🎯 <b>Accuracy:</b> <span id="res-acc">0%</span></p>
-        <button id="nxt" onclick="initRound()">Next Level</button>
+        
+        <div class="dashboard-metric">
+            <span style="color: #89b4fa; font-weight: bold;">WORDS PER MINUTE</span>
+            <h1 id="res-wpm" style="margin: 5px 0; color: #fff;">0</h1>
+        </div>
+        
+        <div class="dashboard-metric">
+            <span style="color: #89b4fa; font-weight: bold;">ACCURACY RATE</span>
+            <h1 id="res-acc" style="margin: 5px 0; color: #fff;">0%</h1>
+        </div>
+
+        <button id="nxt" onclick="initRound()" style="padding: 12px 24px; font-size: 1.1rem; background: #a6e3a1;">Next Level</button>
         <button onclick="exitMenu()">Back to Menu</button>
     </div>
 
@@ -118,11 +129,11 @@
             
             let title = document.getElementById('res-title'), nxt = document.getElementById('nxt');
             if (isSuccess) {
-                title.innerText = "🎉 Level Cleared!"; title.style.color = "#a6e3a1"; nxt.innerText = "Next Level (-10s)";
+                title.innerText = "🎉 LEVEL CLEARED!"; title.style.color = "#a6e3a1"; nxt.innerText = "Next Level (-10s)";
                 lvl++; if (lvl > 10) { lvl = 1; mIdx++; }
                 targetTime = Math.max(10, targetTime - 10);
             } else {
-                title.innerText = "❌ Level Failed!"; title.style.color = "#f38ba8"; nxt.innerText = "Retry Level (+10s)";
+                title.innerText = "❌ LEVEL FAILED!"; title.style.color = "#f38ba8"; nxt.innerText = "Retry Level (+10s)";
                 targetTime += 10;
             }
             save();
@@ -143,19 +154,3 @@
             if (timeLeft <= 0 || idx >= spans.length) return;
             spans[idx].classList.remove('current');
 
-            if (e.inputType === 'deleteContentBackward') {
-                if (idx > 0) { idx--; spans[idx].className = 'letter current'; if (spans[idx].classList.contains('correct')) correct--; }
-            } else {
-                let char = document.getElementById('in').value.slice(-1); if (!char) return;
-                typed++;
-                if (char === spans[idx].innerText) { spans[idx].classList.add('correct'); correct++; }
-                else spans[idx].classList.add('incorrect');
-                idx++;
-                if (idx >= spans.length) showSummary(true);
-                else spans[idx].classList.add('current');
-            }
-            document.getElementById('in').value = '';
-        };
-    </script>
-</body>
-</html>
