@@ -15,16 +15,20 @@
         #in { position: absolute; opacity: 0; pointer-events: none; }
         button { background: #cba6f7; color: #1e1e2e; border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; }
         button:disabled { background: #45475a; color: #7f849c; }
+        #logout-btn { display: none; background: #f38ba8; color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="bar">
-        <span id="user-status">👤 Guest</span> | 
-        <input type="text" id="u" placeholder="User" size="10">
-        <input type="password" id="p" placeholder="Code (5+)" size="10">
-        <button onclick="auth(true)" style="background:#89b4fa">Sign Up</button>
-        <button onclick="auth(false)" style="background:#a6e3a1">Login</button>
+        <span id="user-status">👤 Guest</span> 
+        <button id="logout-btn" onclick="logout()">Logout</button> | 
+        <span id="auth-fields">
+            <input type="text" id="u" placeholder="User" size="10">
+            <input type="password" id="p" placeholder="Code (5+)" size="10">
+            <button onclick="auth(true)" style="background:#89b4fa">Sign Up</button>
+            <button onclick="auth(false)" style="background:#a6e3a1">Login</button>
+        </span>
     </div>
 
     <div id="menu">
@@ -38,7 +42,7 @@
         <input type="text" id="in" autocomplete="off">
         <div id="box" onclick="document.getElementById('in').focus()"></div>
         <button id="nxt" disabled onclick="initRound()">Next Level</button>
-        <button onclick="location.reload()">Exit</button>
+        <button onclick="exitToMenu()">Exit to Menu</button>
         <div id="msg" style="font-weight:bold; margin-top:10px;"></div>
     </div>
 
@@ -81,12 +85,37 @@
                 user = name; 
                 mode = p.mode; 
                 targetTime = p.time;
+                
                 document.getElementById('user-status').innerText = "👤 " + user.toUpperCase();
+                document.getElementById('auth-fields').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'inline-block';
+                
                 document.getElementById('menu').style.display = 'none'; 
                 document.getElementById('game').style.display = 'block';
                 initRound();
             }
             document.getElementById('p').value = '';
+        }
+
+        function logout() {
+            clearInterval(interval);
+            user = null;
+            mode = '';
+            targetTime = 120;
+            
+            document.getElementById('user-status').innerText = "👤 Guest";
+            document.getElementById('auth-fields').style.display = 'inline-block';
+            document.getElementById('logout-btn').style.display = 'none';
+            document.getElementById('u').value = '';
+            document.getElementById('p').value = '';
+            
+            exitToMenu();
+        }
+
+        function exitToMenu() {
+            clearInterval(interval);
+            document.getElementById('game').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
         }
 
         function start(m) {
