@@ -38,7 +38,7 @@
         <div id="box" onclick="document.getElementById('in').focus()"></div>
         
         <button id="next-btn" disabled>Next Level (-10s)</button>
-        <button id="reset-btn">Main Menu / Restart</button>
+        <button id="reset-btn">Main Menu / Reset Progress</button>
         <div id="msg"></div>
     </div>
 
@@ -50,15 +50,39 @@
         const box = document.getElementById('box'), input = document.getElementById('in'), timer = document.getElementById('t'), wpm = document.getElementById('w');
         const nextBtn = document.getElementById('next-btn'), resetBtn = document.getElementById('reset-btn'), msg = document.getElementById('msg'), targetDisplay = document.getElementById('target-time');
         
-        let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval, currentBank = [];
+        let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval, currentBank = [], activeMode = '';
+
+        // Load saved game state if it exists
+        function checkSavedGame() {
+            const savedMode = localStorage.getItem('typeGame_mode');
+            const savedTargetTime = localStorage.getItem('typeGame_targetTime');
+            
+            if (savedMode && savedTargetTime) {
+                activeMode = savedMode;
+                targetTime = parseInt(savedTargetTime, 10);
+                currentBank = activeMode === 'easy' ? easyBank : hardBank;
+                
+                modeDisplay.innerText = activeMode.toUpperCase() + " MODE";
+                menu.style.display = "none";
+                gameArea.style.display = "block";
+                initRound();
+            }
+        }
 
         function selectMode(mode) {
+            activeMode = mode;
             currentBank = mode === 'easy' ? easyBank : hardBank;
             modeDisplay.innerText = mode.toUpperCase() + " MODE";
             menu.style.display = "none";
             gameArea.style.display = "block";
             targetTime = 120;
+            saveProgress();
             initRound();
+        }
+
+        function saveProgress() {
+            localStorage.setItem('typeGame_mode', activeMode);
+            localStorage.setItem('typeGame_targetTime', targetTime);
         }
 
         function initRound() {
@@ -75,7 +99,6 @@
             input.disabled = false;
             input.value = '';
 
-            // Generate words based on selection
             const words = [...currentBank].sort(() => Math.random() - 0.5).slice(0, 12).join(' ');
             box.innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
             box.children[0].classList.add('current');
@@ -94,6 +117,7 @@
                         let finalWpm = wpm.innerText;
                         msg.innerHTML = `<span style="color:#f38ba8;">Failed! WPM: ${finalWpm}. Time increased by 10s.</span>`;
                         targetTime += 10; 
+                        saveProgress(); // Save updated target time on failure
                         nextBtn.innerText = "Retry Level (+10s)";
                         nextBtn.disabled = false;
                     }
@@ -130,6 +154,7 @@
                     let timeTaken = targetTime - timeLeft;
                     msg.innerHTML = `<span style="color:#a6e3a1;">Level Cleared! WPM: ${finalWpm} | Time Taken: ${timeTaken}s</span>`;
                     targetTime = Math.max(10, targetTime - 10); 
+                    saveProgress(); // Save updated target time on success
                     nextBtn.innerText = "Next Level (-10s)";
                     nextBtn.disabled = false;
                 } else {
@@ -142,9 +167,14 @@
         nextBtn.onclick = () => initRound();
         resetBtn.onclick = () => {
             clearInterval(interval);
+            localStorage.removeItem('typeGame_mode');
+            localStorage.removeItem('typeGame_targetTime');
             gameArea.style.display = "none";
             menu.style.display = "block";
         };
+
+        // Initialize on boot
+        checkSavedGame();
     </script>
 </body>
 </html>
