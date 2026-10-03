@@ -1,104 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Typing Fun</title>
+    <title>Typing Fun!</title>
     <style>
-        :root {
-            --bg: #1e1e2e;
-            --pnl: #252538;
-            --txt: #cdd6f4;
-            --sub: #6c7086;
-            --acc: #cba6f7;
-        }
-        .light {
-            --bg: #eff1f5;
-            --pnl: #e6e9ef;
-            --txt: #4c4f69;
-            --sub: #9ca0b0;
-            --acc: #8839ef;
-        }
-        body {
-            font-family: monospace;
-            background: var(--bg);
-            color: var(--txt);
-            text-align: center;
-            padding-top: 15px;
-        }
-        #bar, #menu, #box, #stats, #set {
-            background: var(--pnl);
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 600px;
-            margin: 10px auto;
-        }
-        #game, #stats, #set {
-            display: none;
-        }
-        #box {
-            font-size: 1.4rem;
-            text-align: left;
-            min-height: 80px;
-            background: var(--bg);
-            padding: 15px;
-            border-radius: 4px;
-        }
-        .ch {
-            cursor: crosshair !important;
-        }
-        .letter {
-            color: var(--sub);
-        }
-        .correct {
-            color: #a6e3a1;
-        }
-        .incorrect {
-            color: #f38ba8;
-            background: rgba(243,139,168,0.2);
-        }
-        .current {
-            border-left: 2px solid var(--acc);
-            color: var(--txt);
-        }
-        input {
-            background: var(--bg);
-            border: 1px solid var(--sub);
-            color: var(--txt);
-            padding: 5px;
-            margin: 2px;
-        }
-        #in {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-        button {
-            background: var(--acc);
-            color: var(--bg);
-            border: none;
-            padding: 8px 16px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
-        }
+        :root { --bg: #1e1e2e; --pnl: #252538; --txt: #cdd6f4; --sub: #6c7086; --acc: #cba6f7; }
+        .light { --bg: #eff1f5; --pnl: #e6e9ef; --txt: #4c4f69; --sub: #9ca0b0; --acc: #8839ef; }
+        body { font-family: monospace; background: var(--bg); color: var(--txt); text-align: center; padding-top: 15px; }
+        #bar, #menu, #box, #stats, #set { background: var(--pnl); padding: 15px; border-radius: 8px; max-width: 600px; margin: 10px auto; }
+        #game, #stats, #set { display: none; }
+        #box { font-size: 1.4rem; text-align: left; min-height: 80px; background: var(--bg); padding: 15px; border-radius: 4px; }
+        .ch { cursor: crosshair !important; }
+        .letter { color: var(--sub); } .correct { color: #a6e3a1; } .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); } .current { border-left: 2px solid var(--acc); color: var(--txt); }
+        input { background: var(--bg); border: 1px solid var(--sub); color: var(--txt); padding: 5px; margin: 2px; }
+        #in { position: absolute; opacity: 0; pointer-events: none; }
+        button { background: var(--acc); color: var(--bg); border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; }
     </style>
 </head>
 <body>
+
     <div id="bar">
-        <span id="u-stat">👤 Guest</span>
+        <span id="u-stat">👤 Guest</span> 
         <button id="l-btn" style="display:none; background:#f38ba8; color:#fff;" onclick="logout()">Logout</button> | 
-        <button onclick="togSet(true)" style="background:#f9e2af; color:#1e1e2e;">⚙️ Settings</button> | 
+        <button onclick="togSet(true)" style="background:#f9e2af; color:#1e1e2e;">⚙️ Settings</button> |
         <span id="auth">
-            <input type="text" id="u" placeholder="User" size="8">
+            <input type="text" id="u" placeholder="User" size="8"> 
             <input type="password" id="p" placeholder="Code (5+)" size="8">
-            <button onclick="handleAuth(true)" style="background:#89b4fa">Sign Up</button>
+            <button onclick="handleAuth(true)" style="background:#89b4fa">Sign Up</button> 
             <button onclick="handleAuth(false)" style="background:#a6e3a1">Login</button>
         </span>
     </div>
 
     <div id="set">
         <h2>⚙️ Settings</h2>
-        <button onclick="document.body.classList.remove('light')">🌙 Dark</button>
+        <button onclick="document.body.classList.remove('light')">🌙 Dark</button> 
         <button onclick="document.body.classList.add('light')">☀️ Light</button>
         <button onclick="document.getElementById('box').classList.toggle('ch')">🎯 Crosshair</button>
         <h3>📈 Lifetime Stats</h3>
@@ -108,7 +42,7 @@
 
     <div id="menu">
         <h2>Select Mode (Starts at 120s)</h2>
-        <button onclick="start('easy')" style="background:#a6e3a1">🟢 Easy</button>
+        <button onclick="start('easy')" style="background:#a6e3a1">🟢 Easy</button> 
         <button onclick="start('hard')" style="background:#f38ba8; color:#fff">🔴 Hard</button>
     </div>
 
@@ -124,7 +58,7 @@
         <h2 id="res-title">📊 DASHBOARD</h2>
         <p id="res-info" style="color:#f9e2af; font-weight:bold;"></p>
         <p>WPM: <b id="res-wpm">0</b> | Accuracy: <b id="res-acc">0%</b></p>
-        <button id="nxt" onclick="initRound()" style="background:#a6e3a1;">Next Level</button>
+        <button id="nxt" onclick="initRound()" style="background:#a6e3a1;">Next Level</button> 
         <button onclick="exitMenu()">Menu</button>
     </div>
 
@@ -134,7 +68,7 @@
             { name: "Toys and Fun", easy: ["ball", "doll", "game", "kite", "yo-yo", "bear", "lego", "clay", "car", "ship"], hard: ["trampoline", "skateboard", "videogame", "miniatures", "racecourse", "marbles", "puzzlebox", "actionfigure", "boardgames", "playhouse"] },
             { name: "On a Trip", easy: ["bus", "bag", "map", "car", "train", "camp", "tent", "park", "sea", "road"], hard: ["destination", "locomotive", "navigation", "exploration", "passengers", "itinerary", "backpacking", "sightseeing", "expedition", "adventures"] }
         ];
-
+        
         let idx = 0, correct = 0, typed = 0, targetTime = 120, timeLeft = 120, active = false, interval, mode = '', user = null, mIdx = 0, lvl = 1, totalG = 0, sumW = 0, sumA = 0;
 
         function handleAuth(isSignUp) {
@@ -149,55 +83,40 @@
                 alert("Saved! Click Login.");
             } else {
                 if (!data) return alert("No user found!");
-                let p = JSON.parse(data);
+                let p = JSON.parse(data); 
                 if (p.pass !== pass) return alert("Wrong code!");
-                user = name;
-                mode = p.mode;
-                targetTime = p.time;
-                mIdx = p.mIdx || 0;
-                lvl = p.lvl || 1;
-                totalG = p.totalG || 0;
-                sumW = p.sumW || 0;
-                sumA = p.sumA || 0;
                 
+                user = name; mode = p.mode; targetTime = p.time; mIdx = p.mIdx || 0; lvl = p.lvl || 1; totalG = p.totalG || 0; sumW = p.sumW || 0; sumA = p.sumA || 0;
                 document.getElementById('u-stat').innerText = "👤 " + user.toUpperCase();
                 document.getElementById('auth').style.display = 'none';
                 document.getElementById('l-btn').style.display = 'inline-block';
-                updSet();
-                document.getElementById('menu').style.display = 'none';
+                updSet(); 
+                document.getElementById('menu').style.display = 'none'; 
                 initRound();
             }
             document.getElementById('p').value = '';
         }
 
         function logout() {
-            clearInterval(interval);
-            user = null;
-            mode = '';
-            targetTime = 120;
-            mIdx = 0;
-            lvl = 1;
-            totalG = 0;
-            sumW = 0;
-            sumA = 0;
-            document.getElementById('u-stat').innerText = "👤 Guest";
-            document.getElementById('auth').style.display = 'inline-block';
+            clearInterval(interval); user = null; mode = ''; targetTime = 120; mIdx = 0; lvl = 1; totalG = 0; sumW = 0; sumA = 0;
+            document.getElementById('u-stat').innerText = "👤 Guest"; 
+            document.getElementById('auth').style.display = 'inline-block'; 
             document.getElementById('l-btn').style.display = 'none';
-            document.getElementById('u').value = '';
-            document.getElementById('p').value = '';
-            updSet();
+            document.getElementById('u').value = ''; 
+            document.getElementById('p').value = ''; 
+            updSet(); 
             exitMenu();
         }
 
         function togSet(show) {
             document.getElementById('set').style.display = show ? 'block' : 'none';
-            if (!show) {
+            if (!show) { 
                 if (mode) document.getElementById('game').style.display = 'block';
                 else document.getElementById('menu').style.display = 'block';
-            } else {
-                document.getElementById('game').style.display = 'none';
-                document.getElementById('menu').style.display = 'none';
-                document.getElementById('stats').style.display = 'none';
+            } else { 
+                document.getElementById('game').style.display = 'none'; 
+                document.getElementById('menu').style.display = 'none'; 
+                document.getElementById('stats').style.display = 'none'; 
             }
         }
 
@@ -206,95 +125,65 @@
             document.getElementById('a-acc').innerText = (totalG > 0 ? Math.round(sumA / totalG) : 0) + "%";
         }
 
-        function exitMenu() {
-            clearInterval(interval);
+        function exitMenu() { 
+            clearInterval(interval); 
             mode = '';
-            document.getElementById('game').style.display = 'none';
-            document.getElementById('stats').style.display = 'none';
-            document.getElementById('menu').style.display = 'block';
+            document.getElementById('game').style.display = 'none'; 
+            document.getElementById('stats').style.display = 'none'; 
+            document.getElementById('menu').style.display = 'block'; 
         }
 
-        function start(m) {
-            mode = m;
-            targetTime = 120;
-            mIdx = 0;
-            lvl = 1;
-            document.getElementById('menu').style.display = 'none';
-            initRound();
+        function start(m) { 
+            mode = m; targetTime = 120; mIdx = 0; lvl = 1; 
+            document.getElementById('menu').style.display = 'none'; 
+            initRound(); 
         }
 
-        function save() {
-            if (user) {
-                let existing = JSON.parse(localStorage.getItem('typer_' + user));
-                localStorage.setItem('typer_' + user, JSON.stringify({ 
-                    pass: existing.pass, mode, time: targetTime, mIdx, lvl, totalG, sumW, sumA 
-                }));
-            }
+        function save() { 
+            if (user) localStorage.setItem('typer_' + user, JSON.stringify({ pass: JSON.parse(localStorage.getItem('typer_' + user)).pass, mode, time: targetTime, mIdx, lvl, totalG, sumW, sumA })); 
         }
-
-         Oskar
 
         function initRound() {
-            clearInterval(interval);
-            active = false;
-            idx = 0;
-            correct = 0;
-            typed = 0;
-            timeLeft = targetTime;
+            clearInterval(interval); active = false; idx = 0; correct = 0; typed = 0; timeLeft = targetTime;
+            if (mIdx >= mods.length) { exitMenu(); alert("🎉 Campaign Complete!"); logout(); return; }
             
-            if (mIdx >= mods.length) {
-                alert("🎉 Campaign Complete!");
-                logout();
-                return;
-            }
-            
-            document.getElementById('stats').style.display = 'none';
+            document.getElementById('stats').style.display = 'none'; 
             document.getElementById('game').style.display = 'block';
             document.getElementById('cam-disp').innerText = `Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10`;
-            document.getElementById('t').innerText = timeLeft;
-            document.getElementById('tg').innerText = targetTime;
-Use code with caution.
-document.getElementById('md').innerText = mode.toUpperCase();
-document.getElementById('w').innerText = "0";
-let words = [...mods[mIdx][mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
-document.getElementById('box').innerHTML = [...words].map(c => <span class="letter">${c}</span>).join('');
-let elements = document.getElementById('box').children;
-if (elements.length > 0) elements[0].classList.add('current');
-document.getElementById('in').disabled = false;
-document.getElementById('in').value = '';
-setTimeout(() => document.getElementById('in').focus(), 50);
-}
-function showSummary(isSuccess) {
-clearInterval(interval);
-active = false;
-document.getElementById('game').style.display = 'none';
-document.getElementById('stats').style.display = 'block';
-document.getElementById('res-info').innerText = Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10;
-let wpmVal = parseInt(document.getElementById('w').innerText, 10);
+            document.getElementById('t').innerText = timeLeft; 
+            document.getElementById('tg').innerText = targetTime; 
+            document.getElementById('md').innerText = mode.toUpperCase(); 
+            document.getElementById('w').innerText = "0";
+            
+            let words = [...mods[mIdx][mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
+            document.getElementById('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
+            
+            let elements = document.getElementById('box').children;
+            if (elements.length > 0) elements[0].classList.add('current');
+            
+            document.getElementById('in').disabled = false; 
+            document.getElementById('in').value = ''; 
+            document.getElementById('in').focus();
+        }
+
+        function showSummary(isSuccess) {
+            clearInterval(interval); 
+            document.getElementById('game').style.display = 'none'; 
+            document.getElementById('stats').style.display = 'block';
+            document.getElementById('res-info').innerText = `Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10`;
+            
+            let wpmVal = parseInt(document.getElementById('w').innerText, 10);
 let accVal = typed > 0 ? Math.round((correct / typed) * 100) : 0;
 document.getElementById('res-wpm').innerText = wpmVal;
 document.getElementById('res-acc').innerText = accVal + "%";
-if (user) {
-totalG++;
-sumW += wpmVal;
-sumA += accVal;
-updSet();
-}
+if (user) { totalG++; sumW += wpmVal; sumA += accVal; updSet(); }
 let title = document.getElementById('res-title'), nxt = document.getElementById('nxt');
 if (isSuccess) {
-title.innerText = "🎉 CLEARED!";
-title.style.color = "#a6e3a1";
-nxt.innerText = "Next Level (-10s)";
-lvl++;
-if (lvl > 10) {
-lvl = 1;
-mIdx++;
-}
+title.innerText = "🎉 CLEARED!"; title.style.color = "#a6e3a1"; nxt.innerText = "Next Level (-10s)";
+lvl++; if (lvl > 10) { lvl = 1; mIdx++; }
 targetTime = Math.max(10, targetTime - 10);
 } else {
-title.innerText = "❌ FAILED!";
-title.style.color = "#f38ba8";
-nxt.innerText = "Retry Level (+10s)";
+title.innerText = "❌ FAILED!"; title.style.color = "#f38ba8"; nxt.innerText = "Retry Level (+10s)";
 targetTime += 10;
 }
 save();
@@ -304,9 +193,8 @@ let spans = document.getElementById('box').children;
 if (!active && timeLeft === targetTime) {
 active = true;
 interval = setInterval(() => {
-if (--timeLeft <= 0) {
-showSummary(false);
-} else {
+if (--timeLeft <= 0) showSummary(false);
+else {
 document.getElementById('t').innerText = timeLeft;
 let elapsed = (targetTime - timeLeft) / 60;
 document.getElementById('w').innerText = Math.round((correct / 5) / elapsed) || 0;
@@ -314,30 +202,22 @@ document.getElementById('w').innerText = Math.round((correct / 5) / elapsed) || 
 }, 1000);
 }
 if (timeLeft <= 0 || idx >= spans.length) return;
+spans[idx].classList.remove('current');
 if (e.inputType === 'deleteContentBackward') {
 if (idx > 0) {
-spans[idx].classList.remove('current');
 idx--;
-if (spans[idx].classList.contains('correct')) correct--;
 spans[idx].className = 'letter current';
+if (spans[idx].classList.contains('correct')) correct--;
 }
 } else {
-let char = e.data || document.getElementById('in').value.slice(-1);
+let char = document.getElementById('in').value.slice(-1);
 if (!char) return;
 typed++;
-spans[idx].classList.remove('current');
-if (char === spans[idx].innerText) {
-spans[idx].classList.add('correct');
-correct++;
-} else {
-spans[idx].classList.add('incorrect');
-}
+if (char === spans[idx].innerText) { spans[idx].classList.add('correct'); correct++; }
+else spans[idx].classList.add('incorrect');
 idx++;
-if (idx >= spans.length) {
-showSummary(true);
-} else {
-spans[idx].classList.add('current');
-}
+if (idx >= spans.length) showSummary(true);
+else spans[idx].classList.add('current');
 }
 document.getElementById('in').value = '';
 };
