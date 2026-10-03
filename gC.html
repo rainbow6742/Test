@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Typing Fun</title>
+    <title>Type Campaign</title>
     <style>
         :root { --bg: #1e1e2e; --pnl: #252538; --txt: #cdd6f4; --sub: #6c7086; --acc: #cba6f7; }
         .light { --bg: #eff1f5; --pnl: #e6e9ef; --txt: #4c4f69; --sub: #9ca0b0; --acc: #8839ef; }
@@ -127,6 +127,7 @@
 
         function exitMenu() { 
             clearInterval(interval); 
+            mode = '';
             document.getElementById('game').style.display = 'none'; 
             document.getElementById('stats').style.display = 'none'; 
             document.getElementById('menu').style.display = 'block'; 
@@ -156,7 +157,10 @@
             
             let words = [...mods[mIdx][mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
             document.getElementById('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
-            if (document.getElementById('box').children.length > 0) document.getElementById('box').children[0].classList.add('current');
+            
+            let elements = document.getElementById('box').children;
+            if (elements.length > 0) elements[0].classList.add('current');
+            
             document.getElementById('in').disabled = false; 
             document.getElementById('in').value = ''; 
             document.getElementById('in').focus();
@@ -169,7 +173,7 @@
             document.getElementById('res-info').innerText = `Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10`;
             
             let wpmVal = parseInt(document.getElementById('w').innerText, 10);
-            let accVal = typed > 0 ? Math.round((correct / typed) * 100) : 0;
+let accVal = typed > 0 ? Math.round((correct / typed) * 100) : 0;
 document.getElementById('res-wpm').innerText = wpmVal;
 document.getElementById('res-acc').innerText = accVal + "%";
 if (user) { totalG++; sumW += wpmVal; sumA += accVal; updSet(); }
@@ -192,7 +196,8 @@ interval = setInterval(() => {
 if (--timeLeft <= 0) showSummary(false);
 else {
 document.getElementById('t').innerText = timeLeft;
-document.getElementById('w').innerText = Math.round((correct / 5) / ((targetTime - timeLeft) / 60)) || 0;
+let elapsed = (targetTime - timeLeft) / 60;
+document.getElementById('w').innerText = Math.round((correct / 5) / elapsed) || 0;
 }
 }, 1000);
 }
