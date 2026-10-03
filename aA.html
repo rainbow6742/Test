@@ -15,7 +15,7 @@
     <h2>Menu</h2><p id="m-hi" style="color:#0fcc;margin:5px 0;"></p>
     <label style="cursor:pointer;"><input type="checkbox" id="ai-on" checked> Enable AI Bot</label>
     
-    <h3 style="margin:15px 0 5px 0;border-top:1px solid #444;padding-top:10px;color:#0fcc;">Crosshair Shop</h3>
+    <h3 style="margin:15px 0 5px 0;border-top:1px solid #444;padding-top:10px;color:#0fcc;">Cosmetic Shop</h3>
     <div id="shop-items" style="display:flex;flex-direction:column;gap:5px;margin-bottom:15px;"></div>
 
     <button onclick="toggleM()" style="width:100%;padding:8px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;margin-bottom:5px;">Resume</button>
@@ -25,16 +25,22 @@
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),authDiv=document.getElementById('auth'),menuDiv=document.getElementById('menu'),err=document.getElementById('err'),aiOn=document.getElementById('ai-on'),shopDiv=document.getElementById('shop-items');
 let px=0,py=0,score=0,currentUsr='',keys={},targets=[],bullets=[],hue=0,ai={x:100,y:-100,s:0,cd:0},isLoginMode=true;
-let playerColor='#0fcc', unlockedColors=['#0fcc'];
+let playerColor='#0fcc', unlockedItems=['#0fcc'], bgStyle='none', starField=[];
 
 const shopInventory=[
-    {name:'Cyan Core',color:'#0fcc',cost:0},
-    {name:'Lime Laser',color:'#0f0',cost:200},
-    {name:'Purple Plasma',color:'#b0f',cost:400},
-    {name:'Pink Pixels',color:'#f0f',cost:800}
+    {name:'Cyan Core (Skin)',type:'col',id:'#0fcc',cost:0},
+    {name:'Lime Laser (Skin)',type:'col',id:'#0f0',cost:200},
+    {name:'Purple Plasma (Skin)',type:'col',id:'#b0f',cost:400},
+    {name:'Pink Pixels (Skin)',type:'col',id:'#f0f',cost:800},
+    {name:'Space Theme (BG)',type:'bg',id:'space',cost:2000}
 ];
 
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
+
+// Populate a static background pattern for the Space theme map space
+for(let i=0; i<150; i++) {
+    starField.push({x: (Math.random() - 0.5) * 3000, y: (Math.random() - 0.5) * 3000, r: Math.random() * 2 + 0.5});
+}
 
 function toggleAuthMode(e) {
     if(e) e.preventDefault();
@@ -51,11 +57,11 @@ function submitAuth(){
     if(isLoginMode){
         if(!st){err.textContent="Account does not exist!";return;}
         let user=JSON.parse(st);if(user.pwd !== p){err.textContent="Wrong password!";return;}
-        score=user.hi||0;playerColor=user.col||'#0fcc';unlockedColors=user.owns||['#0fcc'];
+        score=user.hi||0;playerColor=user.col||'#0fcc';bgStyle=user.bg||'none';unlockedItems=user.owns||['#0fcc'];
     }else{
         if(st){err.textContent="Username already taken!";return;}
-        localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',owns:['#0fcc']}));
-        score=0;playerColor='#0fcc';unlockedColors=['#0fcc'];
+        localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',bg:'none',owns:['#0fcc']}));
+        score=0;playerColor='#0fcc';bgStyle='none';unlockedItems=['#0fcc'];
     }
     currentUsr=u;authDiv.style.display='none';c.style.display='block';toggleM();
 }
@@ -65,16 +71,19 @@ function renderShop(){
     shopInventory.forEach(item=>{
         let btn=document.createElement('button');
         btn.style.width='100%';btn.style.padding='6px';btn.style.border='none';btn.style.borderRadius='4px';btn.style.cursor='pointer';btn.style.fontWeight='bold';
-        if(playerColor===item.color){
-            btn.textContent=`${item.name} (Equipped)`;btn.style.background=item.color;btn.style.color='#111';
-        }else if(unlockedColors.includes(item.color)){
+        
+        let isEquipped = (item.type === 'col' && playerColor === item.id) || (item.type === 'bg' && bgStyle === item.id);
+        
+        if(isEquipped){
+            btn.textContent=`${item.name} (Equipped)`;btn.style.background=item.type==='col'?item.id:'#444';btn.style.color=item.type==='col'?'#111':'#0fcc';
+        }else if(unlockedItems.includes(item.id)){
             btn.textContent=`Equip ${item.name}`;btn.style.background='#555';btn.style.color='#fff';
-            btn.onclick=()=>{playerColor=item.color;saveProgress();renderShop();};
+            btn.onclick=()=>{if(item.type==='col')playerColor=item.id;else bgStyle=item.id;saveProgress();renderShop();};
         }else{
             btn.textContent=`Buy ${item.name} (${item.cost} pts)`;btn.style.background='#333';btn.style.color='#aaa';
             if(score>=item.cost){
-                btn.style.color='#fff';btn.style.border=`1px solid ${item.color}`;
-                btn.onclick=()=>{score-=item.cost;unlockedColors.push(item.color);playerColor=item.color;saveProgress();renderShop();};
+                btn.style.color='#fff';btn.style.border=`1px solid ${item.type==='col'?item.id:'#0fcc'}`;
+                btn.onclick=()=>{score-=item.cost;unlockedItems.push(item.id);if(item.type==='col')playerColor=item.id;else bgStyle=item.id;saveProgress();renderShop();};
             }
         }
         shopDiv.appendChild(btn);
@@ -83,7 +92,7 @@ function renderShop(){
 
 function toggleM(){
     if(menuDiv.style.display==='block'){menuDiv.style.display='none';c.requestPointerLock();}
-    else{document.exitPointerLock();document.getElementById('m-hi').textContent=`Points Available: ${score}`;renderShop();menuDiv.style.display='block';}
+    else {document.exitPointerLock();document.getElementById('m-hi').textContent=`Points Available: ${score}`;renderShop();menuDiv.style.display='block';}
 }
 function signOut(){
     currentUsr='';menuDiv.style.display='none';c.style.display='none';authDiv.style.display='block';
@@ -110,7 +119,7 @@ setInterval(()=>{
 
 function saveProgress() {
     let user = JSON.parse(localStorage.getItem('g_'+currentUsr)) || {};
-    user.hi = Math.max(user.hi||0, score);user.col = playerColor;user.owns = unlockedColors;
+    user.hi = Math.max(user.hi||0, score);user.col = playerColor;user.bg = bgStyle;user.owns = unlockedItems;
     localStorage.setItem('g_'+currentUsr, JSON.stringify(user));
 }
 
@@ -119,6 +128,16 @@ function loop(){
         ctx.fillStyle='rgba(17,17,17,0.3)';ctx.fillRect(0,0,c.width,c.height);hue=(hue+2)%360;
         let cx=c.width/2,cy=c.height/2;
         if(keys.w) py-=5; if(keys.s) py+=5; if(keys.a) px-=5; if(keys.d) px+=5;
+
+        // Render Space Background Stars if activated
+        if(bgStyle === 'space'){
+            ctx.fillStyle = '#fff';
+            starField.forEach(s => {
+                let sx = ((s.x - px) % 3000 + 3000) % 3000 - 1500 + cx;
+                let sy = ((s.y - py) % 3000 + 3000) % 3000 - 1500 + cy;
+                ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, 7); ctx.fill();
+            });
+        }
 
         if(aiOn.checked&&targets.length>0){
             let close=targets.reduce((a,b)=>Math.hypot(a.x-ai.x,a.y-ai.y)<Math.hypot(b.x-ai.x,b.y-ai.y)?a:b);
@@ -135,33 +154,23 @@ function loop(){
         targets.forEach((t,ti)=>{
             let sx=t.x-px,sy=t.y-py,dp=Math.hypot(sx-cx,sy-cy),da=Math.hypot(sx-(ai.x-px),sy-(ai.y-py));
             let pts=t.t==='r'?100:10;
-
-            // Player walks into target -> Earn points!
-            if(dp<20){
-                targets.splice(ti,1);score+=pts;saveProgress();return;
-            }
-            // AI walks into target -> AI earns points!
-            if(aiOn.checked&&da<20){
-                targets.splice(ti,1);ai.s+=pts;return;
-            }
+            if(dp<20){targets.splice(ti,1);score+=pts;saveProgress();return;}
+            if(aiOn.checked&&da<20){targets.splice(ti,1);ai.s+=pts;return;}
 
             ctx.fillStyle=t.t==='r'?`hsl(${hue},100%,60%)` : '#f55';ctx.beginPath();ctx.arc(sx,sy,t.t==='r'?22:15,0,7);ctx.fill();
             bullets.forEach((b,bi)=>{
                 if(Math.hypot(sx-b.x,sy-b.y)<(b.r+(t.t==='r'?22:15))){
-                    targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);
-                    if(b.o==='p'){score+=pts;saveProgress();}else{ai.s+=pts;}
-                }
-            });
-        });
-
-        ctx.fillStyle=playerColor;ctx.beginPath();ctx.arc(cx,cy,8,0,7);ctx.fill();
-        ctx.strokeStyle=playerColor;ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(cx-15, cy);ctx.lineTo(cx+15, cy);ctx.moveTo(cx, cy-15); ctx.lineTo(cx, cy+15); ctx.stroke();
-
-        ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText(`You: ${score}`,20,40);
-        if(aiOn.checked){ctx.fillStyle='#fa0';ctx.fillText(`AI: ${ai.s}`,20,65);}
-    }
-    requestAnimationFrame(loop);
+targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);
+if(b.o==='p'){score+=pts;saveProgress();}else{ai.s+=pts;}
+}
+});
+});
+ctx.fillStyle=playerColor;ctx.beginPath();ctx.arc(cx,cy,8,0,7);ctx.fill();
+ctx.strokeStyle=playerColor;ctx.lineWidth=2;
+ctx.beginPath();ctx.moveTo(cx-15, cy);ctx.lineTo(cx+15, cy);ctx.moveTo(cx, cy-15); ctx.lineTo(cx, cy+15); ctx.stroke();
+ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText(You: ${score},20,40);
+if(aiOn.checked){ctx.fillStyle='#fa0';ctx.fillText(AI: ${ai.s},20,65);}
+}
+requestAnimationFrame(loop);
 }
 loop();
-</script></body></html>
