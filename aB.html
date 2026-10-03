@@ -1,90 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Mini CCG</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM LOCKED</title>
     <style>
-        body { background: #211; color: #fff; font-family: sans-serif; text-align: center; margin: 0; user-select: none; }
-        .row { display: flex; justify-content: center; min-height: 110px; padding: 10px; border-bottom: 1px dashed #444; }
-        .hero { background: #532; padding: 15px; border-radius: 50%; font-weight: bold; cursor: pointer; display: inline-block; margin: 5px; }
-        .card { width: 70px; height: 100px; background: #234; border: 2px solid #567; border-radius: 5px; margin: 0 5px; cursor: pointer; position: relative; display: flex; flex-direction: column; justify-content: center; font-size: 12px; }
-        .card.enemy { background: #422; border-color: #744; }
-        .card.ready { border-color: #0f0; box-shadow: 0 0 5px #0f0; }
-        .card.sel { border-color: #ff0; box-shadow: 0 0 10px #ff0; }
-        .stats { font-size: 10px; color: #fa0; margin-top: 10px; }
-        #log { font-family: monospace; color: #aaa; margin: 5px; height: 20px; }
-        button { padding: 10px; font-weight: bold; background: #ca3; border: none; cursor: pointer; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #050000; color: #ff3333;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            overflow: hidden; user-select: none;
+        }
+        #container { text-align: center; max-width: 600px; padding: 20px; }
+        h1 { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 10px #ff0000; animation: blink 1.5s infinite; }
+        p { font-size: 1.2rem; color: #ff8888; margin-bottom: 30px; }
+        .input-hint { font-size: 0.9rem; color: #441111; letter-spacing: 2px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     </style>
 </head>
 <body>
-    <div class="row" id="eh"></div>
-    <div><div class="hero" id="e-hero">ENEMY: 30</div> <span id="em">Mana: 1/1</span></div>
-    <div class="row" id="ef"></div>
-    <div id="log">Your Turn!</div> <button onclick="endTurn()">END TURN</button>
-    <div class="row" id="pf"></div>
-    <div><div class="hero" id="p-hero">YOU: 30</div> <span id="pm">Mana: 1/1</span></div>
-    <div class="row" id="ph"></div>
+
+    <div id="container">
+        <h1>ACCESS DENIED</h1>
+        <p>This terminal has been locked down.<br>You cannot close or leave this screen normally.</p>
+        <div class="input-hint">AWAITING CREDENTIALS...</div>
+    </div>
 
     <script>
-        let pMaxM=1, pM=1, pHp=30, eMaxM=1, eM=1, eHp=30, turn=true, sel=null, id=0;
-        let pHand=[], pField=[], eHand=[], eField=[];
-        const pool = [{n:"Murloc",a:2,h:1,m:1},{n:"Raptor",a:3,h:2,m:2},{n:"Yeti",a:4,h:5,m:4},{n:"Ogre",a:6,h:7,m:6}];
-        const make = (c) => ({...c, id:id++, s:true});
+        let inputBuffer = "";
+        const targetCode = "31718";
+        let isLocked = true;
 
-        for(let i=0;i<3;i++) { pHand.push(make(pool[Math.floor(Math.random()*pool.length)])); eHand.push(make(pool[Math.floor(Math.random()*pool.length)])); }
+        // 1. Trap keypresses anywhere on the document to listen for the unlock sequence
+        document.addEventListener('keydown', (e) => {
+            if (!isLocked) return;
 
-        function log(t) { document.getElementById("log").innerText = t; }
-        document.onclick = (e) => { if(!e.target.closest('.card') && !e.target.closest('.hero')) { sel=null; render(); } };
-
-        function render() {
-            const h = (arr, el, f) => document.getElementById(el).innerHTML = arr.map(c => f(c)).join('');
-            h(pHand, "ph", c => `<div class="card" onclick="play(${c.id})">${c.n}<div class="stats">M:${c.m} A:${c.a} H:${c.h}</div></div>`);
-            h(pField, "pf", c => `<div class="card ${(!c.s&&turn)?'ready':''} ${(sel===c)?'sel':''}" onclick="setAtk(event, ${c.id})">${c.n}<div class="stats">A:${c.a} H:${c.h}</div></div>`);
-            h(eField, "ef", c => `<div class="card enemy" onclick="atk(event, 'm', ${c.id})">${c.n}<div class="stats">A:${c.a} H:${c.h}</div></div>`);
-            h(eHand, "eh", () => `<div class="card enemy">Back</div>`);
-            document.getElementById("p-hero").innerText = `YOU: ${pHp}`;
-            document.getElementById("e-hero").innerText = `ENEMY: ${eHp}`;
-            document.getElementById("pm").innerText = `Mana: ${pM}/${pMaxM}`;
-            document.getElementById("em").innerText = `Mana: ${eM}/${eMaxM}`;
-        }
-
-        function play(cid) {
-            if(!turn) return;
-            let idx = pHand.findIndex(c => c.id===cid), c = pHand[idx];
-            if(pM >= c.m && pField.length < 5) { pM -= c.m; pField.push(pHand.splice(idx,1)[0]); log(`Summoned ${c.n}`); render(); }
-        }
-        function setAtk(e, cid) { e.stopPropagation(); if(!turn) return; let c = pField.find(c=>c.id===cid); if(!c.s) { sel=c; render(); } }
-        
-        document.getElementById("e-hero").onclick = (e) => atk(e, 'h');
-        
-        function atk(e, type, tid) {
-            e.stopPropagation(); if(!sel) return;
-            if(type === 'h') { eHp -= sel.a; log(`Attacked Enemy for ${sel.a}`); sel.s=true; if(eHp<=0) alert("Win!"); }
-            else {
-                let tc = eField.find(c=>c.id===tid); tc.h -= sel.a; sel.h -= tc.a; log(`${sel.n} hit ${tc.n}`); sel.s=true;
-                pField = pField.filter(c=>c.h>0); eField = eField.filter(c=>c.h>0);
+            // Block common escape/functional keys that could close overlays
+            if (e.key === "Escape" || e.key === "F11") {
+                e.preventDefault();
             }
-            sel = null; render();
-        }
 
-        function endTurn() {
-            turn = false; sel = null; log("Enemy Turn..."); render();
-            setTimeout(() => {
-                if(eMaxM < 10) eMaxM++; eM = eMaxM;
-                if(eHand.length < 5) eHand.push(make(pool[Math.floor(Math.random()*pool.length)]));
-                for(let i=eHand.length-1; i>=0; i--) if(eM >= eHand[i].m && eField.length < 5) { eM -= eHand[i].m; eField.push(eHand.splice(i,1)[0]); }
-                eField.forEach(ec => {
-                    if(!ec.s) {
-                        if(pField.length > 0 && Math.random() > 0.5) { let pc = pField[Math.floor(Math.random()*pField.length)]; pc.h -= ec.a; ec.h -= pc.a; }
-                        else { pHp -= ec.a; if(pHp<=0) alert("Lose!"); }
-                    }
-                });
-                pField = pField.filter(c=>c.h>0); eField = eField.filter(c=>c.h>0);
-                if(pMaxM < 10) pMaxM++; pM = pMaxM; turn = true;
-                if(pHand.length < 5) pHand.push(make(pool[Math.floor(Math.random()*pool.length)]));
-                pField.forEach(c => c.s = false); eField.forEach(c => c.s = false); log("Your Turn!"); render();
-            }, 1000);
+            // Append standard numeric characters to our validation buffer
+            if (/^\d\$/.test(e.key)) {
+                inputBuffer += e.key;
+                
+                // Keep the running buffer short to prevent accidental spillover strings
+                if (inputBuffer.length > targetCode.length) {
+                    inputBuffer = inputBuffer.substring(inputBuffer.length - targetCode.length);
+                }
+
+                // Verify check
+                if (inputBuffer === targetCode) {
+                    unlockScreen();
+                }
+            }
+        });
+
+        // 2. Annoy the user if they try to click anywhere on the page
+        document.addEventListener('click', () => {
+            if (isLocked) {
+                alert("🔒 TERMINAL SECURED. Type the 5-digit bypass code to release.");
+            }
+        });
+
+        // 3. Trigger the standard browser exit warnings if they try to reload or navigate away
+        window.addEventListener('beforeunload', (e) => {
+            if (isLocked) {
+                e.preventDefault();
+                e.returnValue = "Are you sure you want to leave?";
+            }
+        });
+
+        function unlockScreen() {
+            isLocked = false;
+            document.body.style.backgroundColor = "#001100";
+            document.body.style.color = "#33ff33";
+            document.getElementById('container').innerHTML = `
+                <h1 style="text-shadow: 0 0 10px #00ff00; animation: none;">ACCESS GRANTED</h1>
+                <p style="color: #88ff88;">Bypass accepted. Restrictions lifted. You may now close this tab safely.</p>
+            `;
         }
-        render();
     </script>
 </body>
 </html>
