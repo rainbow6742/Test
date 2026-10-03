@@ -4,7 +4,7 @@
     <input id="usr" placeholder="User" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
     <input id="pwd" type="password" placeholder="Pass (4+)" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
     <button onclick="auth()" style="width:95%;margin:4px;padding:6px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;">Enter</button>
-    <div style="margin-top:10px;font-size:12px;"><a id="sl" href="#" onclick="isL=!isL;document.getElementById('at').textContent=isL?'Log In':'Sign Up';err.textContent='';" style="color:#0fcc;">Switch Mode</a></div>
+    <div style="margin-top:10px;font-size:12px;"><a id="sl" href="#" onclick="isL=!isL;document.getElementById('at').textContent=isL?'Log In':'Sign Up';document.getElementById('sl').textContent=isL?'Need an account? Sign Up':'Have an account? Log In';err.textContent='';" style="color:#0fcc;text-decoration:none;font-weight:bold;">Need an account? Sign Up</a></div>
     <p id="err" style="color:#f55;font-size:11px;margin:4px 0 0 0;"></p>
 </div>
 <div id="menu" style="display:none;background:rgba(34,34,34,0.95);padding:15px;border-radius:8px;text-align:center;position:absolute;z-index:10;width:280px;max-height:90vh;overflow-y:auto;">
@@ -73,7 +73,7 @@ function loop(){
         ctx.fillStyle='rgba(17,17,17,0.3)';ctx.fillRect(0,0,c.width,c.height);hue=(hue+2)%360;
         let cx=c.width/2,cy=c.height/2;if(mTimer>0&&--mTimer<=0)mult=1;
         if(keys.w)py-=5;if(keys.s)py+=5;if(keys.a)px-=5;if(keys.d)px+=5;
-        if(bg==='space'){ctx.fillStyle='#fff';stars.forEach(s=>{ctx.beginPath();ctx.arc(((s.x-px)%3000+3000)%3000-1500+cx,((s.y-py)%3000+3000)%3000-1500+cy,s.r,0,7);ctx.fill();});}
+        if(bg=='space'){ctx.fillStyle='#fff';stars.forEach(s=>{ctx.beginPath();ctx.arc(((s.x-px)%3000+3000)%3000-1500+cx,((s.y-py)%3000+3000)%3000-1500+cy,s.r,0,7);ctx.fill();});}
         if(aiOn.checked&&targets.length>0){
             let close=targets.reduce((a,b)=>Math.hypot(a.x-ai.x,a.y-ai.y)<Math.hypot(b.x-ai.x,b.y-ai.y)?a:b);
             let ang=Math.atan2(close.y-ai.y,close.x-ai.x);ai.x+=Math.cos(ang)*3.5;ai.y+=Math.sin(ang)*3.5;
@@ -84,7 +84,7 @@ function loop(){
         targets.forEach((t,ti)=>{
             let sx=t.x-px,sy=t.y-py,dp=Math.hypot(sx-cx,sy-cy),da=Math.hypot(sx-(ai.x-px),sy-(ai.y-py)),pts=t.t==='r'?100:10;
             if(dp<20){targets.splice(ti,1);score+=pts*mult;save();return;}if(aiOn.checked&&da<20){targets.splice(ti,1);ai.s+=pts;return;}
-            ctx.fillStyle=t.t==='r'?`hsl(${hue},100%,60%)` Rely:'#f55';ctx.beginPath();ctx.arc(sx,sy,t.t==='r'?22:15,0,7);ctx.fill();
+            ctx.fillStyle=t.t==='r'?`hsl(${hue},100%,60%)` : '#f55';ctx.beginPath();ctx.arc(sx,sy,t.t==='r'?22:15,0,7);ctx.fill();
             bullets.forEach((b,bi)=>{if(Math.hypot(sx-b.x,sy-b.y)<(b.r+(t.t==='r'?22:15))){targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);if(b.o==='p'){score+=pts*mult;save();}else ai.s+=pts;}});
         });
         ctx.fillStyle=pCol;ctx.beginPath();ctx.arc(cx,cy,8,0,7);ctx.fill();ctx.strokeStyle=pCol;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-15,cy);ctx.lineTo(cx+15,cy);ctx.moveTo(cx,cy-15);ctx.lineTo(cx,cy+15);ctx.stroke();
