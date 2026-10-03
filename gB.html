@@ -6,10 +6,10 @@
         body { font-family: monospace; background: #1e1e2e; color: #cdd6f4; text-align: center; padding-top: 15px; }
         #bar, #menu, #box { background: #252538; padding: 15px; border-radius: 8px; max-width: 600px; margin: 10px auto; }
         #game { display: none; }
-        #box { font-size: 1.4rem; text-align: left; min-height: 80px; white-space: pre-wrap; }
-        .letter { color: #6c7086; }
-        .correct { color: #a6e3a1; }
-        .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); }
+        #box { font-size: 1.4rem; text-align: left; min-height: 80px; }
+        .letter { color: #6c7086; } 
+        .correct { color: #a6e3a1; } 
+        .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); } 
         .current { border-left: 2px solid #cba6f7; color: #fff; }
         input[type="text"], input[type="password"] { background: #1e1e2e; border: 1px solid #45475a; color: #fff; padding: 5px; margin: 2px; }
         #in { position: absolute; opacity: 0; pointer-events: none; }
@@ -18,22 +18,25 @@
     </style>
 </head>
 <body>
+
     <div id="bar">
         <span id="user-status">👤 Guest</span> | 
         <input type="text" id="u" placeholder="User" size="10">
         <input type="password" id="p" placeholder="Code (5+)" size="10">
-        <button onclick="auth(1)" style="background:#89b4fa">Sign Up</button>
-        <button onclick="auth(0)" style="background:#a6e3a1">Login</button>
+        <button onclick="auth(true)" style="background:#89b4fa">Sign Up</button>
+        <button onclick="auth(false)" style="background:#a6e3a1">Login</button>
     </div>
+
     <div id="menu">
         <h2>Select Mode (Starts at 120s)</h2>
         <button onclick="start('easy')" style="background:#a6e3a1">🟢 Easy (Short words)</button>
         <button onclick="start('hard')" style="background:#f38ba8; color:#fff">🔴 Hard (Tech words)</button>
     </div>
+
     <div id="game">
         <h3>Target: <span id="tg">120</span>s (<span id="md"></span>) | Time: <span id="t">120</span>s | WPM: <span id="w">0</span></h3>
         <input type="text" id="in" autocomplete="off">
-        <div id="box" onclick="\$('in').focus()"></div>
+        <div id="box" onclick="document.getElementById('in').focus()"></div>
         <button id="nxt" disabled onclick="initRound()">Next Level</button>
         <button onclick="location.reload()">Exit</button>
         <div id="msg" style="font-weight:bold; margin-top:10px;"></div>
@@ -44,110 +47,141 @@
             easy: ["code", "data", "web", "link", "user", "file", "byte", "key", "text", "page", "app", "site", "test", "save", "loop"],
             hard: ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "framework"]
         };
-        const \$ = id => document.getElementById(id);
+        
         let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval, mode = '', user = null;
 
         function auth(isSignUp) {
-            let name = ('u').value.trim().toLowerCase(), pass = ('p').value;
-            if (!name || pass.length <= 4) return alert("Username required & Code must be > 4 characters!");
+            let name = document.getElementById('u').value.trim().toLowerCase();
+            let pass = document.getElementById('p').value;
+            
+            if (!name || pass.length <= 4) {
+                alert("Username required & Code must be more than 4 characters!");
+                return;
+            }
+            
             let data = localStorage.getItem('typer_' + name);
+            
             if (isSignUp) {
-                if (data) return alert("Taken!");
-                localStorage.setItem('typer_' + name, JSON.stringify({ pass, mode: 'easy', time: 120 }));
-                alert("Saved! Now Login.");
+                if (data) {
+                    alert("Username already taken!");
+                    return;
+                }
+                localStorage.setItem('typer_' + name, JSON.stringify({ pass: pass, mode: 'easy', time: 120 }));
+                alert("Account saved! Now click Login.");
             } else {
-                if (!data) return alert("No user!");
+                if (!data) {
+                    alert("User not found!");
+                    return;
+                }
                 let p = JSON.parse(data);
-                if (p.pass !== pass) return alert("Wrong code!");
-                user = name;
-                mode = p.mode;
+                if (p.pass !== pass) {
+                    alert("Wrong access code!");
+                    return;
+                }
+                user = name; 
+                mode = p.mode; 
                 targetTime = p.time;
-                \$('user-status').innerText = `👤 ${user.toUpperCase()}`;
-                \(('menu').style.display = 'none';\)('game').style.display = 'block';
+                document.getElementById('user-status').innerText = "👤 " + user.toUpperCase();
+                document.getElementById('menu').style.display = 'none'; 
+                document.getElementById('game').style.display = 'block';
                 initRound();
             }
-            \$('p').value = '';
+            document.getElementById('p').value = '';
         }
 
         function start(m) {
-            mode = m;
+            mode = m; 
             targetTime = 120;
-            \(('menu').style.display = 'none';\)('game').style.display = 'block';
+            document.getElementById('menu').style.display = 'none'; 
+            document.getElementById('game').style.display = 'block';
             initRound();
         }
 
         function save() {
             if (!user) return;
             let d = JSON.parse(localStorage.getItem('typer_' + user));
-            d.mode = mode;
+            d.mode = mode; 
             d.time = targetTime;
             localStorage.setItem('typer_' + user, JSON.stringify(d));
         }
 
         function initRound() {
-            clearInterval(interval);
-            active = false;
-            idx = 0;
-            correct = 0;
+            clearInterval(interval); 
+            active = false; 
+            idx = 0; 
+            correct = 0; 
             timeLeft = targetTime;
-            \$('t').innerText = timeLeft;
-            \$('tg').innerText = targetTime;
-            \(('md').innerText = mode.toUpperCase();\)('w').innerText = "0";
-            \$('msg').innerText = "";
-            \$('nxt').disabled = true;
-            \$('in').disabled = false;
-            \$('in').value = '';
+            
+            document.getElementById('t').innerText = timeLeft; 
+            document.getElementById('tg').innerText = targetTime; 
+            document.getElementById('md').innerText = mode.toUpperCase(); 
+            document.getElementById('w').innerText = "0"; 
+            document.getElementById('msg').innerText = ""; 
+            document.getElementById('nxt').disabled = true; 
+            document.getElementById('in').disabled = false; 
+            document.getElementById('in').value = '';
+            
             let words = [...banks[mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
-            \$('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
-            \(('box').children[0].classList.add('current');\)('in').focus();
+            document.getElementById('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
+            
+            if (document.getElementById('box').children.length > 0) {
+                document.getElementById('box').children[0].classList.add('current');
+            }
+            document.getElementById('in').focus();
         }
 
-        \$('in').oninput = (e) => {
-            let spans = \$('box').children;
+        document.getElementById('in').oninput = (e) => {
+            let spans = document.getElementById('box').children;
             if (!active && timeLeft === targetTime) {
                 active = true;
                 interval = setInterval(() => {
                     if (--timeLeft <= 0) {
-                        clearInterval(interval);
-                        \$('in').disabled = true;
-                        \$('msg').innerHTML = `<span style="color:#f38ba8">Failed! Time +10s</span>`;
-                        targetTime += 10;
+                        clearInterval(interval); 
+                        document.getElementById('in').disabled = true;
+                        document.getElementById('msg').innerHTML = `<span style="color:#f38ba8">Failed! Time +10s</span>`;
+                        targetTime += 10; 
                         save();
-                        \$('nxt').innerText = "Retry Level (+10s)";
-                        \$('nxt').disabled = false;
+                        document.getElementById('nxt').innerText = "Retry Level (+10s)"; 
+                        document.getElementById('nxt').disabled = false;
                     }
-                    \$('t').innerText = timeLeft;
-                    \$('w').innerText = Math.round((correct / 5) / ((targetTime - timeLeft) / 60)) || 0;
+                    document.getElementById('t').innerText = timeLeft;
+                    let timePassed = (targetTime - timeLeft) / 60;
+                    document.getElementById('w').innerText = Math.round((correct / 5) / timePassed) || 0;
                 }, 1000);
             }
+
             if (timeLeft <= 0 || idx >= spans.length) return;
             spans[idx].classList.remove('current');
-            
+
             if (e.inputType === 'deleteContentBackward') {
-                if (idx > 0) {
+                if (idx > 0) { 
                     idx--;
-                    if (spans[idx].classList.contains('correct')) correct--;
-                    spans[idx].className = 'letter current';
+                    spans[idx].className = 'letter current'; 
+                    if (spans[idx].classList.contains('correct')) correct--; 
                 }
             } else {
-                let char = \$('in').value.slice(-1);
+                let char = document.getElementById('in').value.slice(-1);
                 if (!char) return;
-                if (char === spans[idx].innerText) {
-                    spans[idx].classList.add('correct');
-                    correct++;
-                } else spans[idx].classList.add('incorrect');
+                if (char === spans[idx].innerText) { 
+                    spans[idx].classList.add('correct'); 
+                    correct++; 
+                } else {
+                    spans[idx].classList.add('incorrect');
+                }
                 idx++;
                 if (idx >= spans.length) {
-                    clearInterval(interval);
-                    \$('in').disabled = true;
-                    \$('msg').innerHTML = `<span style="color:#a6e3a1">Cleared! WPM: ${$('w').innerText}</span>`;
-                    targetTime = Math.max(10, targetTime - 10);
+                    clearInterval(interval); 
+                    document.getElementById('in').disabled = true;
+                    document.getElementById('msg').innerHTML = `<span style="color:#a6e3a1">Cleared! WPM: ${document.getElementById('w').innerText}</span>`;
+                    targetTime = Math.max(10, targetTime - 10); 
                     save();
-                    \$('nxt').innerText = "Next Level (-10s)";
-                    \$('nxt').disabled = false;
-                } else spans[idx].classList.add('current');
+                    document.getElementById('nxt').innerText = "Next Level (-10s)"; 
+                    document.getElementById('nxt').disabled = false;
+                } else {
+                    spans[idx].classList.add('current');
+                }
             }
-            \$('in').value = '';
+            document.getElementById('in').value = '';
         };
     </script>
 </body>
