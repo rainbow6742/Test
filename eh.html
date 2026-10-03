@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>eh</title>
+
+  <style>
+    :root {
+      --bg: #09111f;
+      --panel: #111d31;
+      --line: rgba(255, 255, 255, 0.16);
+      --text: #f2f7ff;
+      --muted: #aab8ce;
+      --red: #ff3b4d;
+      --green: #55f29d;
+      --yellow: #ffe16b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, #1d3a5f 0, transparent 34%),
+        radial-gradient(circle at 80% 85%, #3d1b45 0, transparent 35%),
+        var(--bg);
+    }
+
+    .game-shell {
+      width: min(950px, 100%);
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(17, 29, 49, 0.92);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    h1 {
+      margin: 0;
+      text-align: center;
+      letter-spacing: 0.05em;
+      font-size: clamp(1.6rem, 4vw, 2.5rem);
+    }
+
+    .subtitle {
+      margin: 8px 0 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      padding: 12px 8px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    #gameArea {
+      position: relative;
+      height: min(62vh, 560px);
+      min-height: 340px;
+      overflow: hidden;
+      border: 2px solid rgba(85, 242, 157, 0.55);
+      border-radius: 16px;
+      cursor: none;
+      touch-action: none;
+      user-select: none;
+      background-color: #09131f;
+      background-image:
+        linear-gradient(rgba(110, 169, 213, 0.11) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110, 169, 213, 0.11) 1px, transparent 1px),
+        radial-gradient(circle at center, rgba(29, 86, 119, 0.27), transparent 65%);
+      background-size: 40px 40px, 40px 40px, auto;
+    }
+
+    #target {
+      position: absolute;
+      display: none;
+      width: 72px;
+      aspect-ratio: 1;
+      border: 5px solid white;
+      border-radius: 50%;
+      cursor: pointer;
+      background:
+        radial-gradient(circle, var(--red) 0 16%, white 17% 26%, var(--red) 27% 45%, white 46% 55%, var(--red) 56%);
+      box-shadow:
+        0 0 0 2px rgba(0, 0, 0, 0.55),
+        0 0 22px rgba(255, 59, 77, 0.8);
+      animation: targetPulse 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes targetPulse {
+      from {
+        transform: scale(0.92);
+      }
+
+      to {
+        transform: scale(1.08);
+      }
+    }
+
+    #crosshair {
+      position: absolute;
+      z-index: 5;
+      display: none;
+      width: 44px;
+      height: 44px;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+    }
+
+    #crosshair::before,
+    #crosshair::after {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      content: "";
+      background: var(--green);
+      box-shadow: 0 0 7px rgba(85, 242, 157, 0.95);
+      transform: translate(-50%, -50%);
+    }
+
+    #crosshair::before {
+      width: 44px;
+      height: 2px;
+    }
+
+    #crosshair::after {
+      width: 2px;
+      height: 44px;
+    }
+
+    .crosshair-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 7px rgba(85, 242, 157, 0.95);
+      transform: translate(-50%, -50%);
+    }
+
+    .hit-marker {
+      position: absolute;
+      z-index: 4;
+      pointer-events: none;
+      color: var(--yellow);
+      font-size: 2.4rem;
+      font-weight: 900;
+      transform: translate(-50%, -50%);
+      animation: fadeOut 0.45s ease-out forwards;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+
+      to {
+        opacity: 0;
+        transform: translate(-50%, -70%) scale(1.3);
+      }
+    }
+
+    #message {
+      min-height: 28px;
+      margin: 14px 0;
+      text-align: center;
+      color: var(--yellow);
+      font-weight: bold;
+    }
+
+    #startButton {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #07150e;
+      background: var(--green);
+      box-shadow: 0 8px 22px rgba(85, 242, 157, 0.2);
+      font-size: 1rem;
+      font-weight: 800;
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+
+    #startButton:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 540px) {
+      .game-shell {
+        padding: 14px;
+      }
+
+      .hud {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      #gameArea {
+        min-height: 420px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="game-shell">
+    <h1>🎯 Crosshair Reflex</h1>
+    <p class="subtitle">Track the target. Click it before it vanishes.</p>
+
+    <section class="hud" aria-label="Game statistics">
+      <div class="stat">
+        <span class="stat-label">Score</span>
+        <span id="score" class="stat-value">0</span>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label">Time</span>
+        <span id="time" class="stat-value">30</span>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label">Accuracy</span>
+        <span id="accuracy" class="stat-value">100%</span>
+      </div>
+
+      <div class="stat">
+        <span class="stat-label">Best</span>
+        <span id="best" class="stat-value">0</span>
+      </div>
+    </section>
+
+    <div id="gameArea" aria-label="Target range">
+      <div id="target" aria-label="Target"></div>
+
+      <div id="crosshair" aria-hidden="true">
+        <div class="crosshair-ring"></div>
+      </div>
+    </div>
+
+    <p id="message">Press start, then hit as many targets as possible.</p>
+    <button id="startButton">Start game</button>
+  </main>
+
+  <script>
+    const gameArea = document.getElementById("gameArea");
+    const target = document.getElementById("target");
+    const crosshair = document.getElementById("crosshair");
+
+    const scoreDisplay = document.getElementById("score");
+    const timeDisplay = document.getElementById("time");
+    const accuracyDisplay = document.getElementById("accuracy");
+    const bestDisplay = document.getElementById("best");
+    const message = document.getElementById("message");
+    const startButton = document.getElementById("startButton");
+
+    let score = 0;
+    let shots = 0;
+    let hits = 0;
+    let timeLeft = 30;
+    let running = false;
+
+    let gameTimer;
+    let targetTimer;
+
+    let bestScore = Number(localStorage.getItem("crosshairBestScore")) || 0;
+    bestDisplay.textContent = bestScore;
+
+    function updateStats() {
+      scoreDisplay.textContent = score;
+      timeDisplay.textContent = timeLeft;
+
+      const accuracy = shots === 0 ? 100 : Math.round((hits / shots) * 100);
+      accuracyDisplay.textContent = `${accuracy}%`;
+    }
+
+    function moveCrosshair(event) {
+      const bounds = gameArea.getBoundingClientRect();
+      const x = event.clientX - bounds.left;
+      const y = event.clientY - bounds.top;
+
+      crosshair.style.left = `${x}px`;
+      crosshair.style.top = `${y}px`;
+      crosshair.style.display = "block";
+    }
+
+    function hideTarget() {
+      target.style.display = "none";
+      clearTimeout(targetTimer);
+    }
+
+    function targetLifetime() {
+      // The target remains visible for less time as score rises.
+      return Math.max(320, 1150 - score * 24);
+    }
+
+    function showTarget() {
+      if (!running) return;
+
+      hideTarget();
+
+      const targetSize = Math.max(34, 74 - score);
+      target.style.width = `${targetSize}px`;
+
+      const maxX = gameArea.clientWidth - targetSize;
+      const maxY = gameArea.clientHeight - targetSize;
+
+      const x = Math.random() * Math.max(1, maxX);
+      const y = Math.random() * Math.max(1, maxY);
+
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+      target.style.display = "block";
+
+      targetTimer = setTimeout(() => {
+        if (!running) return;
+
+        hideTarget();
+        message.textContent = "Missed! Find the next target.";
+        setTimeout(showTarget, 130);
+      }, targetLifetime());
+    }
+
+    function createHitMarker(clientX, clientY) {
+      const bounds = gameArea.getBoundingClientRect();
+      const marker = document.createElement("div");
+
+      marker.className = "hit-marker";
+      marker.textContent = "+1";
+      marker.style.left = `${clientX - bounds.left}px`;
+      marker.style.top = `${clientY - bounds.top}px`;
+
+      gameArea.appendChild(marker);
+
+      setTimeout(() => marker.remove(), 450);
+    }
+
+    function startGame() {
+      score = 0;
+      shots = 0;
+      hits = 0;
+      timeLeft = 30;
+      running = true;
+
+      updateStats();
+
+      message.textContent = "Go!";
+      startButton.textContent = "Game in progress";
+      crosshair.style.display = "block";
+
+      clearInterval(gameTimer);
+      clearTimeout(targetTimer);
+
+      showTarget();
+
+      gameTimer = setInterval(() => {
+        timeLeft--;
+        updateStats();
+
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      running = false;
+
+      clearInterval(gameTimer);
+      clearTimeout(targetTimer);
+
+      hideTarget();
+      crosshair.style.display = "none";
+      startButton.textContent = "Play again";
+
+      const accuracy = shots === 0 ? 0 : Math.round((hits / shots) * 100);
+
+      if (score > bestScore) {
+        bestScore = score;
+        localStorage.setItem("crosshairBestScore", bestScore);
+        bestDisplay.textContent = bestScore;
+        message.textContent = `New high score: ${score} points at ${accuracy}% accuracy!`;
+      } else {
+        message.textContent = `Time's up! Score: ${score} — Accuracy: ${accuracy}%.`;
+      }
+    }
+
+    gameArea.addEventListener("pointermove", moveCrosshair);
+
+    gameArea.addEventListener("pointerleave", () => {
+      if (running) {
+        crosshair.style.display = "none";
+      }
+    });
+
+    gameArea.addEventListener("pointerenter", () => {
+      if (running) {
+        crosshair.style.display = "block";
+      }
+    });
+
+    gameArea.addEventListener("pointerdown", (event) => {
+      if (!running) return;
+
+      shots++;
+      updateStats();
+
+      // A shot that lands on the game area but not the target counts as a miss.
+      if (event.target !== target) {
+        message.textContent = "Miss!";
+      }
+    });
+
+    target.addEventListener("pointerdown", (event) => {
+      if (!running) return;
+
+      event.stopPropagation();
+
+      shots++;
+      hits++;
+      score++;
+
+      updateStats();
+      createHitMarker(event.clientX, event.clientY);
+
+      message.textContent = `Direct hit! ${score} point${score === 1 ? "" : "s"}.`;
+
+      showTarget();
+    });
+
+    startButton.addEventListener("click", () => {
+      if (!running) {
+        startGame();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      if (running) {
+        showTarget();
+      }
+    });
+  </script>
+</body>
+</html>
