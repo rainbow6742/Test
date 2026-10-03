@@ -27,7 +27,6 @@ const c=document.getElementById('c'),ctx=c.getContext('2d'),authDiv=document.get
 let px=0,py=0,score=0,currentUsr='',keys={},targets=[],bullets=[],hue=0,ai={x:100,y:-100,s:0,cd:0},isLoginMode=true;
 let playerColor='#0fcc', unlockedColors=['#0fcc'];
 
-// All non-zero shop prices multiplied by 4
 const shopInventory=[
     {name:'Cyan Core',color:'#0fcc',cost:0},
     {name:'Lime Laser',color:'#0f0',cost:200},
@@ -52,9 +51,7 @@ function submitAuth(){
     if(isLoginMode){
         if(!st){err.textContent="Account does not exist!";return;}
         let user=JSON.parse(st);if(user.pwd !== p){err.textContent="Wrong password!";return;}
-        score=user.hi||0;
-        playerColor=user.col||'#0fcc';
-        unlockedColors=user.owns||['#0fcc'];
+        score=user.hi||0;playerColor=user.col||'#0fcc';unlockedColors=user.owns||['#0fcc'];
     }else{
         if(st){err.textContent="Username already taken!";return;}
         localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',owns:['#0fcc']}));
@@ -68,7 +65,6 @@ function renderShop(){
     shopInventory.forEach(item=>{
         let btn=document.createElement('button');
         btn.style.width='100%';btn.style.padding='6px';btn.style.border='none';btn.style.borderRadius='4px';btn.style.cursor='pointer';btn.style.fontWeight='bold';
-        
         if(playerColor===item.color){
             btn.textContent=`${item.name} (Equipped)`;btn.style.background=item.color;btn.style.color='#111';
         }else if(unlockedColors.includes(item.color)){
@@ -87,12 +83,7 @@ function renderShop(){
 
 function toggleM(){
     if(menuDiv.style.display==='block'){menuDiv.style.display='none';c.requestPointerLock();}
-    else{
-        document.exitPointerLock();
-        document.getElementById('m-hi').textContent=`Points Available: ${score}`;
-        renderShop();
-        menuDiv.style.display='block';
-    }
+    else{document.exitPointerLock();document.getElementById('m-hi').textContent=`Points Available: ${score}`;renderShop();menuDiv.style.display='block';}
 }
 function signOut(){
     currentUsr='';menuDiv.style.display='none';c.style.display='none';authDiv.style.display='block';
@@ -119,9 +110,7 @@ setInterval(()=>{
 
 function saveProgress() {
     let user = JSON.parse(localStorage.getItem('g_'+currentUsr)) || {};
-    user.hi = Math.max(user.hi||0, score);
-    user.col = playerColor;
-    user.owns = unlockedColors;
+    user.hi = Math.max(user.hi||0, score);user.col = playerColor;user.owns = unlockedColors;
     localStorage.setItem('g_'+currentUsr, JSON.stringify(user));
 }
 
@@ -145,12 +134,21 @@ function loop(){
 
         targets.forEach((t,ti)=>{
             let sx=t.x-px,sy=t.y-py,dp=Math.hypot(sx-cx,sy-cy),da=Math.hypot(sx-(ai.x-px),sy-(ai.y-py));
-            if(dp<20||(aiOn.checked&&da<20)){targets.splice(ti,1);return;}
+            let pts=t.t==='r'?100:10;
+
+            // Player walks into target -> Earn points!
+            if(dp<20){
+                targets.splice(ti,1);score+=pts;saveProgress();return;
+            }
+            // AI walks into target -> AI earns points!
+            if(aiOn.checked&&da<20){
+                targets.splice(ti,1);ai.s+=pts;return;
+            }
 
             ctx.fillStyle=t.t==='r'?`hsl(${hue},100%,60%)` : '#f55';ctx.beginPath();ctx.arc(sx,sy,t.t==='r'?22:15,0,7);ctx.fill();
             bullets.forEach((b,bi)=>{
                 if(Math.hypot(sx-b.x,sy-b.y)<(b.r+(t.t==='r'?22:15))){
-                    targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);let pts=t.t==='r'?100:10;
+                    targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);
                     if(b.o==='p'){score+=pts;saveProgress();}else{ai.s+=pts;}
                 }
             });
