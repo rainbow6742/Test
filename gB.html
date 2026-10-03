@@ -44,6 +44,7 @@
             easy: ["code", "data", "web", "link", "user", "file", "byte", "key", "text", "page", "app", "site", "test", "save", "loop"],
             hard: ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "framework"]
         };
+        
         const \$ = id => document.getElementById(id);
         let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval, mode = '', user = null;
 
@@ -83,7 +84,7 @@
 
         function initRound() {
             clearInterval(interval); active = false; idx = 0; correct = 0; timeLeft = targetTime;
-            ('t').innerText = timeLeft; ('tg').innerText = targetTime; \(('md').innerText = mode.toUpperCase();\)('w').innerText = "0"; ('msg').innerText = ""; ('nxt').disabled = true; ('in').disabled = false; ('in').value = '';
+            ('t').innerText = timeLeft; ('tg').innerText = targetTime; ('md').innerText = mode.toUpperCase(); ('w').innerText = "0"; ('msg').innerText = ""; ('nxt').disabled = true; ('in').disabled = false; ('in').value = '';
             
             let words = [...banks[mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
             \$('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
