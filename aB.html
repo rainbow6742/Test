@@ -1,93 +1,97 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>MicroCraft</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #78a7ff; font-family: sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-        #x { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); border: 2px solid white; mix-blend-mode: difference; pointer-events: none; }
-        #u { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px #000; pointer-events: none; }
-    </style>
-</head>
-<body>
-    <div id="u">Click to play | WASD + Mouse | L-Click: Break, R-Click: Place</div>
-    <div id="x"></div>
-    <canvas id="c"></canvas>
+<!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#111;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
+<div id="auth" style="background:#222;padding:20px;border-radius:8px;text-align:center;width:260px;position:absolute;z-index:20;">
+    <h3 id="at">Log In</h3>
+    <input id="usr" placeholder="User" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
+    <input id="pwd" type="password" placeholder="Pass (4+)" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
+    <button onclick="auth()" style="width:95%;margin:4px;padding:6px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;">Enter</button>
+    <div style="margin-top:10px;font-size:12px;"><a id="sl" href="#" onclick="isL=!isL;document.getElementById('at').textContent=isL?'Log In':'Sign Up';document.getElementById('sl').textContent=isL?'Need an account? Sign Up':'Have an account? Log In';err.textContent='';" style="color:#0fcc;text-decoration:none;">Need an account? Sign Up</a></div>
+    <p id="err" style="color:#f55;font-size:11px;margin:4px 0 0 0;"></p>
+</div>
+<div id="menu" style="display:none;background:rgba(34,34,34,0.95);padding:15px;border-radius:8px;text-align:center;position:absolute;z-index:10;width:290px;max-height:90vh;overflow-y:auto;">
+    <p id="m-hi" style="color:#0fcc;margin:0;"></p>
+    <label><input type="checkbox" id="ai-on" checked> Enable AI Bot</label>
+    <div style="display:flex;gap:5px;margin-top:8px;"><button onclick="tab('sh')" style="flex:1;">Shop</button><button onclick="tab('iv')" style="flex:1;">Inv</button></div>
+    <div id="sh-t"><h4>Shop</h4><div id="sh"></div><h4>Boosts</h4><div id="bo"></div></div>
+    <div id="iv-t" style="display:none;"><h4>Inventory</h4><div id="inv"></div></div><br>
+    <button onclick="toggleM()" style="width:100%;padding:6px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;">Resume</button>
+    <button onclick="location.reload()" style="width:100%;padding:6px;background:#f55;border:none;color:#fff;margin-top:4px;">Sign Out</button>
+</div>
+<canvas id="c" style="display:none;position:absolute;top:0;left:0;"></canvas>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),authDiv=document.getElementById('auth'),menuDiv=document.getElementById('menu'),err=document.getElementById('err'),aiOn=document.getElementById('ai-on'),shDiv=document.getElementById('sh'),boDiv=document.getElementById('bo'),invDiv=document.getElementById('inv');
+let px=0,py=0,score=0,currentUsr='',keys={},targets=[],bullets=[],hue=0,ai={x:100,y:-100,s:0,cd:0},isL=true,pCol='#0fcc',owns=['#0fcc','none'],bg='none',stars=[],mult=1,mTimer=0,jY=0,jVy=0,isJ=false;
+const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
+for(let i=0;i<100;i++)stars.push({x:(Math.random()-0.5)*3000,y:(Math.random()-0.5)*3000,r:Math.random()*2});
+const items=[{n:'Cyan',t:'col',id:'#0fcc',c:0},{n:'Lime',t:'col',id:'#0f0',c:200},{n:'Purple',t:'col',id:'#b0f',c:400},{n:'Pink',t:'col',id:'#f0f',c:800},{n:'Dark BG',t:'bg',id:'none',c:0},{n:'Space BG',t:'bg',id:'space',c:2000}];
 
-    <script>
-        const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
-        let w = canvas.width = window.innerWidth, h = canvas.height = window.innerHeight;
-        window.onresize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-
-        const M = 16, H = 4, g = new Uint8Array(M * M * H);
-        const getB = (x,y,z) => (x<0||x>=M||y<0||y>=M||z<0||z>=H) ? 0 : g[x + y*M + z*M*M];
-        const setB = (x,y,z,v) => { if(x>=0&&x<M&&y>=0&&y<M&&z>=0&&z<H) g[x + y*M + z*M*M] = v; };
-
-        // Generate flat world with a center wall
-        for(let x=0; x<M; x++) for(let y=0; y<M; y++) { setB(x, y, 0, 1); if(x===8 && y>4 && y<12) setB(x, y, 1, 2); }
-
-        let px = 4.5, py = 4.5, pz = 1.5, rx = 0, ry = 0, keys = {};
-        canvas.onclick = () => canvas.requestPointerLock();
-        document.onmousemove = (e) => { if (document.pointerLockElement===canvas) { rx -= e.movementX*0.004; ry = Math.max(-1.4, Math.min(1.4, ry - e.movementY*0.004)); } };
-        window.onkeydown = (e) => keys[e.key.toLowerCase()] = true;
-        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
-
-        function cast() {
-            let dx = -Math.sin(rx)*Math.cos(ry), dy = Math.cos(rx)*Math.cos(ry), dz = Math.sin(ry);
-            let cx = Math.floor(px), cy = Math.floor(py), cz = Math.floor(pz);
-            let sx = Math.sign(dx), sy = Math.sign(dy), sz = Math.sign(dz);
-            let tx = sx > 0 ? (cx + 1 - px) / dx : (px - cx) / dx, ty = sy > 0 ? (cy + 1 - py) / dy : (py - cy) / dy, tz = sz > 0 ? (cz + 1 - pz) / dz : (pz - cz) / dz;
-            let ddx = Math.abs(1/dx), ddy = Math.abs(1/dy), ddz = Math.abs(1/dz), f = 0;
-            for (let i = 0; i < 20; i++) {
-                if (getB(cx, cy, cz) > 0) return { h: 1, x: cx, y: cy, z: cz, px: cx-(f===0?sx:0), py: cy-(f===1?sy:0), pz: cz-(f===2?sz:0) };
-                if (tx < ty && tx < tz) { cx += sx; tx += ddx; f = 0; } else if (ty < tz) { cy += sy; ty += ddy; f = 1; } else { cz += sz; tz += ddz; f = 2; }
-            }
-            return { h: 0 };
+function tab(t){document.getElementById('sh-t').style.display=t==='sh'?'block':'none';document.getElementById('iv-t').style.display=t==='iv'?'block':'none';if(t==='iv')renderI();}
+function auth(){
+    let u=document.getElementById('usr').value.trim(),p=document.getElementById('pwd').value,st=localStorage.getItem('g_'+u);
+    if(!u||p.length<4){err.textContent="4+ chars!";return;}
+    if(isL){if(!st){err.textContent="No account!";return;}let user=JSON.parse(st);if(user.pwd!==p){err.textContent="Wrong pass!";return;}score=user.hi||0;pCol=user.col||'#0fcc';bg=user.bg||'none';owns=user.owns||['#0fcc','none'];}
+    else{if(st){err.textContent="Taken!";return;}localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',bg:'none',owns:['#0fcc','none']}));score=0;pCol='#0fcc';bg='none';owns=['#0fcc','none'];}
+    currentUsr=u;authDiv.style.display='none';c.style.display='block';toggleM();
+}
+function renderS(){
+    shDiv.innerHTML='';boDiv.innerHTML='';
+    items.forEach(item=>{
+        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:4px;font-weight:bold;cursor:pointer;";
+        let eq=(item.t=='col'&&pCol==item.id)||(item.t=='bg'&&bg==item.id);
+        if(eq)btn.textContent=`${item.n} (Eq)`;
+        else if(owns.includes(item.id)){btn.textContent=`Owned - Equip`;btn.onclick=()=>{if(item.t=='col')pCol=item.id;else bg=item.id;save();renderS();};}
+        else{btn.textContent=`Buy ${item.n} (${item.c}pt)`;btn.disabled=score<item.c;btn.onclick=()=>{score-=item.c;owns.push(item.id);if(item.t=='col')pCol=item.id;else bg=item.id;save();renderS();};}
+        shDiv.appendChild(btn);
+    });
+    [{n:'2x (1m)',m:2,d:60,c:150},{n:'2x (2m)',m:2,d:120,c:300},{n:'5x (1m)',m:5,d:60,c:500},{n:'5x (2m)',m:5,d:120,c:1000}].forEach(b=>{
+        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:4px;font-weight:bold;cursor:pointer;";btn.textContent=`${b.n} (${b.c}pt)`;btn.disabled=score<b.c;
+        btn.onclick=()=>{score-=b.c;mult=b.m;mTimer=b.d*60;save();toggleM();};boDiv.appendChild(btn);
+    });
+}
+function renderI(){
+    invDiv.innerHTML='';
+    items.forEach(item=>{
+        if(owns.includes(item.id)){
+            let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:4px;cursor:pointer;";
+            let eq=(item.t=='col'&&pCol==item.id)||(item.t=='bg'&&bg==item.id);btn.textContent=eq?`${item.n} [Active]`:`Equip ${item.n}`;
+            btn.onclick=()=>{if(item.t=='col')pCol=item.id;else bg=item.id;save();renderI();};invDiv.appendChild(btn);
         }
+    });
+}
+function toggleM(){if(menuDiv.style.display==='block'){menuDiv.style.display='none';c.requestPointerLock();}else{document.exitPointerLock();document.getElementById('m-hi').textContent=`Points: ${score}`;tab('sh');renderS();menuDiv.style.display='block';}}
+function save(){let u=JSON.parse(localStorage.getItem('g_'+currentUsr))||{};u.hi=Math.max(u.hi||0,score);u.col=pCol;u.bg=bg;u.owns=owns;localStorage.setItem('g_'+currentUsr,JSON.stringify(u));}
+document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==c&&currentUsr&&menuDiv.style.display==='none')toggleM();});
+window.onclick=()=>{if(currentUsr&&menuDiv.style.display==='none')c.requestPointerLock();};
+document.onmousemove=(e)=>{if(document.pointerLockElement===c){px+=e.movementX;py+=e.movementY;}};
+document.onkeydown=(e)=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&currentUsr)toggleM();if(e.key===' '&&!isJ&&currentUsr&&menuDiv.style.display==='none'){isJ=true;jVy=-12;}};
+document.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
+window.onkeypress=(e)=>{if(!currentUsr||document.pointerLockElement!==c)return;if(e.key.toLowerCase()==='e')bullets.push({x:c.width/2,y:c.height/2-jY,r:60,life:5,o:'p'});};
+window.onmousedown=()=>{if(currentUsr&&document.pointerLockElement===c)bullets.push({x:c.width/2,y:c.height/2-jY,r:6,vy:-8,o:'p'});};
 
-        window.onmousedown = (e) => {
-            if (document.pointerLockElement !== canvas) return;
-            let r = cast();
-            if (r.h) { if (e.button === 0) setB(r.x, r.y, r.z, 0); if (e.button === 2) setB(r.px, r.py, r.pz, 1); }
-        };
-        canvas.oncontextmenu = (e) => e.preventDefault();
+setInterval(()=>{if(!currentUsr||menuDiv.style.display==='block')return;targets.push({x:px+c.width/2+(Math.random()-0.5)*1000,y:py+c.height/2+(Math.random()-0.5)*1000,t:'n'});if(Math.random()<0.01)targets.push({x:px+c.width/2+(Math.random()-0.5)*600,y:py+c.height/2+(Math.random()-0.5)*600,t:'r'});},1000);
 
-        const colors = [null, '#557a2b', '#808080'];
-
-        function loop() {
-            if (keys.w) { px -= Math.sin(rx)*0.05; py += Math.cos(rx)*0.05; }
-            if (keys.s) { px += Math.sin(rx)*0.05; py -= Math.cos(rx)*0.05; }
-            if (keys.a) { px -= Math.cos(rx)*0.05; py -= Math.sin(rx)*0.05; }
-            if (keys.d) { px += Math.cos(rx)*0.05; py += Math.sin(rx)*0.05; }
-
-            ctx.fillStyle = '#78a7ff'; ctx.fillRect(0, 0, w, h);
-            let ray = cast();
-
-            for (let sx = 0; sx < w; sx += 4) {
-                let ax = rx + ((sx - w/2) / (w/2)) * 0.8;
-                let dx = -Math.sin(ax)*Math.cos(ry), dy = Math.cos(ax)*Math.cos(ry), dz = Math.sin(ry);
-                let cx = Math.floor(px), cy = Math.floor(py), cz = Math.floor(pz);
-                let stepX = Math.sign(dx), stepY = Math.sign(dy), stepZ = Math.sign(dz);
-                let tx = stepX > 0 ? (cx + 1 - px) / dx : (px - cx) / dx, ty = stepY > 0 ? (cy + 1 - py) / dy : (py - cy) / dy, tz = stepZ > 0 ? (cz + 1 - pz) / dz : (pz - cz) / dz;
-                let ddx = Math.abs(1/dx), ddy = Math.abs(1/dy), ddz = Math.abs(1/dz), f = 0, bid = 0, d = 0;
-
-                for (let i = 0; i < 30; i++) {
-                    bid = getB(cx, cy, cz);
-                    if (bid > 0) { d = (f===0)?tx-ddx:(f===1)?ty-ddy:tz-ddz; break; }
-                    if (tx < ty && tx < tz) { cx += stepX; tx += ddx; f = 0; } else if (ty < tz) { cy += stepY; ty += ddy; f = 1; } else { cz += stepZ; tz += ddz; f = 2; }
-                }
-
-                if (bid > 0 && d > 0) {
-                    let bh = Math.floor(h / (d * Math.cos(((sx - w/2) / (w/2)) * 0.8)));
-                    let yTop = h/2 - bh/2 + (ry * h/2);
-                    ctx.fillStyle = colors[bid];
-                    ctx.fillRect(sx, yTop, 4, bh);
-                    if (ray.h && cx === ray.x && cy === ray.y && cz === ray.z) { ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(sx, yTop, 4, bh); }
-                }
-            }
-            requestAnimationFrame(loop);
+function loop(){
+    if(currentUsr&&menuDiv.style.display==='none'){
+        ctx.fillStyle='rgba(17,17,17,0.3)';ctx.fillRect(0,0,c.width,c.height);hue=(hue+2)%360;let cx=c.width/2,cy=c.height/2;if(mTimer>0&&--mTimer<=0)mult=1;
+        if(isJ){jY-=jVy;jVy+=0.6;if(jY<=0){jY=0;isJ=false;}}
+        if(keys.w)py-=5;if(keys.s)py+=5;if(keys.a)px-=5;if(keys.d)px+=5;
+        if(bg=='space'){ctx.fillStyle='#fff';stars.forEach(s=>{let sx=((s.x-px)%3000+3000)%3000-1500+cx,sy=((s.y-py)%3000+3000)%3000-1500+cy;if(Math.hypot(sx-cx,sy-cy)<350){ctx.beginPath();ctx.arc(sx,sy,s.r,0,7);ctx.fill();}});}
+        if(aiOn.checked&&targets.length>0){
+            let close=targets.reduce((a,b)=>Math.hypot(a.x-ai.x,a.y-ai.y)<Math.hypot(b.x-ai.x,b.y-ai.y)?a:b),ang=Math.atan2(close.y-ai.y,close.x-ai.x);ai.x+=Math.cos(ang)*3.5;ai.y+=Math.sin(ang)*3.5;
+            if(ai.cd--<=0){bullets.push({x:ai.x-px,y:ai.y-py,r:6,vy:-8,o:'a'});ai.cd=20;}
+            if(Math.hypot(ai.x-px-cx,ai.y-py-cy)<350){ctx.fillStyle='#fa0';ctx.beginPath();ctx.arc(ai.x-px,ai.y-py,10,0,7);ctx.fill();}
         }
-        loop();
-    </script>
-</body>
-</html>
+        bullets.forEach((b,bi)=>{b.y+=b.vy||0;if(b.life)b.life--;if(Math.hypot(b.x-cx,b.y-cy)<350){ctx.fillStyle=b.o==='a'?'#fa0':(b.life?'rgba(0,255,200,0.4)':pCol);ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,7);ctx.fill();}if(b.y<0||b.life===0)bullets.splice(bi,1);});
+        targets.forEach((t,ti)=>{
+            let sx=t.x-px,sy=t.y-py,dp=Math.hypot(sx-cx,sy-(cy-jY)),da=Math.hypot(sx-(ai.x-px),sy-(ai.y-py)),pts=t.t==='r'?100:10;
+            if(dp<22){targets.splice(ti,1);score+=pts*mult;save();return;}if(aiOn.checked&&da<22){targets.splice(ti,1);ai.s+=pts;return;}
+            if(Math.hypot(sx-cx,sy-cy)<350){ctx.fillStyle=t.t==='r'?`hsl(${hue},100%,60%)` : '#f55';ctx.beginPath();ctx.arc(sx,sy,t.t==='r'?22:15,0,7);ctx.fill();bullets.forEach((b,bi)=>{if(Math.hypot(sx-b.x,sy-b.y)<(b.r+(t.t==='r'?22:15))){targets.splice(ti,1);if(!b.life)bullets.splice(bi,1);if(b.o==='p'){score+=pts*mult;save();}else ai.s+=pts;}});}
+        });
+        if(isJ){ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.arc(cx,cy,10,0,7);ctx.fill();}
+        ctx.fillStyle=pCol;ctx.beginPath();ctx.arc(cx,cy-jY,12+(jY*0.1),0,7);ctx.fill();
+        ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,350,0,7);ctx.stroke();
+        ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText(`You: ${score}`,20,40);if(aiOn.checked){ctx.fillStyle='#fa0';ctx.fillText(`AI: ${ai.s}`,20,65);}
+if(mult>1){ctx.fillStyle='#fa0';ctx.font='bold 16px sans-serif';ctx.fillText(${mult}x Boost: ${Math.ceil(mTimer/60)}s,20,c.height-20);}
+}
+requestAnimationFrame(loop);
+}
+loop();
