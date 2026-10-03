@@ -1,161 +1,64 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Type Campaign</title>
-    <style>
-        :root { --bg: #1e1e2e; --pnl: #252538; --txt: #cdd6f4; --sub: #6c7086; --acc: #cba6f7; }
-        .light { --bg: #eff1f5; --pnl: #e6e9ef; --txt: #4c4f69; --sub: #9ca0b0; --acc: #8839ef; }
-        body { font-family: monospace; background: var(--bg); color: var(--txt); text-align: center; padding-top: 15px; }
-        #bar, #menu, #box, #stats, #set { background: var(--pnl); padding: 15px; border-radius: 8px; max-width: 600px; margin: 10px auto; }
-        #game, #stats, #set { display: none; }
-        #box { font-size: 1.4rem; text-align: left; min-height: 80px; background: var(--bg); padding: 15px; border-radius: 4px; }
-        .ch { cursor: crosshair !important; }
-        .letter { color: var(--sub); } .correct { color: #a6e3a1; } .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); } .current { border-left: 2px solid var(--acc); color: var(--txt); }
-        input { background: var(--bg); border: 1px solid var(--sub); color: var(--txt); padding: 5px; margin: 2px; }
-        #in { position: absolute; opacity: 0; pointer-events: none; }
-        button { background: var(--acc); color: var(--bg); border: none; padding: 8px 16px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; }
-    </style>
-</head>
-<body>
+<body style="margin:0; overflow:hidden; background:#111;">
+<canvas id="c"></canvas>
+<script>
+const c = document.getElementById('c'), ctx = c.getContext('2d');
+let px = 0, py = 0, score = 0, keys = {}, targets = [], bullets = [];
+const resize = () => { c.width = window.innerWidth; c.height = window.innerHeight; };
+window.onresize = resize; resize();
 
-    <div id="bar">
-        <span id="u-stat">👤 Guest</span> <button id="l-btn" style="display:none; background:#f38ba8; color:#fff;" onclick="logout()">Logout</button> | 
-        <button onclick="togSet(true)" style="background:#f9e2af; color:#1e1e2e;">⚙️ Settings</button> |
-        <span id="auth">
-            <input type="text" id="u" placeholder="User" size="8"> <input type="password" id="p" placeholder="Code (5+)" size="8">
-            <button onclick="handleAuth(true)" style="background:#89b4fa">Sign Up</button> <button onclick="handleAuth(false)" style="background:#a6e3a1">Login</button>
-        </span>
-    </div>
+// Pointer Lock for Center Crosshair
+window.onclick = () => c.requestPointerLock();
+document.onmousemove = (e) => { if (document.pointerLockElement === c) { px += e.movementX; py += e.movementY; } };
+document.onkeydown = (e) => { keys[e.key.toLowerCase()] = true; };
+document.onkeyup = (e) => { keys[e.key.toLowerCase()] = false; };
 
-    <div id="set">
-        <h2>⚙️ Settings</h2>
-        <button onclick="document.body.classList.remove('light')">🌙 Dark</button> <button onclick="document.body.classList.add('light')">☀️ Light</button>
-        <button onclick="document.getElementById('box').classList.toggle('ch')">🎯 Crosshair</button>
-        <h3>📈 Lifetime Stats</h3>
-        <p>Avg WPM: <b id="a-wpm">0</b> | Avg Acc: <b id="a-acc">0%</b></p>
-        <button onclick="togSet(false)">Close</button>
-    </div>
-
-    <div id="menu">
-        <h2>Select Mode (Starts at 120s)</h2>
-        <button onclick="start('easy')" style="background:#a6e3a1">🟢 Easy</button> <button onclick="start('hard')" style="background:#f38ba8; color:#fff">🔴 Hard</button>
-    </div>
-
-    <div id="game">
-        <div id="cam-disp" style="color:#f9e2af; font-weight:bold;"></div>
-        <h3>Target: <span id="tg">120</span>s (<span id="md"></span>) | Time: <span id="t">120</span>s | WPM: <span id="w">0</span></h3>
-        <input type="text" id="in" autocomplete="off">
-        <div id="box" onclick="document.getElementById('in').focus()"></div>
-        <button onclick="exitMenu()">Exit</button>
-    </div>
-
-    <div id="stats">
-        <h2 id="res-title">📊 DASHBOARD</h2>
-        <p id="res-info" style="color:#f9e2af; font-weight:bold;"></p>
-        <p>WPM: <b id="res-wpm">0</b> | Accuracy: <b id="res-acc">0%</b></p>
-        <button id="nxt" onclick="initRound()" style="background:#a6e3a1;">Next Level</button> <button onclick="exitMenu()">Menu</button>
-    </div>
-
-    <script>
-        const mods = [
-            { name: "Tech", easy: ["code", "data", "web", "link", "user", "file", "byte", "key", "text", "page"], hard: ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "framework"] },
-            { name: "Toys and Fun", easy: ["ball", "doll", "game", "kite", "yo-yo", "bear", "lego", "clay", "car", "ship"], hard: ["trampoline", "skateboard", "videogame", "miniatures", "racecourse", "marbles", "puzzlebox", "actionfigure", "boardgames", "playhouse"] },
-            { name: "On a Trip", easy: ["bus", "bag", "map", "car", "train", "camp", "tent", "park", "sea", "road"], hard: ["destination", "locomotive", "navigation", "exploration", "passengers", "itinerary", "backpacking", "sightseeing", "expedition", "adventures"] }
-        ];
-        let idx = 0, correct = 0, typed = 0, targetTime = 120, timeLeft = 120, active = false, interval, mode = '', user = null, mIdx = 0, lvl = 1, totalG = 0, sumW = 0, sumA = 0;
-
-        function handleAuth(isSignUp) {
-            let name = document.getElementById('u').value.trim().toLowerCase(), pass = document.getElementById('p').value;
-            if (!name || pass.length <= 4) return alert("Requires username & code > 4 characters!");
-            let data = localStorage.getItem('typer_' + name);
-            if (isSignUp) {
-                if (data) return alert("Taken!");
-                localStorage.setItem('typer_' + name, JSON.stringify({ pass: pass, mode: 'easy', time: 120, mIdx: 0, lvl: 1, totalG: 0, sumW: 0, sumA: 0 }));
-                alert("Saved! Click Login.");
-            } else {
-                if (!data) return alert("No user found!");
-                let p = JSON.parse(data); if (p.pass !== pass) return alert("Wrong code!");
-                user = name; mode = p.mode; targetTime = p.time; mIdx = p.mIdx || 0; lvl = p.lvl || 1; totalG = p.totalG || 0; sumW = p.sumW || 0; sumA = p.sumA || 0;
-                document.getElementById('u-stat').innerText = "👤 " + user.toUpperCase();
-                document.getElementById('auth').style.display = 'none';
-                document.getElementById('l-btn').style.display = 'inline-block';
-                updSet(); document.getElementById('menu').style.display = 'none'; initRound();
-            }
-            document.getElementById('p').value = '';
-        }
-
-        function logout() {
-            clearInterval(interval); user = null; mode = ''; targetTime = 120; mIdx = 0; lvl = 1; totalG = 0; sumW = 0; sumA = 0;
-            document.getElementById('u-stat').innerText = "👤 Guest"; document.getElementById('auth').style.display = 'inline-block'; document.getElementById('l-btn').style.display = 'none';
-            document.getElementById('u').value = ''; document.getElementById('p').value = ''; updSet(); exitMenu();
-        }
-
-        function togSet(show) {
-            document.getElementById('set').style.display = show ? 'block' : 'none';
-            if (!show) { document.getElementById(mode ? 'game' : 'menu').style.display = 'block'; }
-            else { document.getElementById('game').style.display = 'none'; document.getElementById('menu').style.display = 'none'; document.getElementById('stats').style.display = 'none'; }
-        }
-
-        function updSet() {
-            document.getElementById('a-wpm').innerText = totalG > 0 ? Math.round(sumW / totalG) : 0;
-            document.getElementById('a-acc').innerText = (totalG > 0 ? Math.round(sumA / totalG) : 0) + "%";
-        }
-
-        function exitMenu() { clearInterval(interval); mode = ''; document.getElementById('game').style.display = 'none'; document.getElementById('stats').style.display = 'none'; document.getElementById('menu').style.display = 'block'; }
-        function start(m) { mode = m; targetTime = 120; mIdx = 0; lvl = 1; document.getElementById('menu').style.display = 'none'; initRound(); }
-        function save() { if (user) localStorage.setItem('typer_' + user, JSON.stringify({ pass: JSON.parse(localStorage.getItem('typer_' + user)).pass, mode: mode, time: targetTime, mIdx: mIdx, lvl: lvl, totalG: totalG, sumW: sumW, sumA: sumA })); }
-
-        function initRound() {
-            clearInterval(interval); active = false; idx = 0; correct = 0; typed = 0; timeLeft = targetTime;
-            if (mIdx >= mods.length) { exitMenu(); alert("🎉 Campaign Complete!"); logout(); return; }
-            document.getElementById('stats').style.display = 'none'; document.getElementById('game').style.display = 'block';
-            document.getElementById('cam-disp').innerText = `Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10`;
-            document.getElementById('t').innerText = timeLeft; document.getElementById('tg').innerText = targetTime; document.getElementById('md').innerText = mode.toUpperCase(); document.getElementById('w').innerText = "0";
-            let words = [...mods[mIdx][mode]].sort(() => Math.random() - 0.5).slice(0, 10).join(' ');
-            document.getElementById('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
-            
-            let elements = document.getElementById('box').children;
-            if (elements.length > 0) {
-                elements[0].classList.add('current');
-            }
-            document.getElementById('in').disabled = false; document.getElementById('in').value = ''; document.getElementById('in').focus();
-        }
-
-        function showSummary(isSuccess) {
-            clearInterval(interval); document.getElementById('game').style.display = 'none'; document.getElementById('stats').style.display = 'block';
-            document.getElementById('res-info').innerText = `Module ${mIdx + 1}: ${mods[mIdx].name} | Level ${lvl}/10`;
-            let wpmVal = parseInt(document.getElementById('w').innerText, 10), accVal = typed > 0 ? Math.round((correct / typed) * 100) : 0;
-            document.getElementById('res-wpm').innerText = wpmVal; document.getElementById('res-acc').innerText = accVal + "%";
-            if (user) { totalG++; sumW += wpmVal; sumA += accVal; updSet(); }
-            let title = document.getElementById('res-title'), nxt = document.getElementById('nxt');
-            if (isSuccess) {
-                title.innerText = "🎉 CLEARED!"; title.style.color = "#a6e3a1"; nxt.innerText = "Next Level (-10s)";
-                lvl++; if (lvl > 10) { lvl = 1; mIdx++; }
-                targetTime = Math.max(10, targetTime - 10);
-            } else {
-title.innerText = "❌ FAILED!"; title.style.color = "#f38ba8"; nxt.innerText = "Retry Level (+10s)";
-targetTime += 10;
-}
-save();
-}
-document.getElementById('in').oninput = (e) => {
-let spans = document.getElementById('box').children;
-if (!active && timeLeft === targetTime) {
-active = true;
-interval = setInterval(() => {
-if (--timeLeft <= 0) showSummary(false);
-else { document.getElementById('t').innerText = timeLeft; document.getElementById('w').innerText = Math.round((correct / 5) / ((targetTime - timeLeft) / 60)) || 0; }
-}, 1000);
-}
-if (timeLeft <= 0 || idx >= spans.length) return;
-spans[idx].classList.remove('current');
-if (e.inputType === 'deleteContentBackward') {
-if (idx > 0) { idx--; spans[idx].className = 'letter current'; if (spans[idx].classList.contains('correct')) correct--; }
-} else {
-let char = document.getElementById('in').value.slice(-1); if (!char) return;
-typed++;
-if (char === spans[idx].innerText) { spans[idx].classList.add('correct'); correct++; } else spans[idx].classList.add('incorrect');
-idx++; if (idx >= spans.length) showSummary(true); else spans[idx].classList.add('current');
-}
-document.getElementById('in').value = '';
+// Actions: Space (Dash) & E (Shield Flare)
+window.onkeypress = (e) => {
+    if (e.key === ' ') { px += (keys.d?2:keys.a?-2:0)*50; py += (keys.s?2:keys.w?-2:0)*50; }
+    if (e.key.toLowerCase() === 'e') { bullets.push({x:c.width/2, y:c.height/2, r:60, life:5}); } // Shield blast
 };
+window.onmousedown = () => bullets.push({x:c.width/2, y:c.height/2, r:6, vy:-8}); // Shoot
+
+setInterval(() => targets.push({x: px + c.width/2 + (Math.random()-0.5)*800, y: py + c.height/2 + (Math.random()-0.5)*800}), 600);
+
+function loop() {
+    ctx.fillStyle = 'rgba(17,17,17,0.3)'; ctx.fillRect(0, 0, c.width, c.height); // Motion blur
+    if (keys.w) py -= 5; if (keys.s) py += 5; if (keys.a) px -= 5; if (keys.d) px += 5;
+
+    let cx = c.width / 2, cy = c.height / 2;
+    
+    // Draw Bullets & Shields
+    bullets.forEach((b, bi) => {
+        b.y += b.vy || 0; if(b.life) b.life--;
+        ctx.fillStyle = b.life ? 'rgba(0,255,200,0.4)' : '#ff0';
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
+        if (b.y < 0 || b.life === 0) bullets.splice(bi, 1);
+    });
+
+    // Draw Targets
+    targets.forEach((t, ti) => {
+        let sx = t.x - px, sy = t.y - py;
+        ctx.fillStyle = '#f55'; ctx.beginPath(); ctx.arc(sx, sy, 15, 0, 7); ctx.fill();
+        
+        bullets.forEach((b, bi) => {
+            if (Math.hypot(sx - b.x, sy - b.y) < (b.r + 15)) {
+                targets.splice(ti, 1); if(!b.life) bullets.splice(bi, 1); score += 10;
+            }
+        });
+    });
+
+    // Crosshair & Player Core
+    ctx.fillStyle = '#0fcc'; ctx.beginPath(); ctx.arc(cx, cy, 8, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#0fcc'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx-15, cy); ctx.lineTo(cx+15, cy); ctx.moveTo(cx, cy-15); ctx.lineTo(cx, cy+15); ctx.stroke();
+
+    // UI Score
+    ctx.fillStyle = '#fff'; ctx.font = '20px sans-serif'; ctx.fillText(`Score: ${score}`, 20, 40);
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
