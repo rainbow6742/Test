@@ -1,159 +1,90 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML5 Blackjack</title>
+    <title>Mini CCG</title>
     <style>
-        body { background: #1a4a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        #table { width: 90%; max-width: 600px; background: #226622; border: 8px solid #5a3d28; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .section { margin-bottom: 20px; }
-        .hand-label { font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #ffcc00; }
-        .card-container { display: flex; gap: 10px; min-height: 120px; }
-        .card { width: 80px; height: 120px; background: white; border-radius: 8px; color: black; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; box-sizing: border-box; font-size: 20px; font-weight: bold; box-shadow: 3px 3px 5px rgba(0,0,0,0.3); position: relative; }
-        .card.red { color: #cc0000; }
-        .card.back { background: #cc0000; border: 4px solid white; color: white; justify-content: center; align-items: center; }
-        .card-suit { font-size: 28px; align-self: center; }
-        #controls { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
-        button { padding: 10px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; background: #ffcc00; color: #1a4a1a; transition: 0.2s; }
-        button:hover { background: #fff; }
-        button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
-        #message { text-align: center; font-size: 22px; font-weight: bold; margin: 15px 0; height: 30px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        body { background: #211; color: #fff; font-family: sans-serif; text-align: center; margin: 0; user-select: none; }
+        .row { display: flex; justify-content: center; min-height: 110px; padding: 10px; border-bottom: 1px dashed #444; }
+        .hero { background: #532; padding: 15px; border-radius: 50%; font-weight: bold; cursor: pointer; display: inline-block; margin: 5px; }
+        .card { width: 70px; height: 100px; background: #234; border: 2px solid #567; border-radius: 5px; margin: 0 5px; cursor: pointer; position: relative; display: flex; flex-direction: column; justify-content: center; font-size: 12px; }
+        .card.enemy { background: #422; border-color: #744; }
+        .card.ready { border-color: #0f0; box-shadow: 0 0 5px #0f0; }
+        .card.sel { border-color: #ff0; box-shadow: 0 0 10px #ff0; }
+        .stats { font-size: 10px; color: #fa0; margin-top: 10px; }
+        #log { font-family: monospace; color: #aaa; margin: 5px; height: 20px; }
+        button { padding: 10px; font-weight: bold; background: #ca3; border: none; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="table">
-        <div class="section">
-            <div class="hand-label">Dealer's Hand: <span id="dealer-score">?</span></div>
-            <div id="dealer-cards" class="card-container"></div>
-        </div>
-
-        <div id="message">Click Deal to Start!</div>
-
-        <div class="section">
-            <div class="hand-label">Your Hand: <span id="player-score">0</span></div>
-            <div id="player-cards" class="card-container"></div>
-        </div>
-
-        <div id="controls">
-            <button id="deal-btn" onclick="startNewGame()">Deal</button>
-            <button id="hit-btn" onclick="playerHit()" disabled>Hit</button>
-            <button id="stand-btn" onclick="playerStand()" disabled>Stand</button>
-        </div>
-    </div>
+    <div class="row" id="eh"></div>
+    <div><div class="hero" id="e-hero">ENEMY: 30</div> <span id="em">Mana: 1/1</span></div>
+    <div class="row" id="ef"></div>
+    <div id="log">Your Turn!</div> <button onclick="endTurn()">END TURN</button>
+    <div class="row" id="pf"></div>
+    <div><div class="hero" id="p-hero">YOU: 30</div> <span id="pm">Mana: 1/1</span></div>
+    <div class="row" id="ph"></div>
 
     <script>
-        const suits = ['♠', '♥', '♦', '♣'];
-        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-        let deck = [], playerHand = [], dealerHand = [], gameActive = false;
+        let pMaxM=1, pM=1, pHp=30, eMaxM=1, eM=1, eHp=30, turn=true, sel=null, id=0;
+        let pHand=[], pField=[], eHand=[], eField=[];
+        const pool = [{n:"Murloc",a:2,h:1,m:1},{n:"Raptor",a:3,h:2,m:2},{n:"Yeti",a:4,h:5,m:4},{n:"Ogre",a:6,h:7,m:6}];
+        const make = (c) => ({...c, id:id++, s:true});
 
-        function createDeck() {
-            deck = [];
-            for (let suit of suits) {
-                for (let value of values) {
-                    deck.push({ suit, value, isRed: suit === '♥' || suit === '♦' });
-                }
+        for(let i=0;i<3;i++) { pHand.push(make(pool[Math.floor(Math.random()*pool.length)])); eHand.push(make(pool[Math.floor(Math.random()*pool.length)])); }
+
+        function log(t) { document.getElementById("log").innerText = t; }
+        document.onclick = (e) => { if(!e.target.closest('.card') && !e.target.closest('.hero')) { sel=null; render(); } };
+
+        function render() {
+            const h = (arr, el, f) => document.getElementById(el).innerHTML = arr.map(c => f(c)).join('');
+            h(pHand, "ph", c => `<div class="card" onclick="play(${c.id})">${c.n}<div class="stats">M:${c.m} A:${c.a} H:${c.h}</div></div>`);
+            h(pField, "pf", c => `<div class="card ${(!c.s&&turn)?'ready':''} ${(sel===c)?'sel':''}" onclick="setAtk(event, ${c.id})">${c.n}<div class="stats">A:${c.a} H:${c.h}</div></div>`);
+            h(eField, "ef", c => `<div class="card enemy" onclick="atk(event, 'm', ${c.id})">${c.n}<div class="stats">A:${c.a} H:${c.h}</div></div>`);
+            h(eHand, "eh", () => `<div class="card enemy">Back</div>`);
+            document.getElementById("p-hero").innerText = `YOU: ${pHp}`;
+            document.getElementById("e-hero").innerText = `ENEMY: ${eHp}`;
+            document.getElementById("pm").innerText = `Mana: ${pM}/${pMaxM}`;
+            document.getElementById("em").innerText = `Mana: ${eM}/${eMaxM}`;
+        }
+
+        function play(cid) {
+            if(!turn) return;
+            let idx = pHand.findIndex(c => c.id===cid), c = pHand[idx];
+            if(pM >= c.m && pField.length < 5) { pM -= c.m; pField.push(pHand.splice(idx,1)[0]); log(`Summoned ${c.n}`); render(); }
+        }
+        function setAtk(e, cid) { e.stopPropagation(); if(!turn) return; let c = pField.find(c=>c.id===cid); if(!c.s) { sel=c; render(); } }
+        
+        document.getElementById("e-hero").onclick = (e) => atk(e, 'h');
+        
+        function atk(e, type, tid) {
+            e.stopPropagation(); if(!sel) return;
+            if(type === 'h') { eHp -= sel.a; log(`Attacked Enemy for ${sel.a}`); sel.s=true; if(eHp<=0) alert("Win!"); }
+            else {
+                let tc = eField.find(c=>c.id===tid); tc.h -= sel.a; sel.h -= tc.a; log(`${sel.n} hit ${tc.n}`); sel.s=true;
+                pField = pField.filter(c=>c.h>0); eField = eField.filter(c=>c.h>0);
             }
-            // Shuffle
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
+            sel = null; render();
         }
 
-        function getHandScore(hand) {
-            let score = 0, aces = 0;
-            for (let card of hand) {
-                if (['J', 'Q', 'K'].includes(card.value)) score += 10;
-                else if (card.value === 'A') { score += 11; aces++; }
-                else score += parseInt(card.value);
-            }
-            while (score > 21 && aces > 0) { score -= 10; aces--; }
-            return score;
+        function endTurn() {
+            turn = false; sel = null; log("Enemy Turn..."); render();
+            setTimeout(() => {
+                if(eMaxM < 10) eMaxM++; eM = eMaxM;
+                if(eHand.length < 5) eHand.push(make(pool[Math.floor(Math.random()*pool.length)]));
+                for(let i=eHand.length-1; i>=0; i--) if(eM >= eHand[i].m && eField.length < 5) { eM -= eHand[i].m; eField.push(eHand.splice(i,1)[0]); }
+                eField.forEach(ec => {
+                    if(!ec.s) {
+                        if(pField.length > 0 && Math.random() > 0.5) { let pc = pField[Math.floor(Math.random()*pField.length)]; pc.h -= ec.a; ec.h -= pc.a; }
+                        else { pHp -= ec.a; if(pHp<=0) alert("Lose!"); }
+                    }
+                });
+                pField = pField.filter(c=>c.h>0); eField = eField.filter(c=>c.h>0);
+                if(pMaxM < 10) pMaxM++; pM = pMaxM; turn = true;
+                if(pHand.length < 5) pHand.push(make(pool[Math.floor(Math.random()*pool.length)]));
+                pField.forEach(c => c.s = false); eField.forEach(c => c.s = false); log("Your Turn!"); render();
+            }, 1000);
         }
-
-        function renderCard(card, isHidden = false) {
-            if (isHidden) return `<div class="card back">?</div>`;
-            return `<div class="card ${card.isRed ? 'red' : ''}">
-                <div>${card.value}</div>
-                <div class="card-suit">${card.suit}</div>
-                <div style="transform: rotate(180deg);">${card.value}</div>
-            </div>`;
-        }
-
-        function updateUI(hideDealer = true) {
-            const pCards = document.getElementById('player-cards');
-            const dCards = document.getElementById('dealer-cards');
-            
-            pCards.innerHTML = playerHand.map(c => renderCard(c)).join('');
-            document.getElementById('player-score').innerText = getHandScore(playerHand);
-
-            if (hideDealer && dealerHand.length > 0) {
-                dCards.innerHTML = renderCard(dealerHand[0]) + renderCard(null, true);
-                document.getElementById('dealer-score').innerText = "?";
-            } else {
-                dCards.innerHTML = dealerHand.map(c => renderCard(c)).join('');
-                document.getElementById('dealer-score').innerText = getHandScore(dealerHand);
-            }
-        }
-
-        function startNewGame() {
-            createDeck();
-            playerHand = [deck.pop(), deck.pop()];
-            dealerHand = [deck.pop(), deck.pop()];
-            gameActive = true;
-            
-            document.getElementById('message').innerText = "Hit or Stand?";
-            document.getElementById('deal-btn').disabled = true;
-            document.getElementById('hit-btn').disabled = false;
-            document.getElementById('stand-btn').disabled = false;
-            
-            updateUI(true);
-
-            if (getHandScore(playerHand) === 21) {
-                endGame("Blackjack! You Win!");
-            }
-        }
-
-        function playerHit() {
-            if (!gameActive) return;
-            playerHand.push(deck.pop());
-            updateUI(true);
-            
-            if (getHandScore(playerHand) > 21) {
-                endGame("You Busted! Dealer Wins.");
-            }
-        }
-
-        function playerStand() {
-            if (!gameActive) return;
-            gameActive = false;
-
-            // Dealer AI logic
-            while (getHandScore(dealerHand) < 17) {
-                dealerHand.push(deck.pop());
-            }
-
-            updateUI(false);
-
-            const pScore = getHandScore(playerHand);
-            const dScore = getHandScore(dealerHand);
-
-            if (dScore > 21) endGame("Dealer Busted! You Win!");
-            else if (pScore > dScore) endGame("You Win!");
-            else if (dScore > pScore) endGame("Dealer Wins.");
-            else endGame("It's a Push (Tie)!");
-        }
-
-        function endGame(msg) {
-            gameActive = false;
-            updateUI(false);
-            document.getElementById('message').innerText = msg;
-            document.getElementById('deal-btn').disabled = false;
-            document.getElementById('hit-btn').disabled = true;
-            document.getElementById('stand-btn').disabled = true;
-        }
+        render();
     </script>
 </body>
 </html>
