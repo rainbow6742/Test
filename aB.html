@@ -3,317 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FocusSpace - Pomodoro & Tasks</title>
+    <title>Google</title>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent-color: #3b82f6;
-            --break-color: #10b981;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 40px 20px;
+            font-family: Roboto, arial, sans-serif;
+            font-size: 14px;
+            color: #202124;
             display: flex;
             flex-direction: column;
-            align-items: center;
             min-height: 100vh;
-            box-sizing: border-box;
+            background-color: #ffffff;
         }
 
-        .app-container {
-            max-width: 900px;
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .app-container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Timer Section Card */
-        .timer-card, .task-card {
-            background-color: var(--card-bg);
-            padding: 30px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        /* Top Header Navigation */
+        header {
             display: flex;
-            flex-direction: column;
+            justify-content: flex-end;
             align-items: center;
-        }
-
-        .mode-selectors {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .mode-btn {
-            background: transparent;
-            border: 2px dashed var(--text-muted);
-            color: var(--text-muted);
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-        }
-
-        .mode-btn.active {
-            border-style: solid;
-            border-color: var(--accent-color);
-            color: var(--text-main);
-            background-color: rgba(59, 130, 246, 0.1);
-        }
-
-        .mode-btn.break-mode.active {
-            border-color: var(--break-color);
-            background-color: rgba(16, 185, 129, 0.1);
-        }
-
-        .time-display {
-            font-size: 80px;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            margin: 20px 0;
-            letter-spacing: -2px;
-        }
-
-        .controls {
-            display: flex;
+            height: 60px;
+            padding: 0 24px;
             gap: 15px;
         }
 
-        .control-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
+        header a {
+            text-decoration: none;
+            color: rgba(0,0,0,0.87);
+        }
+
+        header a:hover {
+            text-decoration: underline;
+        }
+
+        .apps-icon {
+            padding: 8px;
+            border-radius: 50%;
             cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
-
-        .control-btn:hover {
-            opacity: 0.9;
-        }
-
-        .reset-btn {
-            background-color: #475569;
-        }
-
-        /* Task Section Card */
-        .task-card {
-            align-items: stretch;
-        }
-
-        h2 {
-            margin-top: 0;
-            font-size: 24px;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 10px;
-        }
-
-        .task-input-wrapper {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        #taskInput {
-            flex: 1;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 12px;
-            color: white;
-            font-size: 16px;
-        }
-
-        #taskInput:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-
-        .add-task-btn {
-            background-color: #334155;
-            color: white;
-            border: none;
-            padding: 0 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-
-        .add-task-btn:hover {
-            background-color: #475569;
-        }
-
-        .task-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            max-height: 280px;
-            overflow-y: auto;
-        }
-
-        .task-item {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            background-color: #0f172a;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--accent-color);
+            justify-content: center;
         }
 
-        .task-text {
-            flex: 1;
-            margin-right: 10px;
-            word-break: break-word;
+        .apps-icon:hover {
+            background-color: rgba(60,64,67,0.08);
         }
 
-        .delete-task-btn {
-            background: transparent;
+        .sign-in-btn {
+            background-color: #1a73e8;
+            color: white !important;
+            padding: 9px 23px;
+            border-radius: 4px;
+            font-weight: 500;
+            letter-spacing: .25px;
+        }
+
+        .sign-in-btn:hover {
+            background-color: #1b66c9;
+            text-decoration: none !important;
+            box-shadow: 0 1px 2px 0 rgba(66,133,244,0.3), 0 1px 3px 1px rgba(66,133,244,0.15);
+        }
+
+        /* Main Branding & Search Area */
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 120px;
+        }
+
+        .logo {
+            font-size: 90px;
+            font-weight: 500;
+            letter-spacing: -2.5px;
+            margin-bottom: 28px;
+            user-select: none;
+        }
+
+        /* Google original colors */
+        .g1 { color: #4285F4; }
+        .o1 { color: #EA4335; }
+        .o2 { color: #FBBC05; }
+        .g2 { color: #4285F4; }
+        .l  { color: #34A853; }
+        .e  { color: #EA4335; }
+
+        .search-box {
+            width: 100%;
+            max-width: 584px;
+            border: 1px solid #e3e6e8;
+            border-radius: 24px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            gap: 12px;
+            box-shadow: none;
+            transition: box-shadow 0.1s, border-color 0.1s;
+        }
+
+        .search-box:hover, .search-box:focus-within {
+            box-shadow: 0 1px 6px rgba(32,33,36,0.28);
+            border-color: rgba(223,225,229,0);
+        }
+
+        .search-icon {
+            fill: #9aa0a6;
+            width: 20px;
+            height: 20px;
+        }
+
+        .search-input {
+            flex-grow: 1;
             border: none;
-            color: #ef4444;
-            cursor: pointer;
+            outline: none;
             font-size: 16px;
+            height: 100%;
+            color: #202124;
+        }
+
+        .mic-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .buttons-container {
+            margin-top: 29px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            background-color: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-size: 14px;
+            padding: 0 16px;
+            line-height: 27px;
+            height: 36px;
+            min-width: 54px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn:hover {
+            border: 1px solid #dadce0;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            color: #202124;
+        }
+
+        /* Bottom Footer section */
+        footer {
+            background-color: #f2f2f2;
+            border-top: 1px solid #e4e4e4;
+        }
+
+        .location {
+            padding: 15px 30px;
+            border-bottom: 1px solid #e4e4e4;
+            color: rgba(0,0,0,0.54);
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .footer-section {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            display: block;
+            padding: 15px;
+            color: #70757a;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
-    <h1 style="margin-bottom: 40px; font-size: 32px; letter-spacing: -0.5px;">🎯 FocusSpace</h1>
+    <header>
+        <a href="#">Gmail</a>
+        <a href="#">Images</a>
+        <div class="apps-icon" title="Google apps">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#5f6368">
+                <path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+            </svg>
+        </div>
+        <a href="#" class="sign-in-btn">Sign in</a>
+    </header>
 
-    <div class="app-container">
-        <!-- POMODORO TIMER -->
-        <div class="timer-card">
-            <div class="mode-selectors">
-                <button class="mode-btn active" id="workMode" onclick="setMode('work')">Focus Session</button>
-                <button class="mode-btn break-mode" id="breakMode" onclick="setMode('break')">Short Break</button>
-            </div>
-            <div class="time-display" id="timeDisplay">25:00</div>
-            <div class="controls">
-                <button class="control-btn" id="startBtn" onclick="toggleTimer()">Start</button>
-                <button class="control-btn reset-btn" onclick="resetTimer()">Reset</button>
-            </div>
+    <main>
+        <!-- Custom Colored Typography Logo -->
+        <div class="logo">
+            <span class="g1">G</span><span class="o1">o</span><span class="o2">o</span><span class="g2">g</span><span class="l">l</span><span class="e">e</span>
         </div>
 
-        <!-- TASK MANAGER -->
-        <div class="task-card">
-            <h2>Focus Tasks</h2>
-            <div class="task-input-wrapper">
-                <input type="text" id="taskInput" placeholder="What are you working on?" maxlength="50">
-                <button class="add-task-btn" onclick="addTask()">+</button>
-            </div>
-            <ul class="task-list" id="taskList">
-                <!-- Javascript will insert tasks here -->
-            </ul>
+        <!-- Search Bar Frame -->
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24">
+                <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
+            </svg>
+            <input type="text" class="search-input" id="searchQuery" autofocus>
+            <svg class="mic-icon" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"></path>
+                <path fill="#34A853" d="M12 17c-3.14 0-5.64-2.5-5.64-5.64H5c0 3.53 2.61 6.44 6 6.92V21h2v-2.72c3.39-.48 6-3.39 6-6.92h-1.36C17.64 14.5 15.14 17 12 17z"></path>
+            </svg>
         </div>
-    </div>
+
+        <div class="buttons-container">
+            <button class="btn" onclick="executeSearch()">Google Search</button>
+            <button class="btn" onclick="feelingLucky()">I'm Feeling Lucky</button>
+        </div>
+    </main>
+
+    <footer>
+        <div class="location">United States</div>
+        <div class="footer-links">
+            <div class="footer-section">
+                <a href="#">About</a>
+                <a href="#">Advertising</a>
+                <a href="#">Business</a>
+                <a href="#">How Search works</a>
+            </div>
+            <div class="footer-section">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Settings</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
-        // Timer Variables
-        let timer;
-        let isRunning = false;
-        let currentMode = 'work'; // 'work' or 'break'
-        let timeRemaining = 25 * 60; 
+        const queryInput = document.getElementById('searchQuery');
 
-        const timeDisplay = document.getElementById('timeDisplay');
-        const startBtn = document.getElementById('startBtn');
-        const workModeBtn = document.getElementById('workMode');
-        const breakModeBtn = document.getElementById('breakMode');
-        const taskInput = document.getElementById('taskInput');
-        const taskList = document.getElementById('taskList');
-
-        function updateDisplay() {
-            const minutes = Math.floor(timeRemaining / 60);
-            const seconds = timeRemaining % 60;
-            timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function toggleTimer() {
-            if (isRunning) {
-                clearInterval(timer);
-                startBtn.textContent = 'Start';
-                startBtn.style.backgroundColor = 'var(--accent-color)';
-            } else {
-                timer = setInterval(() => {
-                    if (timeRemaining > 0) {
-                        timeRemaining--;
-                        updateDisplay();
-                    } else {
-                        clearInterval(timer);
-                        alert(currentMode === 'work' ? 'Time for a break!' : 'Back to work!');
-                        resetTimer();
-                    }
-                }, 1000);
-                startBtn.textContent = 'Pause';
-                startBtn.style.backgroundColor = '#e2e8f0';
-                startBtn.style.color = '#0f172a';
+        // Handles passing the input query over to the real engine
+        function executeSearch() {
+            const query = queryInput.value.trim();
+            if (query) {
+                window.location.href = `https://google.com{encodeURIComponent(query)}`;
             }
-            isRunning = !isRunning;
         }
 
-        function resetTimer() {
-            clearInterval(timer);
-            isRunning = false;
-            startBtn.textContent = 'Start';
-            startBtn.style.backgroundColor = 'var(--accent-color)';
-            startBtn.style.color = 'white';
-            timeRemaining = currentMode === 'work' ? 25 * 60 : 5 * 60;
-            updateDisplay();
-        }
-
-        function setMode(mode) {
-            currentMode = mode;
-            if (mode === 'work') {
-                workModeBtn.classList.add('active');
-                breakModeBtn.classList.remove('active');
+        function feelingLucky() {
+            const query = queryInput.value.trim();
+            if (query) {
+                window.location.href = `https://google.com{encodeURIComponent(query)}&btnI=I`;
             } else {
-                breakModeBtn.classList.add('active');
-                workModeBtn.classList.remove('active');
+                window.location.href = "https://doodles.google";
             }
-            resetTimer();
         }
 
-        // Task List Functions
-        function addTask() {
-            const text = taskInput.value.trim();
-            if (text === '') return;
-
-            const li = document.createElement('li');
-            li.className = 'task-item';
-            li.innerHTML = `
-                <span class="task-text">${text}</span>
-                <button class="delete-task-btn" onclick="this.parentElement.remove()">✕</button>
-            `;
-            
-            taskList.appendChild(li);
-            taskInput.value = '';
-        }
-
-        // Allow entering tasks with Enter key
-        taskInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addTask();
+        // Trigger search on pressing Enter
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                executeSearch();
+            }
         });
-
-        // Setup init display
-        updateDisplay();
     </script>
 </body>
 </html>
