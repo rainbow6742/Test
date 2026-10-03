@@ -3,85 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM LOCKED</title>
+    <title>Unlock to Win</title>
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #050000; color: #ff3333;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            overflow: hidden; user-select: none;
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
         }
-        #container { text-align: center; max-width: 600px; padding: 20px; }
-        h1 { font-size: 3rem; margin-bottom: 10px; text-shadow: 0 0 10px #ff0000; animation: blink 1.5s infinite; }
-        p { font-size: 1.2rem; color: #ff8888; margin-bottom: 30px; }
-        .input-hint { font-size: 0.9rem; color: #441111; letter-spacing: 2px; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            width: 200px;
+            text-align: center;
+        }
+        input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #cccccc;
+            border: none;
+            border-radius: 6px;
+            cursor: not-allowed;
+            transition: background-color 0.3s;
+        }
+        button.active {
+            background-color: #28a745;
+            cursor: pointer;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
 
-    <div id="container">
-        <h1>ACCESS DENIED</h1>
-        <p>This terminal has been locked down.<br>You cannot close or leave this screen normally.</p>
-        <div class="input-hint">AWAITING CREDENTIALS...</div>
-    </div>
+<div class="container">
+    <h2>Enter the Code to Win</h2>
+    <input type="text" id="codeInput" placeholder="Enter code here..." maxlength="5">
+    <br>
+    <button id="winButton" disabled>Claim Win</button>
+    <div id="message"></div>
+</div>
 
-    <script>
-        let inputBuffer = "";
-        const targetCode = "31718530450091423760889265552700";
-        let isLocked = true;
+<script>
+    const codeInput = document.getElementById('codeInput');
+    const winButton = document.getElementById('winButton');
+    const message = document.getElementById('message');
+    const targetCode = "31718";
 
-        // 1. Trap keypresses anywhere on the document to listen for the unlock sequence
-        document.addEventListener('keydown', (e) => {
-            if (!isLocked) return;
-
-            // Block common escape/functional keys that could close overlays
-            if (e.key === "Escape" || e.key === "F11") {
-                e.preventDefault();
-            }
-
-            // Append standard numeric characters to our validation buffer
-            if (/^\d\$/.test(e.key)) {
-                inputBuffer += e.key;
-                
-                // Keep the running buffer short to prevent accidental spillover strings
-                if (inputBuffer.length > targetCode.length) {
-                    inputBuffer = inputBuffer.substring(inputBuffer.length - targetCode.length);
-                }
-
-                // Verify check
-                if (inputBuffer === targetCode) {
-                    unlockScreen();
-                }
-            }
-        });
-
-        // 2. Annoy the user if they try to click anywhere on the page
-        document.addEventListener('click', () => {
-            if (isLocked) {
-                alert("🔒 TERMINAL SECURED. Type the 5-digit bypass code to release.");
-            }
-        });
-
-        // 3. Trigger the standard browser exit warnings if they try to reload or navigate away
-        window.addEventListener('beforeunload', (e) => {
-            if (isLocked) {
-                e.preventDefault();
-                e.returnValue = "Are you sure you want to leave?";
-            }
-        });
-
-        function unlockScreen() {
-            isLocked = false;
-            document.body.style.backgroundColor = "#001100";
-            document.body.style.color = "#33ff33";
-            document.getElementById('container').innerHTML = `
-                <h1 style="text-shadow: 0 0 10px #00ff00; animation: none;">ACCESS GRANTED</h1>
-                <p style="color: #88ff88;">Bypass accepted. Restrictions lifted. You may now close this tab safely.</p>
-            `;
+    codeInput.addEventListener('input', () => {
+        if (codeInput.value === targetCode) {
+            winButton.disabled = false;
+            winButton.classList.add('active');
+        } else {
+            winButton.disabled = true;
+            winButton.classList.remove('active');
         }
-    </script>
+    });
+
+    winButton.addEventListener('click', () => {
+        message.textContent = "🎉 Congratulations! You won! 🎉";
+    });
+</script>
+
 </body>
 </html>
