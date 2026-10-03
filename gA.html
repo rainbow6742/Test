@@ -1,115 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Clicker Game Mini</title>
+    <title>Typing Game</title>
     <style>
-        body { font-family: sans-serif; background: #12121c; color: #fff; text-align: center; padding: 20px; }
-        .box { background: #1e1e2f; padding: 15px; border-radius: 10px; margin: 10px auto; max-width: 420px; }
-        button { background: #00ffcc; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 4px; color: #12121c; }
-        button:disabled { background: #444; color: #888; cursor: not-allowed; }
+        body { font-family: monospace; background: #1e1e2e; color: #cd.d6f4; text-align: center; padding-top: 50px; }
+        #box { font-size: 1.5rem; max-width: 600px; margin: 20px auto; background: #252538; padding: 20px; border-radius: 8px; text-align: left; }
+        .letter { color: #6c7086; }
+        .correct { color: #a6e3a1; }
+        .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); }
+        .current { border-left: 2px solid #cba6f7; color: #fff; }
+        input { position: absolute; opacity: 0; }
     </style>
 </head>
 <body>
-
-    <div class="box">
-        <h1>Score: <span id="score">0</span></h1>
-        <p>Auto-clicking: <span id="cps">0</span>/sec <span id="badge" style="color:#ff007f; font-weight:bold;"></span></p>
-        <button id="clickBtn" style="width:100%; height:50px;">TAP / CLICK OR PRESS ANY KEY</button>
-        <hr style="border-color:#333;">
-        <div id="dailyText">Day 1: +10 Pts</div>
-        <button id="dailyBtn">Claim Daily Reward</button>
-    </div>
-
-    <div class="box">
-        <h3>🏪 Shop</h3>
-        <p><b>Auto-Clickers:</b><br>
-            <button class="shop-btn" onclick="buyAuto(1, 50)">+1/s (50pt)</button>
-            <button class="shop-btn" onclick="buyAuto(5, 100)">+5/s (100pt)</button>
-            <button class="shop-btn" onclick="buyAuto(10, 200)">+10/s (200pt)</button>
-            <button class="shop-btn" onclick="buyAuto(25, 500)">+25/s (500pt)</button>
-            <button class="shop-btn" onclick="buyAuto(50, 1000)">+50/s (1000pt)</button>
-        </p>
-        <p><b>1-Min Multipliers:</b><br>
-            <button class="shop-btn" onclick="buyMult(2, 50)">2x (50pt)</button>
-            <button class="shop-btn" onclick="buyMult(5, 200)">5x (200pt)</button>
-        </p>
-    </div>
+    <h2>Time: <span id="t">30</span>s | WPM: <span id="w">0</span></h2>
+    <input type="text" id="in" autocomplete="off">
+    <div id="box" onclick="document.getElementById('in').focus()"></div>
+    <button onclick="location.reload()">Restart</button>
 
     <script>
-        let pts = parseInt(localStorage.getItem('pts')) || 0;
-        let cps = parseInt(localStorage.getItem('cps')) || 0;
-        let streak = parseInt(localStorage.getItem('streak')) || 1;
-        let lastClaim = localStorage.getItem('lastClaim') || "";
-        let mult = 1, multTimer, cdTimer;
+        const words = "algorithm function variable developer keyboard network security interface database framework".split(' ').sort(() => Math.random() - 0.5).join(' ');
+        const box = document.getElementById('box'), input = document.getElementById('in'), timer = document.getElementById('t'), wpm = document.getElementById('w');
+        let idx = 0, correct = 0, total = 0, timeLeft = 30, active = false, interval;
 
-        const el = (id) => document.getElementById(id);
+        box.innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
+        const spans = box.children;
+        spans[0].classList.add('current');
 
-        function clickAction() { 
-            pts += mult; 
-            saveAndUpdate(); 
-        }
-
-        // Anti-key hold protection
-        window.addEventListener('keydown', (e) => { if (!e.repeat) clickAction(); });
-        el('clickBtn').addEventListener('click', () => { clickAction(); el('clickBtn').blur(); });
-
-        // Auto clicker loop
-        setInterval(() => { if (cps > 0) { pts += (cps * mult); saveAndUpdate(); } }, 1000);
-
-        function buyAuto(val, cost) { if (pts >= cost) { pts -= cost; cps += val; saveAndUpdate(); } }
-
-        function buyMult(val, cost) {
-            if (pts >= cost) {
-                pts -= cost; mult = val; saveAndUpdate();
-                clearTimeout(multTimer); clearInterval(cdTimer);
-                let left = 60;
-                el('badge').textContent = `(${val}x - ${left}s)`;
-                cdTimer = setInterval(() => { left--; el('badge').textContent = left > 0 ? `(${val}x - ${left}s)` : ""; }, 1000);
-                multTimer = setTimeout(() => { mult = 1; clearInterval(cdTimer); el('badge').textContent = ""; saveAndUpdate(); }, 60000);
+        input.oninput = (e) => {
+            if (!active && timeLeft === 30) {
+                active = true;
+                interval = setInterval(() => {
+                    if (--timeLeft <= 0) { clearInterval(interval); input.disabled = true; alert(`Done! WPM: ${wpm.innerText}`); }
+                    timer.innerText = timeLeft;
+                    wpm.innerText = Math.round((correct / 5) / ((30 - timeLeft) / 60)) || 0;
+                }, 1000);
             }
-        }
 
-        function checkDaily() {
-            let today = new Date().toDateString();
-            let amt = 10 * Math.pow(2, streak - 1);
-            el('dailyText').textContent = `Day ${streak} Reward: +${amt} Points`;
-            
-            if (lastClaim === today) {
-                el('dailyBtn').disabled = true;
-                el('dailyBtn').textContent = "Claimed Today";
-            } else {
-                el('dailyBtn').disabled = false;
-                el('dailyBtn').textContent = "Claim";
-                if (lastClaim && Math.ceil(Math.abs(new Date(today) - new Date(lastClaim)) / 86400000) > 1) {
-                    streak = 1;
-                    checkDaily();
+            if (timeLeft <= 0 || idx >= spans.length) return;
+            spans[idx].classList.remove('current');
+
+            if (e.inputType === 'deleteContentBackward') {
+                if (idx > 0) {
+                    idx--;
+                    if (spans[idx].classList.contains('correct')) correct--;
+                    spans[idx].className = 'letter current';
                 }
+            } else {
+                let char = input.value.slice(-1);
+                if (!char) return;
+                if (char === spans[idx].innerText) { spans[idx].classList.add('correct'); correct++; }
+                else spans[idx].classList.add('incorrect');
+                idx++;
+                if (idx < spans.length) spans[idx].classList.add('current');
             }
-        }
-
-        el('dailyBtn').addEventListener('click', () => {
-            pts += 10 * Math.pow(2, streak - 1);
-            lastClaim = new Date().toDateString();
-            streak++;
-            saveAndUpdate();
-            checkDaily();
-        });
-
-        function saveAndUpdate() {
-            localStorage.setItem('pts', pts); localStorage.setItem('cps', cps);
-            localStorage.setItem('streak', streak); localStorage.setItem('lastClaim', lastClaim);
-            el('score').textContent = pts; el('cps').textContent = cps;
-            
-            // Map prices directly matching the button order in HTML
-            const costs =;
-            document.querySelectorAll('.shop-btn').forEach((b, i) => {
-                b.disabled = pts < costs[i];
-            });
-        }
-
-        saveAndUpdate();
-        checkDaily();
+            input.value = '';
+        };
+        input.focus();
     </script>
 </body>
 </html>
