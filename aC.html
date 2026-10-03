@@ -125,8 +125,7 @@ bullets.forEach((b,bi)=>{if(Math.hypot(sx-b.x,sy-b.y)<(b.r+(t.t==='r'?22:15))){t
 ctx.fillStyle=pCol;ctx.beginPath();ctx.arc(cx,cy,12,0,7);ctx.fill();
 ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText(`You: ${score}`,20,40);if(aiOn.checked){ctx.fillStyle='#fa0';ctx.fillText(`AI: ${ai.s}`,20,65);}
 let uiY=c.height-20;
-if(magTimer>0){ctx.fillStyle='#0fcc';ctx.font='bold 16px sans-serif';ctx.fillText(`Magnet Active: ${Math.ceil(magTimer/60)}s`,20,uiY);uiY-=25;}
-if(mult>1){ctx.fillStyle='#fa0';ctx.font='bold 16px sans-serif';ctx.fillText(${mult}x Boost Active: ${Math.ceil(mTimer/60)}s,20,uiY);}
+if(magTimer>0){ctx.fillStyle='#0fcc';ctx.font='bold 16px sans-serif';ctx.fillText(`Magnet Active: ${Math.ceil(magTimer/60)}s`,20,uiY);uiY-=25;}if(mult>1){ctx.fillStyle='#fa0';ctx.font='bold 16px sans-serif';ctx.fillText(${mult}x Boost Active: ${Math.ceil(mTimer/60)}s,20,uiY);}
 }
 requestAnimationFrame(loop);
 }
