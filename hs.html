@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hearthstone Card Component</title>
+  <style>
+    /* Import Belwe-like bold font styling feel via Google Fonts */
+    @import url('https://googleapis.com');
+
+    :root {
+      --bg-dark: #120c06;
+      --card-font-title: 'Metamorphous', serif;
+      --card-font-body: 'Inter', sans-serif;
+      --mana-color: #0070ff;
+      --attack-color: #fcd34d;
+      --health-color: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle, #2d1f10 0%, var(--bg-dark) 100%);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+
+    /* Card Wrapper & 3D Effect */
+    .card-container {
+      position: relative;
+      width: 320px;
+      height: 460px;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      transform-style: preserve-3d;
+      cursor: pointer;
+    }
+
+    .card-container:hover {
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.8), 
+                  0 0 30px rgba(253, 186, 116, 0.3);
+    }
+
+    /* Card Frame Setup */
+    .hs-card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: #1e150c;
+      border: 6px solid #4a341a;
+      border-radius: 30px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+      overflow: hidden;
+    }
+
+    /* Card Artwork (Oval frame wrapper) */
+    .card-art-frame {
+      position: absolute;
+      top: 35px;
+      width: 220px;
+      height: 250px;
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+      border: 8px solid #a17846;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,0,0,0.6);
+      background: url('https://picsum.photos') center center / cover no-repeat;
+      z-index: 1;
+    }
+
+    /* Inner Dark Border Accent */
+    .card-art-frame::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 3px solid #2b1a0a;
+      pointer-events: none;
+    }
+
+    /* Card Title Banner (Slightly curved/bent banner look) */
+    .card-title-banner {
+      position: absolute;
+      top: 240px;
+      z-index: 3;
+      background: linear-gradient(90deg, transparent 0%, #3a220f 15%, #5c3a1a 50%, #3a220f 85%, transparent 100%);
+      width: 110%;
+      padding: 6px 0;
+      text-align: center;
+      border-top: 2px solid #8c6439;
+      border-bottom: 2px solid #8c6439;
+      transform: rotate(-2deg);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+    }
+
+    .card-title {
+      font-family: var(--card-font-title);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000,
+         0px  3px 5px rgba(0,0,0,0.8);
+    }
+
+    /* Card Bottom Text Box description box */
+    .card-description-box {
+      position: absolute;
+      bottom: 25px;
+      width: 88%;
+      height: 140px;
+      background: #ecdcc3;
+      border: 6px solid #3d2a19;
+      border-radius: 10px;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 4px 10px rgba(0,0,0,0.4);
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .card-text {
+      font-family: var(--card-font-body);
+      color: #2b1d0c;
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .card-text b {
+      color: #000;
+      font-weight: 800;
+    }
+
+    /* Badges & Gems (Mana, Attack, Health) */
+    .badge {
+      position: absolute;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--card-font-title);
+      font-size: 2rem;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 
+        -2px -2px 0 #000,  
+         2px -2px 0 #000,
+        -2px  2px 0 #000,
+         2px  2px 0 #000;
+      z-index: 4;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+
+    /* Mana Gem (Top Left) */
+    .mana-gem {
+      top: -5px;
+      left: -5px;
+      background: radial-gradient(circle, var(--mana-color) 30%, #002d72 100%);
+      border: 3px solid #fff;
+      box-shadow: 0 0 15px rgba(0, 112, 255, 0.4), 0 4px 8px rgba(0,0,0,0.5);
+      border-radius: 10px 40px 40px 40px; /* Hearthstone mana shape feel */
+      transform: rotate(-10deg);
+    }
+
+    /* Attack Gem (Bottom Left) */
+    .attack-gem {
+      bottom: -8px;
+      left: -8px;
+      background: radial-gradient(circle, #ffe066 10%, #d4a373 60%, #5c3d11 100%);
+      border: 4px solid #2b1d0c;
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; /* jagged attack shape */
+    }
+
+    /* Health Gem (Bottom Right) */
+    .health-gem {
+      bottom: -8px;
+      right: -8px;
+      background: radial-gradient(circle, #ff6b6b 20%, var(--health-color) 60%, #5a0000 100%);
+      border: 4px solid #2b1d0c;
+      border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; /* Drop/Bloodstone shape */
+    }
+
+    /* Card Glow Accent Layer */
+    .card-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      pointer-events: none;
+      z-index: 5;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.12) 0%, transparent 60%);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Card Component -->
+  <div class="card-container" id="hsCard">
+    <div class="hs-card">
+      <div class="card-glow" id="cardGlow"></div>
+      
+      <!-- Mana Cost -->
+      <div class="badge mana-gem">4</div>
+      
+      <!-- Minion Artwork Image -->
+      <div class="card-art-frame"></div>
+      
+      <!-- Card Title Ribbons -->
+      <div class="card-title-banner">
+        <h2 class="card-title">Chillwind Yeti</h2>
+      </div>
+      
+      <!-- Card Rules Text -->
+      <div class="card-description-box">
+        <p class="card-text">
+          <b>Battlecry:</b> He looks incredibly fluffy but stays completely cool under high pressure environments.
+        </p>
+      </div>
+      
+      <!-- Attack Power -->
+      <div class="badge attack-gem">4</div>
+      
+      <!-- Health Points -->
+      <div class="badge health-gem">5</div>
+    </div>
+  </div>
+
+  <script>
+    const card = document.getElementById('hsCard');
+    const glow = document.getElementById('cardGlow');
+
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Calculate dynamic tilting math angles
+      const minionXAngle = ((rect.width / 2) - x) / 10;
+      const minionYAngle = (((rect.height / 2) - y) / 10) * -1;
+      
+      // Apply structural 3D transformations Matrix
+      card.style.transform = `rotateX(${minionYAngle}deg) rotateY(${minionXAngle}deg) scale(1.03)`;
+      
+      // Pass coordinates into CSS for lighting tracking reflections
+      glow.style.setProperty('--mx', `${(x / rect.width) * 100}%`);
+      glow.style.setProperty('--my', `${(y / rect.height) * 100}%`);
+    });
+
+    // Reset styles seamlessly on mouse leave
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+      glow.style.setProperty('--mx', '50%');
+      glow.style.setProperty('--my', '50%');
+    });
+  </script>
+</body>
+</html>
