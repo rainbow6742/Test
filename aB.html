@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unlock to Win</title>
+    <title>The Multiplying Page</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -12,79 +12,82 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f2f5;
+            background-color: #2c3e50;
+            color: white;
         }
         .container {
             text-align: center;
-            background: white;
-            padding: 30px;
+            background: #34495e;
+            padding: 40px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        p {
+            color: #bdc3c7;
+            margin-bottom: 25px;
         }
         input {
-            padding: 10px;
-            font-size: 16px;
-            border: 2px solid #ccc;
+            padding: 12px;
+            font-size: 18px;
+            border: 2px solid #7f8c8d;
             border-radius: 6px;
-            margin-bottom: 20px;
-            width: 200px;
+            background: #2c3e50;
+            color: white;
             text-align: center;
+            width: 220px;
         }
         input:focus {
             outline: none;
-            border-color: #007bff;
-        }
-        button {
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: bold;
-            color: white;
-            background-color: #cccccc;
-            border: none;
-            border-radius: 6px;
-            cursor: not-allowed;
-            transition: background-color 0.3s;
-        }
-        button.active {
-            background-color: #28a745;
-            cursor: pointer;
-        }
-        #message {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #28a745;
+            border-color: #e74c3c;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Enter the Code to Win</h2>
-    <input type="text" id="codeInput" placeholder="Enter code here..." maxlength="5">
-    <br>
-    <button id="winButton" disabled>Claim Win</button>
-    <div id="message"></div>
+    <h1>Don't Press 'X'</h1>
+    <p>(Click the screen once first, then press 'X' to duplicate)</p>
+    <input type="text" id="codeInput" placeholder="Enter code to close all..." maxlength="5">
 </div>
 
 <script>
-    const codeInput = document.getElementById('codeInput');
-    const winButton = document.getElementById('winButton');
-    const message = document.getElementById('message');
-    const targetCode = "31718";
+    // BroadcastChannel allows all open tabs/windows of this page to talk to each other
+    const closeChannel = new BroadcastChannel('close_windows_channel');
 
-    codeInput.addEventListener('input', () => {
-        if (codeInput.value === targetCode) {
-            winButton.disabled = false;
-            winButton.classList.add('active');
-        } else {
-            winButton.disabled = true;
-            winButton.classList.remove('active');
+    // Listen for the close signal from any other window
+    closeChannel.onmessage = (event) => {
+        if (event.data === 'close_all') {
+            window.close();
+        }
+    };
+
+    // Detect when the user presses a key
+    document.addEventListener('keydown', (event) => {
+        // Check if the user is typing in the input box so typing 'x' in the code doesn't trigger popups
+        if (document.activeElement === document.getElementById('codeInput')) {
+            return; 
+        }
+
+        // If 'x' or 'X' is pressed, open 2 new instances of the exact same URL
+        if (event.key === 'x' || event.key === 'X') {
+            const currentUrl = window.location.href;
+            window.open(currentUrl, '_blank');
+            window.open(currentUrl, '_blank');
         }
     });
 
-    winButton.addEventListener('click', () => {
-        message.textContent = "🎉 Congratulations! You won! 🎉";
+    // Monitor the input box for the magic code
+    const codeInput = document.getElementById('codeInput');
+    codeInput.addEventListener('input', () => {
+        if (codeInput.value === '31718') {
+            // Send a message to all other tabs to close
+            closeChannel.postMessage('close_all');
+            // Close the current tab
+            window.close();
+        }
     });
 </script>
 
