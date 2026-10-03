@@ -1,113 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTML Video Generator</title>
+    <title>MicroCraft</title>
     <style>
-        body { background: #050510; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        canvas { border-radius: 8px; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
-        button { margin-top: 20px; padding: 12px 24px; font-size: 16px; background: #00ffff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; }
-        button:hover { background: #00cccc; }
-        #status { font-size: 18px; margin-bottom: 10px; color: #00ffff; }
+        body { margin: 0; overflow: hidden; background: #78a7ff; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #x { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; transform: translate(-50%,-50%); border: 2px solid white; mix-blend-mode: difference; pointer-events: none; }
+        #u { position: absolute; top: 10px; left: 10px; color: white; text-shadow: 1px 1px #000; pointer-events: none; }
     </style>
 </head>
 <body>
-
-    <div id="status">Generating Video (5 Seconds)...</div>
-    <canvas id="canvas" width="640" height="360"></canvas>
-    <button id="downloadBtn">Download Video (.webm)</button>
+    <div id="u">Click to play | WASD + Mouse | L-Click: Break, R-Click: Place</div>
+    <div id="x"></div>
+    <canvas id="c"></canvas>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const downloadBtn = document.getElementById('downloadBtn');
-        const statusText = document.getElementById('status');
+        const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
+        let w = canvas.width = window.innerWidth, h = canvas.height = window.innerHeight;
+        window.onresize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
 
-        const FPS = 30;
-        const DURATION = 5; // 5-second video length
-        const TOTAL_FRAMES = FPS * DURATION;
-        
-        let currentFrame = 0;
-        let recordedChunks = [];
-        
-        // Setup MediaRecorder to capture the canvas stream natively
-        const stream = canvas.captureStream(FPS);
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+        const M = 16, H = 4, g = new Uint8Array(M * M * H);
+        const getB = (x,y,z) => (x<0||x>=M||y<0||y>=M||z<0||z>=H) ? 0 : g[x + y*M + z*M*M];
+        const setB = (x,y,z,v) => { if(x>=0&&x<M&&y>=0&&y<M&&z>=0&&z<H) g[x + y*M + z*M*M] = v; };
 
-        mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) recordedChunks.push(e.data);
-        };
+        // Generate flat world with a center wall
+        for(let x=0; x<M; x++) for(let y=0; y<M; y++) { setB(x, y, 0, 1); if(x===8 && y>4 && y<12) setB(x, y, 1, 2); }
 
-        mediaRecorder.onstop = () => {
-            const blob = new Blob(recordedChunks, { type: 'video/webm' });
-            const url = URL.createObjectURL(blob);
-            downloadBtn.style.display = 'block';
-            downloadBtn.onclick = () => {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'html_generated_video.webm';
-                a.click();
-            };
-            statusText.innerText = "Video Ready!";
-        };
+        let px = 4.5, py = 4.5, pz = 1.5, rx = 0, ry = 0, keys = {};
+        canvas.onclick = () => canvas.requestPointerLock();
+        document.onmousemove = (e) => { if (document.pointerLockElement===canvas) { rx -= e.movementX*0.004; ry = Math.max(-1.4, Math.min(1.4, ry - e.movementY*0.004)); } };
+        window.onkeydown = (e) => keys[e.key.toLowerCase()] = true;
+        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
 
-        // Render loop for creating the procedural content frame-by-frame
-        function renderVideoFrame() {
-            if (currentFrame >= TOTAL_FRAMES) {
-                mediaRecorder.stop();
-                return;
+        function cast() {
+            let dx = -Math.sin(rx)*Math.cos(ry), dy = Math.cos(rx)*Math.cos(ry), dz = Math.sin(ry);
+            let cx = Math.floor(px), cy = Math.floor(py), cz = Math.floor(pz);
+            let sx = Math.sign(dx), sy = Math.sign(dy), sz = Math.sign(dz);
+            let tx = sx > 0 ? (cx + 1 - px) / dx : (px - cx) / dx, ty = sy > 0 ? (cy + 1 - py) / dy : (py - cy) / dy, tz = sz > 0 ? (cz + 1 - pz) / dz : (pz - cz) / dz;
+            let ddx = Math.abs(1/dx), ddy = Math.abs(1/dy), ddz = Math.abs(1/dz), f = 0;
+            for (let i = 0; i < 20; i++) {
+                if (getB(cx, cy, cz) > 0) return { h: 1, x: cx, y: cy, z: cz, px: cx-(f===0?sx:0), py: cy-(f===1?sy:0), pz: cz-(f===2?sz:0) };
+                if (tx < ty && tx < tz) { cx += sx; tx += ddx; f = 0; } else if (ty < tz) { cy += sy; ty += ddy; f = 1; } else { cz += sz; tz += ddz; f = 2; }
             }
-
-            // Progress tracking variables
-            let progress = currentFrame / TOTAL_FRAMES;
-            let time = currentFrame / FPS;
-
-            // Frame Background
-            ctx.fillStyle = '#0a0518';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Ambient background particles
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            for(let i=0; i<30; i++) {
-                let x = (Math.sin(i + time) * 0.5 + 0.5) * canvas.width;
-                let y = ((i * 15 + time * 50) % canvas.height);
-                ctx.fillRect(x, y, 2, 2);
-            }
-
-            // Animated Geometric Star (Centerpiece)
-            ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(time * 1.5);
-
-            let lines = 12;
-            for (let i = 0; i < lines; i++) {
-                ctx.rotate((Math.PI * 2) / lines);
-                let length = 80 + Math.sin(time * 5 + i) * 30;
-                
-                // Neon glowing properties
-                ctx.strokeStyle = `hsl(${(time * 50 + i * 20) % 360}, 100%, 60%)`;
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(length, 0);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // Overlay Cinematic Timecode text
-            ctx.fillStyle = '#00ffff';
-            ctx.font = '16px monospace';
-            ctx.fillText(`TIME: 00:0${time.toFixed(2)} / 00:05.00`, 20, 340);
-            ctx.fillText(`FRAME: ${currentFrame} / ${TOTAL_FRAMES}`, 450, 340);
-
-            currentFrame++;
-            requestAnimationFrame(renderVideoFrame);
+            return { h: 0 };
         }
 
-        // Start recording and processing
-        mediaRecorder.start();
-        renderVideoFrame();
+        window.onmousedown = (e) => {
+            if (document.pointerLockElement !== canvas) return;
+            let r = cast();
+            if (r.h) { if (e.button === 0) setB(r.x, r.y, r.z, 0); if (e.button === 2) setB(r.px, r.py, r.pz, 1); }
+        };
+        canvas.oncontextmenu = (e) => e.preventDefault();
+
+        const colors = [null, '#557a2b', '#808080'];
+
+        function loop() {
+            if (keys.w) { px -= Math.sin(rx)*0.05; py += Math.cos(rx)*0.05; }
+            if (keys.s) { px += Math.sin(rx)*0.05; py -= Math.cos(rx)*0.05; }
+            if (keys.a) { px -= Math.cos(rx)*0.05; py -= Math.sin(rx)*0.05; }
+            if (keys.d) { px += Math.cos(rx)*0.05; py += Math.sin(rx)*0.05; }
+
+            ctx.fillStyle = '#78a7ff'; ctx.fillRect(0, 0, w, h);
+            let ray = cast();
+
+            for (let sx = 0; sx < w; sx += 4) {
+                let ax = rx + ((sx - w/2) / (w/2)) * 0.8;
+                let dx = -Math.sin(ax)*Math.cos(ry), dy = Math.cos(ax)*Math.cos(ry), dz = Math.sin(ry);
+                let cx = Math.floor(px), cy = Math.floor(py), cz = Math.floor(pz);
+                let stepX = Math.sign(dx), stepY = Math.sign(dy), stepZ = Math.sign(dz);
+                let tx = stepX > 0 ? (cx + 1 - px) / dx : (px - cx) / dx, ty = stepY > 0 ? (cy + 1 - py) / dy : (py - cy) / dy, tz = stepZ > 0 ? (cz + 1 - pz) / dz : (pz - cz) / dz;
+                let ddx = Math.abs(1/dx), ddy = Math.abs(1/dy), ddz = Math.abs(1/dz), f = 0, bid = 0, d = 0;
+
+                for (let i = 0; i < 30; i++) {
+                    bid = getB(cx, cy, cz);
+                    if (bid > 0) { d = (f===0)?tx-ddx:(f===1)?ty-ddy:tz-ddz; break; }
+                    if (tx < ty && tx < tz) { cx += stepX; tx += ddx; f = 0; } else if (ty < tz) { cy += stepY; ty += ddy; f = 1; } else { cz += stepZ; tz += ddz; f = 2; }
+                }
+
+                if (bid > 0 && d > 0) {
+                    let bh = Math.floor(h / (d * Math.cos(((sx - w/2) / (w/2)) * 0.8)));
+                    let yTop = h/2 - bh/2 + (ry * h/2);
+                    ctx.fillStyle = colors[bid];
+                    ctx.fillRect(sx, yTop, 4, bh);
+                    if (ray.h && cx === ray.x && cy === ray.y && cz === ray.z) { ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(sx, yTop, 4, bh); }
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+        loop();
     </script>
 </body>
 </html>
