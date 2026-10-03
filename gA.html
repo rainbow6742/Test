@@ -1,39 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Typing Game</title>
+    <title>Speed Typing Campaign</title>
     <style>
-        body { font-family: monospace; background: #1e1e2e; color: #cd.d6f4; text-align: center; padding-top: 50px; }
-        #box { font-size: 1.5rem; max-width: 600px; margin: 20px auto; background: #252538; padding: 20px; border-radius: 8px; text-align: left; }
+        body { font-family: monospace; background: #1e1e2e; color: #cdd6f4; text-align: center; padding-top: 40px; }
+        #box { font-size: 1.4rem; max-width: 650px; margin: 20px auto; background: #252538; padding: 20px; border-radius: 8px; text-align: left; min-height: 100px; }
         .letter { color: #6c7086; }
         .correct { color: #a6e3a1; }
         .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); }
         .current { border-left: 2px solid #cba6f7; color: #fff; }
         input { position: absolute; opacity: 0; }
+        button { background: #cba6f7; color: #1e1e2e; border: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; font-size: 1rem; }
+        button:disabled { background: #45475a; color: #7f849c; cursor: not-allowed; }
+        #msg { margin-top: 15px; font-weight: bold; font-size: 1.1rem; min-height: 24px; }
     </style>
 </head>
 <body>
-    <h2>Time: <span id="t">30</span>s | WPM: <span id="w">0</span></h2>
+    <h1>Round Time Target: <span id="target-time">120</span>s</h1>
+    <h2>Time Left: <span id="t">120</span>s | Current WPM: <span id="w">0</span></h2>
+    
     <input type="text" id="in" autocomplete="off">
     <div id="box" onclick="document.getElementById('in').focus()"></div>
-    <button onclick="location.reload()">Restart</button>
+    
+    <button id="next-btn" disabled>Next Level (-10s)</button>
+    <button id="reset-btn">Restart</button>
+    <div id="msg"></div>
 
     <script>
-        const words = "algorithm function variable developer keyboard network security interface database framework".split(' ').sort(() => Math.random() - 0.5).join(' ');
+        const wordBank = ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "responsive", "terminal", "framework", "hardware", "optimize", "graphics"];
         const box = document.getElementById('box'), input = document.getElementById('in'), timer = document.getElementById('t'), wpm = document.getElementById('w');
-        let idx = 0, correct = 0, total = 0, timeLeft = 30, active = false, interval;
+        const nextBtn = document.getElementById('next-btn'), resetBtn = document.getElementById('reset-btn'), msg = document.getElementById('msg'), targetDisplay = document.getElementById('target-time');
+        
+        let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval;
 
-        box.innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
-        const spans = box.children;
-        spans[0].classList.add('current');
+        function initRound() {
+            clearInterval(interval);
+            active = false;
+            idx = 0;
+            correct = 0;
+            timeLeft = targetTime;
+            timer.innerText = timeLeft;
+            targetDisplay.innerText = targetTime;
+            wpm.innerText = "0";
+            msg.innerText = "";
+            nextBtn.disabled = true;
+            input.disabled = false;
+            input.value = '';
+
+            // Generate random words
+            const words = [...wordBank].sort(() => Math.random() - 0.5).slice(0, 12).join(' ');
+            box.innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
+            box.children[0].classList.add('current');
+            input.focus();
+        }
 
         input.oninput = (e) => {
-            if (!active && timeLeft === 30) {
+            const spans = box.children;
+            
+            // Start timer on first keystroke
+            if (!active && timeLeft === targetTime) {
                 active = true;
                 interval = setInterval(() => {
-                    if (--timeLeft <= 0) { clearInterval(interval); input.disabled = true; alert(`Done! WPM: ${wpm.innerText}`); }
+                    if (--timeLeft <= 0) { 
+                        clearInterval(interval); 
+                        input.disabled = true;
+                        let finalWpm = wpm.innerText;
+                        msg.innerHTML = `<span style="color:#f38ba8;">Failed! WPM: ${finalWpm}. Time increased by 10s.</span>`;
+                        targetTime += 10; // Increase time allowance for failing
+                        nextBtn.innerText = "Retry Level (+10s)";
+                        nextBtn.disabled = false;
+                    }
                     timer.innerText = timeLeft;
-                    wpm.innerText = Math.round((correct / 5) / ((30 - timeLeft) / 60)) || 0;
+                    let timePassed = (targetTime - timeLeft) / 60;
+                    wpm.innerText = Math.round((correct / 5) / timePassed) || 0;
                 }, 1000);
             }
 
@@ -49,14 +88,36 @@
             } else {
                 let char = input.value.slice(-1);
                 if (!char) return;
-                if (char === spans[idx].innerText) { spans[idx].classList.add('correct'); correct++; }
-                else spans[idx].classList.add('incorrect');
+                if (char === spans[idx].innerText) { 
+                    spans[idx].classList.add('correct'); 
+                    correct++; 
+                } else { 
+                    spans[idx].classList.add('incorrect'); 
+                }
                 idx++;
-                if (idx < spans.length) spans[idx].classList.add('current');
+                
+                // Completed the block successfully before time ran out
+                if (idx >= spans.length) {
+                    clearInterval(interval);
+                    input.disabled = true;
+                    let finalWpm = wpm.innerText;
+                    let timeTaken = targetTime - timeLeft;
+                    msg.innerHTML = `<span style="color:#a6e3a1;">Level Cleared! WPM: ${finalWpm} | Time Taken: ${timeTaken}s</span>`;
+                    targetTime = Math.max(10, targetTime - 10); // Decrease time allowance for succeeding
+                    nextBtn.innerText = "Next Level (-10s)";
+                    nextBtn.disabled = false;
+                } else {
+                    spans[idx].classList.add('current');
+                }
             }
             input.value = '';
         };
-        input.focus();
+
+        nextBtn.onclick = () => initRound();
+        resetBtn.onclick = () => { targetTime = 120; initRound(); };
+
+        // Initial setup
+        initRound();
     </script>
 </body>
 </html>
