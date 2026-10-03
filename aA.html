@@ -3,17 +3,17 @@
     <h3 id="at">Log In</h3>
     <input id="usr" placeholder="User" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
     <input id="pwd" type="password" placeholder="Pass (4+)" style="width:90%;margin:4px;padding:6px;background:#333;color:#fff;border:none;">
-    <button onclick="auth()" style="width:95%;margin:4px;padding:6px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;">Enter</button>
+    <button onclick="auth()" style="width:95%;margin:4px;padding:6px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;border-radius:4px;">Enter</button>
     <div style="margin-top:10px;font-size:12px;"><a id="sl" href="#" onclick="isL=!isL;document.getElementById('at').textContent=isL?'Log In':'Sign Up';document.getElementById('sl').textContent=isL?'Need an account? Sign Up':'Have an account? Log In';err.textContent='';" style="color:#0fcc;text-decoration:none;font-weight:bold;">Need an account? Sign Up</a></div>
     <p id="err" style="color:#f55;font-size:11px;margin:4px 0 0 0;"></p>
 </div>
 <div id="menu" style="display:none;background:rgba(34,34,34,0.95);padding:15px;border-radius:8px;text-align:center;position:absolute;z-index:10;width:280px;max-height:90vh;overflow-y:auto;">
     <p id="m-hi" style="color:#0fcc;margin:0 0 5px 0;"></p>
-    <label><input type="checkbox" id="ai-on" checked> Enable AI Bot</label>
+    <label style="cursor:pointer;"><input type="checkbox" id="ai-on" checked> Enable AI Bot</label>
     <h4 style="margin:10px 0 5px 0;color:#0fcc;border-top:1px solid #444;padding-top:5px;">Shop</h4><div id="sh"></div>
     <h4 style="margin:10px 0 5px 0;color:#fa0;border-top:1px solid #444;padding-top:5px;">Boosts</h4><div id="bo"></div><br>
-    <button onclick="toggleM()" style="width:100%;padding:6px;background:#0fcc;border:none;font-weight:bold;margin-bottom:4px;">Resume</button>
-    <button onclick="location.reload()" style="width:100%;padding:6px;background:#f55;border:none;color:#fff;">Sign Out</button>
+    <button onclick="toggleM()" style="width:100%;padding:6px;background:#0fcc;border:none;font-weight:bold;margin-bottom:4px;cursor:pointer;">Resume</button>
+    <button onclick="location.reload()" style="width:100%;padding:6px;background:#f55;border:none;color:#fff;cursor:pointer;">Sign Out</button>
 </div>
 <canvas id="c" style="display:none;position:absolute;top:0;left:0;"></canvas>
 <script>
@@ -24,30 +24,37 @@ for(let i=0;i<100;i++)stars.push({x:(Math.random()-0.5)*3000,y:(Math.random()-0.
 
 function auth(){
     let u=document.getElementById('usr').value.trim(),p=document.getElementById('pwd').value,st=localStorage.getItem('g_'+u);
-    if(!u||p.length<4){err.textContent="4+ chars!";return;}
-    if(isL){if(!st){err.textContent="No account!";return;}let user=JSON.parse(st);if(user.pwd!==p){err.textContent="Wrong pass!";return;}score=user.hi||0;pCol=user.col||'#0fcc';bg=user.bg||'none';owns=user.owns||['#0fcc'];}
-    else{if(st){err.textContent="Taken!";return;}localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',bg:'none',owns:['#0fcc']}));score=0;pCol='#0fcc';bg='none';owns=['#0fcc'];}
+    if(!u||p.length<4){err.textContent="4+ chars required!";return;}
+    if(isL){
+        if(!st){err.textContent="No account found!";return;}
+        let user=JSON.parse(st);if(user.pwd!==p){err.textContent="Wrong password!";return;}
+        score=user.hi||0;pCol=user.col||'#0fcc';bg=user.bg||'none';owns=user.owns||['#0fcc'];
+    }else{
+        if(st){err.textContent="Username taken!";return;}
+        localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0,col:'#0fcc',bg:'none',owns:['#0fcc']}));
+        score=0;pCol='#0fcc';bg='none';owns=['#0fcc'];
+    }
     currentUsr=u;authDiv.style.display='none';c.style.display='block';toggleM();
 }
 function renderS(){
     shDiv.innerHTML='';boDiv.innerHTML='';
-    [{n:'Cyan',t:'col',id:'#0fcc',c:0},{n:'Lime',t:'col',id:'#0f0',c:200},{n:'Purple',t:'col',id:'#b0f',c:400},{n:'Pink',t:'col',id:'#f0f',c:800},{n:'Space BG',t:'bg',id:'space',c:2000}].forEach(item=>{
-        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:4px;font-weight:bold;cursor:pointer;";
-        let eq=(item.t==='col'&&pCol===item.id)||(item.t==='bg'&&bg===item.id);
-        if(eq){btn.textContent=`${item.n} (Eq)`;btn.style.background='#444';}
-        else if(owns.includes(item.id)){btn.textContent=`Use ${item.n}`;btn.onclick=()=>{if(item.t==='col')pCol=item.id;else bg=item.id;save();renderS();};}
-        else{btn.textContent=`${item.n} (${item.c}pt)`;btn.disabled=score<item.c;btn.onclick=()=>{score-=item.c;owns.push(item.id);if(item.t==='col')pCol=item.id;else bg=item.id;save();renderS();};}
+    [{n:'Cyan Skin',t:'col',id:'#0fcc',c:0},{n:'Lime Skin',t:'col',id:'#0f0',c:200},{n:'Purple Skin',t:'col',id:'#b0f',c:400},{n:'Pink Skin',t:'col',id:'#f0f',c:800},{n:'Space BG',t:'bg',id:'space',c:2000}].forEach(item=>{
+        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:6px;font-weight:bold;cursor:pointer;border:none;border-radius:4px;";
+        let eq=(item.t=='col'&&pCol==item.id)||(item.t=='bg'&&bg==item.id);
+        if(eq){btn.textContent=`${item.n} (Equipped)`;btn.style.background='#555';btn.style.color='#fff';}
+        else if(owns.includes(item.id)){btn.textContent=`Equip ${item.n}`;btn.style.background='#3a3a3a';btn.style.color='#fff';btn.onclick=()=>{if(item.t=='col')pCol=item.id;else bg=item.id;save();renderS();};}
+        else{btn.textContent=`Buy ${item.n} (${item.c}pt)`;btn.disabled=score<item.c;btn.style.background=score<item.c?'#222':'#0fcc';btn.style.color=score<item.c?'#666':'#111';btn.onclick=()=>{score-=item.c;owns.push(item.id);if(item.t=='col')pCol=item.id;else bg=item.id;save();renderS();};}
         shDiv.appendChild(btn);
     });
-    [{n:'2x (1m)',m:2,d:60,c:150},{n:'2x (2m)',m:2,d:120,c:300},{n:'5x (1m)',m:5,d:60,c:500},{n:'5x (2m)',m:5,d:120,c:1000}].forEach(b=>{
-        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:4px;font-weight:bold;cursor:pointer;";
-        btn.textContent=`${b.n} (${b.c}pt)`;btn.disabled=score<b.c;
+    [{n:'2x Boost (1m)',m:2,d:60,c:150},{n:'2x Boost (2m)',m:2,d:120,c:300},{n:'5x Boost (1m)',m:5,d:60,c:500},{n:'5x Boost (2m)',m:5,d:120,c:1000}].forEach(b=>{
+        let btn=document.createElement('button');btn.style="width:100%;margin:2px 0;padding:6px;font-weight:bold;cursor:pointer;border:none;border-radius:4px;";
+        btn.textContent=`${b.n} (${b.c}pt)`;btn.disabled=score<b.c;btn.style.background=score<b.c?'#222':'#fa0';btn.style.color=score<b.c?'#666':'#111';
         btn.onclick=()=>{score-=b.c;mult=b.m;mTimer=b.d*60;save();toggleM();};boDiv.appendChild(btn);
     });
 }
 function toggleM(){
     if(menuDiv.style.display==='block'){menuDiv.style.display='none';c.requestPointerLock();}
-    else{document.exitPointerLock();document.getElementById('m-hi').textContent=`Points: ${score}`;renderS();menuDiv.style.display='block';}
+    else{document.exitPointerLock();document.getElementById('m-hi').textContent=`Points Available: ${score}`;renderS();menuDiv.style.display='block';}
 }
 function save(){let u=JSON.parse(localStorage.getItem('g_'+currentUsr))||{};u.hi=Math.max(u.hi||0,score);u.col=pCol;u.bg=bg;u.owns=owns;localStorage.setItem('g_'+currentUsr,JSON.stringify(u));}
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==c&&currentUsr&&menuDiv.style.display==='none')toggleM();});
@@ -89,7 +96,7 @@ function loop(){
         });
         ctx.fillStyle=pCol;ctx.beginPath();ctx.arc(cx,cy,8,0,7);ctx.fill();ctx.strokeStyle=pCol;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx-15,cy);ctx.lineTo(cx+15,cy);ctx.moveTo(cx,cy-15);ctx.lineTo(cx,cy+15);ctx.stroke();
         ctx.fillStyle='#fff';ctx.font='18px sans-serif';ctx.fillText(`You: ${score}`,20,40);if(aiOn.checked){ctx.fillStyle='#fa0';ctx.fillText(`AI: ${ai.s}`,20,65);}
-        if(mult>1){ctx.fillStyle='#fa0';ctx.fillText(`${mult}x Boost: ${Math.ceil(mTimer/60)}s`,20,c.height-20);}
+        if(mult>1){ctx.fillStyle='#fa0';ctx.font='bold 16px sans-serif';ctx.fillText(`${mult}x Boost Active: ${Math.ceil(mTimer/60)}s`,20,c.height-20);}
     }
     requestAnimationFrame(loop);
 }
