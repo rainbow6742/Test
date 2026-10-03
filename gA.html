@@ -4,34 +4,62 @@
     <title>Speed Typing Campaign</title>
     <style>
         body { font-family: monospace; background: #1e1e2e; color: #cdd6f4; text-align: center; padding-top: 40px; }
+        #menu { max-width: 650px; margin: 50px auto; background: #252538; padding: 40px; border-radius: 8px; }
+        #game-area { display: none; }
         #box { font-size: 1.4rem; max-width: 650px; margin: 20px auto; background: #252538; padding: 20px; border-radius: 8px; text-align: left; min-height: 100px; }
         .letter { color: #6c7086; }
         .correct { color: #a6e3a1; }
         .incorrect { color: #f38ba8; background: rgba(243,139,168,0.2); }
         .current { border-left: 2px solid #cba6f7; color: #fff; }
         input { position: absolute; opacity: 0; }
-        button { background: #cba6f7; color: #1e1e2e; border: none; padding: 10px 20px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 5px; font-size: 1rem; }
+        button { background: #cba6f7; color: #1e1e2e; border: none; padding: 12px 24px; font-weight: bold; border-radius: 4px; cursor: pointer; margin: 10px; font-size: 1rem; }
         button:disabled { background: #45475a; color: #7f849c; cursor: not-allowed; }
+        .btn-easy { background: #a6e3a1; }
+        .btn-hard { background: #f38ba8; color: #fff; }
         #msg { margin-top: 15px; font-weight: bold; font-size: 1.1rem; min-height: 24px; }
     </style>
 </head>
 <body>
-    <h1>Round Time Target: <span id="target-time">120</span>s</h1>
-    <h2>Time Left: <span id="t">120</span>s | Current WPM: <span id="w">0</span></h2>
-    
-    <input type="text" id="in" autocomplete="off">
-    <div id="box" onclick="document.getElementById('in').focus()"></div>
-    
-    <button id="next-btn" disabled>Next Level (-10s)</button>
-    <button id="reset-btn">Restart</button>
-    <div id="msg"></div>
+
+    <!-- Mode Selection Menu -->
+    <div id="menu">
+        <h1>⚡ Choose Your Difficulty</h1>
+        <p>Both modes start at 120s. Winning drops time by 10s. Failing adds 10s.</p>
+        <button class="btn-easy" onclick="selectMode('easy')">🟢 Easy Mode (Words up to 5 letters)</button>
+        <button class="btn-hard" onclick="selectMode('hard')">🔴 Hard Mode (Complex tech words)</button>
+    </div>
+
+    <!-- Active Game Layout -->
+    <div id="game-area">
+        <h1>Round Time Target: <span id="target-time">120</span>s (<span id="mode-display"></span>)</h1>
+        <h2>Time Left: <span id="t">120</span>s | Current WPM: <span id="w">0</span></h2>
+        
+        <input type="text" id="in" autocomplete="off">
+        <div id="box" onclick="document.getElementById('in').focus()"></div>
+        
+        <button id="next-btn" disabled>Next Level (-10s)</button>
+        <button id="reset-btn">Main Menu / Restart</button>
+        <div id="msg"></div>
+    </div>
 
     <script>
-        const wordBank = ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "responsive", "terminal", "framework", "hardware", "optimize", "graphics"];
+        const easyBank = ["code", "data", "web", "link", "user", "file", "byte", "key", "text", "page", "icon", "app", "site", "test", "load", "save", "sync", "run", "log", "loop", "true", "null", "main", "open", "type", "word", "game", "time", "fast", "easy"];
+        const hardBank = ["algorithm", "compiler", "variable", "developer", "database", "encryption", "javascript", "interface", "protocol", "responsive", "terminal", "framework", "hardware", "optimize", "graphics"];
+        
+        const menu = document.getElementById('menu'), gameArea = document.getElementById('game-area'), modeDisplay = document.getElementById('mode-display');
         const box = document.getElementById('box'), input = document.getElementById('in'), timer = document.getElementById('t'), wpm = document.getElementById('w');
         const nextBtn = document.getElementById('next-btn'), resetBtn = document.getElementById('reset-btn'), msg = document.getElementById('msg'), targetDisplay = document.getElementById('target-time');
         
-        let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval;
+        let idx = 0, correct = 0, targetTime = 120, timeLeft = 120, active = false, interval, currentBank = [];
+
+        function selectMode(mode) {
+            currentBank = mode === 'easy' ? easyBank : hardBank;
+            modeDisplay.innerText = mode.toUpperCase() + " MODE";
+            menu.style.display = "none";
+            gameArea.style.display = "block";
+            targetTime = 120;
+            initRound();
+        }
 
         function initRound() {
             clearInterval(interval);
@@ -47,8 +75,8 @@
             input.disabled = false;
             input.value = '';
 
-            // Generate random words
-            const words = [...wordBank].sort(() => Math.random() - 0.5).slice(0, 12).join(' ');
+            // Generate words based on selection
+            const words = [...currentBank].sort(() => Math.random() - 0.5).slice(0, 12).join(' ');
             box.innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
             box.children[0].classList.add('current');
             input.focus();
@@ -57,7 +85,6 @@
         input.oninput = (e) => {
             const spans = box.children;
             
-            // Start timer on first keystroke
             if (!active && timeLeft === targetTime) {
                 active = true;
                 interval = setInterval(() => {
@@ -66,7 +93,7 @@
                         input.disabled = true;
                         let finalWpm = wpm.innerText;
                         msg.innerHTML = `<span style="color:#f38ba8;">Failed! WPM: ${finalWpm}. Time increased by 10s.</span>`;
-                        targetTime += 10; // Increase time allowance for failing
+                        targetTime += 10; 
                         nextBtn.innerText = "Retry Level (+10s)";
                         nextBtn.disabled = false;
                     }
@@ -96,14 +123,13 @@
                 }
                 idx++;
                 
-                // Completed the block successfully before time ran out
                 if (idx >= spans.length) {
                     clearInterval(interval);
                     input.disabled = true;
                     let finalWpm = wpm.innerText;
                     let timeTaken = targetTime - timeLeft;
                     msg.innerHTML = `<span style="color:#a6e3a1;">Level Cleared! WPM: ${finalWpm} | Time Taken: ${timeTaken}s</span>`;
-                    targetTime = Math.max(10, targetTime - 10); // Decrease time allowance for succeeding
+                    targetTime = Math.max(10, targetTime - 10); 
                     nextBtn.innerText = "Next Level (-10s)";
                     nextBtn.disabled = false;
                 } else {
@@ -114,10 +140,11 @@
         };
 
         nextBtn.onclick = () => initRound();
-        resetBtn.onclick = () => { targetTime = 120; initRound(); };
-
-        // Initial setup
-        initRound();
+        resetBtn.onclick = () => {
+            clearInterval(interval);
+            gameArea.style.display = "none";
+            menu.style.display = "block";
+        };
     </script>
 </body>
 </html>
