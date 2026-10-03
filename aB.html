@@ -1,90 +1,113 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Retro Space Shooter</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Video Generator</title>
     <style>
-        body { margin: 0; background: #050510; overflow: hidden; color: #00ffff; font-family: sans-serif; }
-        #ui { position: absolute; top: 10px; left: 10px; font-size: 20px; pointer-events: none; }
+        body { background: #050510; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        canvas { border-radius: 8px; box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+        button { margin-top: 20px; padding: 12px 24px; font-size: 16px; background: #00ffff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; display: none; }
+        button:hover { background: #00cccc; }
+        #status { font-size: 18px; margin-bottom: 10px; color: #00ffff; }
     </style>
 </head>
 <body>
-    <div id="ui">Score: <span id="sc">0</span> | Shield: <span id="sh">100</span>%</div>
-    <canvas id="g"></canvas>
+
+    <div id="status">Generating Video (5 Seconds)...</div>
+    <canvas id="canvas" width="640" height="360"></canvas>
+    <button id="downloadBtn">Download Video (.webm)</button>
 
     <script>
-        const canvas = document.getElementById('g'), ctx = canvas.getContext('2d');
-        let w = canvas.width = window.innerWidth, h = canvas.height = window.innerHeight;
-        window.onresize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusText = document.getElementById('status');
 
-        let score = 0, shield = 100, px = w/2, py = h/2, keys = {}, objects = [];
+        const FPS = 30;
+        const DURATION = 5; // 5-second video length
+        const TOTAL_FRAMES = FPS * DURATION;
+        
+        let currentFrame = 0;
+        let recordedChunks = [];
+        
+        // Setup MediaRecorder to capture the canvas stream natively
+        const stream = canvas.captureStream(FPS);
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
 
-        window.onkeydown = (e) => { keys[e.key.toLowerCase()] = true; if(e.key === ' ' && shield > 0) objects.push({t:'l', x:px, y:py, z:1}); };
-        window.onkeyup = (e) => keys[e.key.toLowerCase()] = false;
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
 
-        // Populate background stars
-        for(let i=0; i<100; i++) objects.push({t:'s', x:Math.random()*w - w/2, y:Math.random()*h - h/2, z:Math.random()*1000});
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            downloadBtn.style.display = 'block';
+            downloadBtn.onclick = () => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'html_generated_video.webm';
+                a.click();
+            };
+            statusText.innerText = "Video Ready!";
+        };
 
-        function spawn() {
-            if(shield > 0) {
-                objects.push({t:'a', x:(Math.random()-0.5)*w*2, y:(Math.random()-0.5)*h*2, z:1000, r:15+Math.random()*20});
-                setTimeout(spawn, Math.max(200, 1000 - score));
+        // Render loop for creating the procedural content frame-by-frame
+        function renderVideoFrame() {
+            if (currentFrame >= TOTAL_FRAMES) {
+                mediaRecorder.stop();
+                return;
             }
+
+            // Progress tracking variables
+            let progress = currentFrame / TOTAL_FRAMES;
+            let time = currentFrame / FPS;
+
+            // Frame Background
+            ctx.fillStyle = '#0a0518';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ambient background particles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for(let i=0; i<30; i++) {
+                let x = (Math.sin(i + time) * 0.5 + 0.5) * canvas.width;
+                let y = ((i * 15 + time * 50) % canvas.height);
+                ctx.fillRect(x, y, 2, 2);
+            }
+
+            // Animated Geometric Star (Centerpiece)
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(time * 1.5);
+
+            let lines = 12;
+            for (let i = 0; i < lines; i++) {
+                ctx.rotate((Math.PI * 2) / lines);
+                let length = 80 + Math.sin(time * 5 + i) * 30;
+                
+                // Neon glowing properties
+                ctx.strokeStyle = `hsl(${(time * 50 + i * 20) % 360}, 100%, 60%)`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(length, 0);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Overlay Cinematic Timecode text
+            ctx.fillStyle = '#00ffff';
+            ctx.font = '16px monospace';
+            ctx.fillText(`TIME: 00:0${time.toFixed(2)} / 00:05.00`, 20, 340);
+            ctx.fillText(`FRAME: ${currentFrame} / ${TOTAL_FRAMES}`, 450, 340);
+
+            currentFrame++;
+            requestAnimationFrame(renderVideoFrame);
         }
-        spawn();
 
-        function loop() {
-            ctx.fillStyle = '#050510'; ctx.fillRect(0, 0, w, h);
-            const cx = w/2, cy = h/2;
-
-            // Handle input
-            if (keys.w) py -= 7; if (keys.s) py += 7; if (keys.a) px -= 7; if (keys.d) px += 7;
-            px = Math.max(20, Math.min(w - 20, px)); py = Math.max(20, Math.min(h - 20, py));
-
-            objects.forEach((o, idx) => {
-                if (o.t === 's') { // Stars
-                    o.z -= 4; if(o.z <= 0) o.z = 1000;
-                    ctx.fillStyle = '#fff'; ctx.fillRect((o.x/o.z)*cx + cx, (o.y/o.z)*cy + cy, 2, 2);
-                }
-                else if (o.t === 'l') { // Lasers
-                    o.z += 25;
-                    ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(o.x, o.y, 4, 0, 7); ctx.fill();
-                    if(o.z > 1000) objects.splice(idx, 1);
-                }
-                else if (o.t === 'a') { // Asteroids
-                    o.z -= 6;
-                    let sx = (o.x/o.z)*cx + cx, sy = (o.y/o.z)*cy + cy, sr = (o.r/o.z)*cx;
-                    
-                    if (o.z <= 10) { // Screen impact
-                        if (Math.hypot(sx - px, sy - py) < sr + 20 && shield > 0) { shield -= 20; if(shield <= 0) alert(`Game Over! Score: ${score}`); }
-                        objects.splice(idx, 1); return;
-                    }
-
-                    // Draw Asteroid
-                    ctx.fillStyle = '#544'; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1, sr), 0, 7); ctx.fill();
-
-                    // Collision with lasers
-                    objects.forEach((l, lIdx) => {
-                        if (l.t === 'l' && Math.abs(l.z - (1000 - o.z)) < 60 && Math.hypot(l.x - sx, l.y - sy) < sr + 10) {
-                            objects.splice(idx, 1); objects.splice(lIdx, 1); score += 100;
-                        }
-                    });
-                }
-            });
-
-            // UI Update
-            document.getElementById('sc').innerText = score;
-            document.getElementById('sh').innerText = Math.max(0, shield);
-
-            // Default Tactical Crosshair
-            ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(px, py, 15, 0, 7); ctx.stroke(); // Circle
-            ctx.beginPath(); ctx.moveTo(px-25, py); ctx.lineTo(px-5, py); ctx.moveTo(px+5, py); ctx.lineTo(px+25, py); // H-Lines
-            ctx.moveTo(px, py-25); ctx.lineTo(px, py-5); ctx.moveTo(px, py+5); ctx.lineTo(px, py+25); ctx.stroke(); // V-Lines
-            ctx.fillStyle = '#00ffff'; ctx.fillRect(px-1, py-1, 2, 2); // Center Dot
-
-            requestAnimationFrame(loop);
-        }
-        loop();
+        // Start recording and processing
+        mediaRecorder.start();
+        renderVideoFrame();
     </script>
 </body>
 </html>
