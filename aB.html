@@ -3,92 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Multiplying Page</title>
+    <title>Hangman Game</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
+            color: #fff;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
+            min-height: 100vh;
             margin: 0;
-            background-color: #2c3e50;
-            color: white;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .container {
-            text-align: center;
-            background: #34495e;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
+
         h1 {
-            margin-bottom: 10px;
+            margin-top: 0;
+            color: #4dabf7;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
-        p {
-            color: #bdc3c7;
-            margin-bottom: 25px;
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #2a2a35;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
         }
-        input {
-            padding: 12px;
-            font-size: 18px;
-            border: 2px solid #7f8c8d;
-            border-radius: 6px;
-            background: #2c3e50;
-            color: white;
+
+        /* Hangman Canvas/SVG styling */
+        .gallows {
+            stroke: #fff;
+            stroke-width: 4;
+            fill: none;
+            stroke-linecap: round;
+        }
+
+        .body-part {
+            display: none;
+            stroke: #ff6b6b;
+            stroke-width: 4;
+        }
+
+        .word-display {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+
+        .letter-slot {
+            border-bottom: 4px solid #4dabf7;
+            min-width: 25px;
             text-align: center;
-            width: 220px;
+            height: 45px;
         }
-        input:focus {
-            outline: none;
-            border-color: #e74c3c;
+
+        /* Keyboard styling */
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .key {
+            background-color: #3b3b4f;
+            color: white;
+            border: none;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+        }
+
+        .key:hover:not(:disabled) {
+            background-color: #4e4e6a;
+        }
+
+        .key:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .key.correct {
+            background-color: #2b8a3e;
+        }
+
+        .key.wrong {
+            background-color: #c92a2a;
+        }
+
+        /* Game Over Modals */
+        .message {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 20px 0;
+            min-height: 30px;
+            text-align: center;
+        }
+
+        .btn-restart {
+            background-color: #4dabf7;
+            color: #1e1e24;
+            border: none;
+            padding: 12px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            display: none;
+        }
+
+        .btn-restart:hover {
+            background-color: #339af0;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Don't Press 'X'</h1>
-    <p>(Click the screen once first, then press 'X' to duplicate)</p>
-    <input type="text" id="codeInput" placeholder="Enter code to close all..." maxlength="5">
-</div>
+    <h1>Hangman</h1>
+    <div class="game-container">
+        <!-- Hangman Visual elements using vector graphic lines -->
+        <svg height="250" width="200">
+            <!-- Gallows base -->
+            <line x1="20" y1="230" x2="180" y2="230" class="gallows" />
+            <line x1="60" y1="20" x2="60" y2="230" class="gallows" />
+            <line x1="60" y1="20" x2="140" y2="20" class="gallows" />
+            <line x1="140" y1="20" x2="140" y2="50" class="gallows" />
+
+            <!-- Stick figure parts ordered by step -->
+            <circle cx="140" cy="70" r="20" class="body-part" id="part-0" /> <!-- Head -->
+            <line x1="140" y1="90" x2="140" y2="150" class="body-part" id="part-1" /> <!-- Body -->
+            <line x1="140" y1="110" x2="110" y2="130" class="body-part" id="part-2" /> <!-- Left Arm -->
+            <line x1="140" y1="110" x2="170" y2="130" class="body-part" id="part-3" /> <!-- Right Arm -->
+            <line x1="140" y1="150" x2="110" y2="190" class="body-part" id="part-4" /> <!-- Left Leg -->
+            <line x1="140" y1="150" x2="170" y2="190" class="body-part" id="part-5" /> <!-- Right Leg -->
+        </svg>
+
+        <div class="word-display" id="wordDisplay"></div>
+        <div class="message" id="gameMessage"></div>
+        <div class="keyboard" id="keyboard"></div>
+        <button class="btn-restart" id="restartBtn" onclick="initGame()">Play Again</button>
+    </div>
 
 <script>
-    // BroadcastChannel allows all open tabs/windows of this page to talk to each other
-    const closeChannel = new BroadcastChannel('close_windows_channel');
+    const wordList = [
+        "JAVASCRIPT", "DEVELOPER", "HANGMAN", "COMPUTER", "PROGRAMMING",
+        "INTERFACE", "KEYBOARD", "BROWSERS", "CREATIVE", "MONITOR"
+    ];
 
-    // Listen for the close signal from any other window
-    closeChannel.onmessage = (event) => {
-        if (event.data === 'close_all') {
-            window.close();
-        }
-    };
+    let selectedWord = "";
+    let guessedLetters = [];
+    let wrongGuesses = 0;
+    const maxWrong = 6;
 
-    // Detect when the user presses a key
-    document.addEventListener('keydown', (event) => {
-        // Check if the user is typing in the input box so typing 'x' in the code doesn't trigger popups
-        if (document.activeElement === document.getElementById('codeInput')) {
-            return; 
+    const wordDisplay = document.getElementById("wordDisplay");
+    const gameMessage = document.getElementById("gameMessage");
+    const keyboard = document.getElementById("keyboard");
+    const restartBtn = document.getElementById("restartBtn");
+
+    // Initialize/Reset the game state
+    function initGame() {
+        wrongGuesses = 0;
+        guessedLetters = [];
+        selectedWord = wordList[Math.floor(Math.random() * wordList.length)];
+        
+        gameMessage.textContent = "";
+        restartBtn.style.display = "none";
+        
+        // Hide all hangman body parts
+        for(let i = 0; i < maxWrong; i++) {
+            document.getElementById(`part-${i}`).style.display = "none";
         }
 
-        // If 'x' or 'X' is pressed, open 2 new instances of the exact same URL
-        if (event.key === 'x' || event.key === 'X') {
-            const currentUrl = window.location.href;
-            window.open(currentUrl, '_blank');
-            window.open(currentUrl, '_blank');
-        }
-    });
+        renderWord();
+        renderKeyboard();
+    }
 
-    // Monitor the input box for the magic code
-    const codeInput = document.getElementById('codeInput');
-    codeInput.addEventListener('input', () => {
-        if (codeInput.value === '31718') {
-            // Send a message to all other tabs to close
-            closeChannel.postMessage('close_all');
-            // Close the current tab
-            window.close();
+    // Display underscores or correct letters
+    function renderWord() {
+        wordDisplay.innerHTML = "";
+        let won = true;
+
+        for (let letter of selectedWord) {
+            const slot = document.createElement("div");
+            slot.classList.add("letter-slot");
+            
+            if (guessedLetters.includes(letter)) {
+                slot.textContent = letter;
+            } else {
+                slot.textContent = "";
+                won = false;
+            }
+            wordDisplay.appendChild(slot);
         }
-    });
+
+        if (won) {
+            endGame(true);
+        }
+    }
+
+    // Build the virtual A-Z alphabet buttons
+    function renderKeyboard() {
+        keyboard.innerHTML = "";
+        for (let i = 65; i <= 90; i++) {
+            const letter = String.fromCharCode(i);
+            const button = document.createElement("button");
+            button.classList.add("key");
+            button.textContent = letter;
+            button.id = `key-${letter}`;
+            button.addEventListener("click", () => handleGuess(letter));
+            keyboard.appendChild(button);
+        }
+    }
+
+    // Process a chosen letter
+    function handleGuess(letter) {
+        guessedLetters.push(letter);
+        const button = document.getElementById(`key-${letter}`);
+        button.disabled = true;
+
+        if (selectedWord.includes(letter)) {
+            button.classList.add("correct");
+            renderWord();
+        } else {
+            button.classList.add("wrong");
+            // Reveal the next body part based on mistake number
+            document.getElementById(`part-${wrongGuesses}`).style.display = "block";
+            wrongGuesses++;
+            
+            if (wrongGuesses === maxWrong) {
+                endGame(false);
+            }
+        }
+    }
+
+    // Process winning or losing conditions
+    function endGame(isWin) {
+        // Disable remaining layout buttons
+        const keys = document.querySelectorAll(".key");
+        keys.forEach(key => key.disabled = true);
+
+        if (isWin) {
+            gameMessage.textContent = "🎉 You Win! Congratulations! 🎉";
+            gameMessage.style.color = "#2b8a3e";
+        } else {
+            gameMessage.textContent = `❌ Game Over! The word was: ${selectedWord}`;
+            gameMessage.style.color = "#e74c3c";
+        }
+        
+        restartBtn.style.display = "block";
+    }
+
+    // Start game on load
+    initGame();
 </script>
 
 </body>
