@@ -3,11 +3,7 @@
     <h2 id="auth-title">Log In</h2>
     <input id="usr" placeholder="User" style="width:90%;margin:5px;padding:8px;background:#333;color:#fff;border:none;">
     <input id="pwd" type="password" placeholder="Pass (4+)" style="width:90%;margin:5px;padding:8px;background:#333;color:#fff;border:none;">
-    
-    <!-- Action Button (changes function depending on mode) -->
     <button id="submit-btn" onclick="submitAuth()" style="width:95%;margin:5px;padding:8px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;border-radius:4px;">Enter Arena</button>
-    
-    <!-- Switch between Login and Signup modes -->
     <div style="margin-top:15px;font-size:13px;color:#aaa;">
         <span id="switch-text">Don't have an account?</span> 
         <a id="switch-link" href="#" onclick="toggleAuthMode(event)" style="color:#0fcc;text-decoration:none;font-weight:bold;">Sign Up</a>
@@ -39,16 +35,12 @@ function toggleAuthMode(e) {
 function submitAuth(){
     let u=document.getElementById('usr').value.trim(),p=document.getElementById('pwd').value,st=localStorage.getItem('g_'+u);
     if(!u||p.length<4){err.textContent="4+ chars required!";return;}
-    
     if(isLoginMode){
         if(!st){err.textContent="Account does not exist!";return;}
-        let user=JSON.parse(st);
-        if(user.pwd !== p){err.textContent="Wrong password!";return;}
-        score=user.hi||0;
+        let user=JSON.parse(st);if(user.pwd !== p){err.textContent="Wrong password!";return;}score=user.hi||0;
     }else{
         if(st){err.textContent="Username already taken!";return;}
-        localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0}));
-        score=0;
+        localStorage.setItem('g_'+u,JSON.stringify({pwd:p,hi:0}));score=0;
     }
     currentUsr=u;authDiv.style.display='none';c.style.display='block';toggleM();
 }
@@ -65,10 +57,7 @@ function signOut(){
 document.addEventListener('pointerlockchange',()=>{if(document.pointerLockElement!==c&&currentUsr&&menuDiv.style.display==='none')toggleM();});
 window.onclick=()=>{if(currentUsr&&menuDiv.style.display==='none')c.requestPointerLock();};
 document.onmousemove=(e)=>{if(document.pointerLockElement===c){px+=e.movementX;py+=e.movementY;}};
-document.onkeydown=(e)=>{
-    keys[e.key.toLowerCase()]=true;
-    if(e.key==='Escape'&&currentUsr)toggleM();
-};
+document.onkeydown=(e)=>{keys[e.key.toLowerCase()]=true;if(e.key==='Escape'&&currentUsr)toggleM();};
 document.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
 window.onkeypress=(e)=>{
     if(!currentUsr||document.pointerLockElement!==c)return;
@@ -87,7 +76,7 @@ function loop(){
     if(currentUsr&&menuDiv.style.display==='none'){
         ctx.fillStyle='rgba(17,17,17,0.3)';ctx.fillRect(0,0,c.width,c.height);hue=(hue+2)%360;
         let cx=c.width/2,cy=c.height/2;
-        if(keys.w)py-=5;if(keys.s)py+=5;if(keys.a)px-=5;if(keys.d)px+=5;
+        if(keys.w) py-=5; if(keys.s) py+=5; if(keys.a) px-=5; if(keys.d) px+=5;
 
         if(aiOn.checked&&targets.length>0){
             let close=targets.reduce((a,b)=>Math.hypot(a.x-ai.x,a.y-ai.y)<Math.hypot(b.x-ai.x,b.y-ai.y)?a:b);
@@ -103,8 +92,6 @@ function loop(){
 
         targets.forEach((t,ti)=>{
             let sx=t.x-px,sy=t.y-py,dp=Math.hypot(sx-cx,sy-cy),da=Math.hypot(sx-(ai.x-px),sy-(ai.y-py));
-            let tx=(aiOn.checked&&da<dp)?ai.x-px:cx,ty=(aiOn.checked&&da<dp)?ai.y-py:cy;
-            let ang=Math.atan2(ty-sy,tx-sx);t.x+=Math.cos(ang)*(t.t==='r'?1:1.5);t.y+=Math.sin(ang)*(t.t==='r'?1:1.5);
 
             if(dp<20){targets.splice(ti,1);score=Math.max(0,score-10);let u=JSON.parse(localStorage.getItem('g_'+currentUsr));if(score>u.hi){u.hi=score;localStorage.setItem('g_'+currentUsr,JSON.stringify(u));}return;}
             if(aiOn.checked&&da<20){targets.splice(ti,1);ai.s=Math.max(0,ai.s-10);return;}
