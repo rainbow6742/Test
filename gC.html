@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Type!</title>
+    <title>Type Campaign</title>
     <style>
         :root { --bg: #1e1e2e; --pnl: #252538; --txt: #cdd6f4; --sub: #6c7086; --acc: #cba6f7; }
         .light { --bg: #eff1f5; --pnl: #e6e9ef; --txt: #4c4f69; --sub: #9ca0b0; --acc: #8839ef; }
@@ -70,7 +70,7 @@
             let data = localStorage.getItem('typer_' + name);
             if (isSignUp) {
                 if (data) return alert("Taken!");
-                localStorage.setItem('typer_' + name, JSON.stringify({ pass, mode: 'easy', time: 120, mIdx: 0, lvl: 1, totalG: 0, sumW: 0, sumA: 0 }));
+                localStorage.setItem('typer_' + name, JSON.stringify({ pass: pass, mode: 'easy', time: 120, mIdx: 0, lvl: 1, totalG: 0, sumW: 0, sumA: 0 }));
                 alert("Saved! Click Login.");
             } else {
                 if (!data) return alert("No user found!");
@@ -103,7 +103,7 @@
 
         function exitMenu() { clearInterval(interval); mode = ''; document.getElementById('game').style.display = 'none'; document.getElementById('stats').style.display = 'none'; document.getElementById('menu').style.display = 'block'; }
         function start(m) { mode = m; targetTime = 120; mIdx = 0; lvl = 1; document.getElementById('menu').style.display = 'none'; initRound(); }
-        function save() { if (user) localStorage.setItem('typer_' + user, JSON.stringify({ pass: JSON.parse(localStorage.getItem('typer_' + user)).pass, mode, time: targetTime, mIdx, lvl, totalG, sumW, sumA })); }
+        function save() { if (user) localStorage.setItem('typer_' + user, JSON.stringify({ pass: JSON.parse(localStorage.getItem('typer_' + user)).pass, mode: mode, time: targetTime, mIdx: mIdx, lvl: lvl, totalG: totalG, sumW: sumW, sumA: sumA })); }
 
         function initRound() {
             clearInterval(interval); active = false; idx = 0; correct = 0; typed = 0; timeLeft = targetTime;
@@ -115,7 +115,9 @@
             document.getElementById('box').innerHTML = [...words].map(c => `<span class="letter">${c}</span>`).join('');
             
             let elements = document.getElementById('box').children;
-            if (elements.length > 0) elements[0].classList.add('current');
+            if (elements.length > 0) {
+                elements[0].classList.add('current');
+            }
             document.getElementById('in').disabled = false; document.getElementById('in').value = ''; document.getElementById('in').focus();
         }
 
