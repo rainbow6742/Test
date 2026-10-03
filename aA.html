@@ -11,7 +11,6 @@
     <p id="err" style="color:#f55;font-size:12px;margin-top:5px;"></p>
 </div>
 
-<!-- Updated Menu with Customization Shop -->
 <div id="menu" style="display:none;background:rgba(34,34,34,0.95);padding:20px;border-radius:8px;text-align:center;position:absolute;z-index:10;width:300px;max-height:90vh;overflow-y:auto;">
     <h2>Menu</h2><p id="m-hi" style="color:#0fcc;margin:5px 0;"></p>
     <label style="cursor:pointer;"><input type="checkbox" id="ai-on" checked> Enable AI Bot</label>
@@ -28,11 +27,12 @@ const c=document.getElementById('c'),ctx=c.getContext('2d'),authDiv=document.get
 let px=0,py=0,score=0,currentUsr='',keys={},targets=[],bullets=[],hue=0,ai={x:100,y:-100,s:0,cd:0},isLoginMode=true;
 let playerColor='#0fcc', unlockedColors=['#0fcc'];
 
+// All non-zero shop prices multiplied by 4
 const shopInventory=[
     {name:'Cyan Core',color:'#0fcc',cost:0},
-    {name:'Lime Laser',color:'#0f0',cost:50},
-    {name:'Purple Plasma',color:'#b0f',cost:100},
-    {name:'Pink Pixels',color:'#f0f',cost:200}
+    {name:'Lime Laser',color:'#0f0',cost:200},
+    {name:'Purple Plasma',color:'#b0f',cost:400},
+    {name:'Pink Pixels',color:'#f0f',cost:800}
 ];
 
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
