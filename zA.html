@@ -12,16 +12,17 @@
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
-let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500;
+let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500,au=null;
+const playOof=()=>{
+    try{if(!au)au=new(window.AudioContext||window.webkitAudioContext)();let o=au.createOscillator(),g=au.createGain(),t=au.currentTime;
+    o.type='sawtooth';o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(330,t+0.05);o.frequency.exponentialRampToValueAtTime(180,t+0.15);
+    g.gain.setValueAtTime(0.3,t);g.gain.exponentialRampToValueAtTime(0.01,t+0.18);o.connect(g);g.connect(au.destination);o.start(t);o.stop(t+0.18);}catch(e){}
+};
 const plat=[
     {x:250,y:550,w:300,h:20,t:'spawn'},
     {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
     {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},
-    
-    // HEADHITTER: Bottom base platform remains steady, top platform is now less wide (w:28) to allow easier wrap-around jumps
-    {x:460,y:230,w:45,h:12}, 
-    {x:460,y:175,w:28,h:12}, 
-    
+    {x:460,y:230,w:45,h:12},{x:460,y:175,w:28,h:12}, 
     {x:280,y:130,w:120,h:15,t:'checkpoint'},
     {x:210,y:70,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:10,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-50,w:45,h:12,t:'rainbow',state:'idle',timer:0},
     {x:380,y:-100,w:35,h:12,t:'plat'},{x:280,y:-150,w:40,h:12},{x:200,y:-175,w:12,h:50,t:'lava'},{x:180,y:-220,w:50,h:12},
@@ -31,7 +32,7 @@ const plat=[
 ],items=[{x:390,y:-530,w:20,h:40,t:'trophy',c:'#ffd700'}];
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 const killPlayer=()=>{
-    px=respawnX;py=respawnY;vy=0;isG=false;
+    playOof();px=respawnX;py=respawnY;vy=0;isG=false;
     plat.forEach(p=>{if(p.t==='rainbow'){p.state='idle';p.timer=0;}});
 };
 const restartObby=()=>{
