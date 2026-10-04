@@ -14,9 +14,9 @@
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),elist=document.getElementById('elist'),msg=document.getElementById('msg');
-let keys={},px=40,py=100,pw=20,ph=20,g=0.3,vy=0,isG=false,bx=120,by=200,br=12,bvx=0,bvy=0,worldCol='#111',active=true,jumps=0,steps=0,afk=0,konami='',clicks=0,lavaFrame=0;
-const plat=[{x:-40,y:260,w:230,h:20},{x:250,y:260,w:120,h:20},{x:440,y:260,w:60,h:20},{x:100,y:140,w:40,h:15,t:'cloud'},{x:290,y:170,w:40,h:15,t:'fake'},{x:-150,y:350,w:800,h:20,t:'lava'},{x:550,y:260,w:100,h:20,t:'space'}];
-const items=[{x:460,y:230,w:20,h:30,t:'trophy',c:'#fa0'},{x:300,y:240,w:18,h:20,t:'cheese',c:'#ff0'},{x:0,y:230,w:20,h:30,t:'trash',c:'#7a7'},{x:110,y:110,w:15,h:15,t:'star',c:'#fff'},{x:-120,y:220,w:25,h:40,t:'door',c:'#b52'}];
+let keys={},px=100,py=200,pw=20,ph=20,g=0.3,vy=0,isG=false,bx=250,by=200,br=12,bvx=0,bvy=0,worldCol='#111',active=true,jumps=0,steps=0,afk=0,konami='',clicks=0,lavaFrame=0;
+const plat=[{x:50,y:260,w:230,h:20},{x:340,y:260,w:120,h:20},{x:520,y:260,w:60,h:20},{x:150,y:140,w:40,h:15,t:'cloud'},{x:360,y:170,w:40,h:15,t:'fake'},{x:-50,y:450,w:800,h:20,t:'lava'},{x:640,y:260,w:100,h:20,t:'space'}];
+const items=[{x:540,y:230,w:20,h:30,t:'trophy',c:'#fa0'},{x:380,y:240,w:18,h:20,t:'cheese',c:'#ff0'},{x:60,y:230,w:20,h:30,t:'trash',c:'#7a7'},{x:160,y:110,w:15,h:15,t:'star',c:'#fff'},{x:-10,y:220,w:25,h:40,t:'door',c:'#b52'}];
 const endings={
     'win':{n:'1. You Won',d:'Walked across and touched the golden trophy.'},'fell':{n:'2. The Void',d:'You completely missed the track and fell.'},
     'reset':{n:'3. Hard Reset',d:'Manually typed /reset in the chat panel.'},'super':{n:'4. Super Win',d:'Pushed the yellow physics ball into the trophy.'},
@@ -43,12 +43,12 @@ const updateUI=()=>{
     elist.innerHTML=Object.keys(endings).map(k=>`<div style="color:${unlocked.includes(k)?'#0fcc':'#555'}">${unlocked.includes(k)?'✓':'?'} ${endings[k].n}</div>`).join('');
 };
 const resetGame=()=>{
-    px=40;py=100;vy=0;bx=120;by=200;bvx=bvy=0;worldCol='#111';msg.style.display='none';active=true;chat.value='';chat.blur();jumps=steps=afk=clicks=0;konami='';
+    px=100;py=200;vy=0;bx=250;by=200;bvx=bvy=0;worldCol='#111';msg.style.display='none';active=true;chat.value='';chat.blur();jumps=steps=afk=clicks=0;konami='';
 };
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();updateUI();
 window.onkeydown=(e)=>{
     keys[e.key.toLowerCase()]=true;let k=e.key.toLowerCase();
-    if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key))konami+=e.key[5].toLowerCase();
+    if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key))konami+=e.key.toLowerCase();
     if(konami.endsWith('uuddlrlr')&&active)saveEnd('konami');
     if(e.key==='Enter'&&document.activeElement===chat){
         let val=chat.value.trim().toLowerCase();
@@ -71,9 +71,9 @@ function loop(){
     items.forEach(i=> { ctx.fillStyle=i.c; ctx.fillRect(i.x,i.y,i.w,i.h); });
     ctx.fillStyle='#0fcc';ctx.fillRect(px,py,pw,ph);ctx.fillStyle='#ffff33';ctx.beginPath();ctx.arc(bx,by,br,0,7);ctx.fill();
     if(active){
-        if(keys['a']||keys['arrowleft']){px-=3;steps++;}if(keys['d']||keys['arrowright']){px+3;px+=3;steps++;}
+        if(keys['a']||keys['arrowleft']){px-=3;steps++;}if(keys['d']||keys['arrowright']){px+=3;steps++;}
         if(!keys['a']&&!keys['d']&&!keys['w']&&!keys[' '])afk++;else afk=0;if(afk>600)saveEnd('afk');if(steps>800)saveEnd('marathon');
-        if((keys['w']||keys[' '])&&isG){vy=-6.5;isG=false;jumps++;if(jumps>=25)saveEnd('bunny');}
+        if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-6.5;isG=false;jumps++;if(jumps>=25)saveEnd('bunny');}
         vy+=g;py+=vy;isG=false;
         plat.forEach(p=>{
             if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6){
@@ -96,7 +96,7 @@ function loop(){
             if(bx+br>i.x&&bx-br<i.x+i.w&&by+br>i.y&&by-br<i.y+i.h&&i.t==='trophy')saveEnd('super');
         });
         if(py>500)saveEnd('fell');if(by>400&&worldCol==='#111'){worldCol='#ffea6b';saveEnd('cheese');}
-        if(px<-300)saveEnd('secret');if(px===-40&&py===240)saveEnd('glitch');if(px<-200&&py<-200)saveEnd('corner');
+        if(px<-300)saveEnd('secret');if(px===50&&py===240)saveEnd('glitch');if(px<-200&&py<-200)saveEnd('corner');
     }
     ctx.restore();requestAnimationFrame(loop);
 }const G=id=>document.getElementById(id);loop();
