@@ -12,11 +12,9 @@
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
-let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500,au=null;
-const playOof=()=>{
-    try{if(!au)au=new(window.AudioContext||window.webkitAudioContext)();let o=au.createOscillator(),g=au.createGain(),t=au.currentTime;
-    o.type='sine';o.frequency.setValueAtTime(260,t);o.frequency.linearRampToValueAtTime(410,t+0.07);
-    g.gain.setValueAtTime(0.4,t);g.gain.exponentialRampToValueAtTime(0.01,t+0.12);o.connect(g);g.connect(au.destination);o.start(t);o.stop(t+0.12);}catch(e){}
+let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500,parts=[];
+const spawnParts=(x,y)=>{
+    for(let i=0;i<60;i++)parts.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7-2,c:`hsl(${Math.random()*360},100%,60%)`,s:Math.random()*4+2,a:1});
 };
 const plat=[
     {x:250,y:550,w:300,h:20,t:'spawn'},
@@ -32,11 +30,11 @@ const plat=[
 ],items=[{x:390,y:-530,w:20,h:40,t:'trophy',c:'#ffd700'}];
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 const killPlayer=()=>{
-    playOof();px=respawnX;py=respawnY;vy=0;isG=false;
+    px=respawnX;py=respawnY;vy=0;isG=false;
     plat.forEach(p=>{if(p.t==='rainbow'){p.state='idle';p.timer=0;}});
 };
 const restartObby=()=>{
-    hasCheckpoint=false;isFlying=false;respawnX=390;respawnY=500;killPlayer();msg.style.display='none';active=true;
+    hasCheckpoint=false;isFlying=false;respawnX=390;respawnY=500;killPlayer();msg.style.display='none';active=true;parts=[];
     document.getElementById('chk').textContent="Not Saved";document.getElementById('chk').style.color="#f33";
 };
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
@@ -76,15 +74,19 @@ function loop(){
         }
     });
     items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
+    parts.forEach((p,idx)=>{
+        p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.a-=0.015;
+        if(p.a<=0){parts.splice(idx,1);return;}
+        ctx.fillStyle=p.c;ctx.globalAlpha=p.a;ctx.fillRect(p.x,p.y,p.s,p.s);ctx.globalAlpha=1;
+    });
     ctx.fillStyle=isFlying?'#00e5ff':'#ff3366';ctx.fillRect(px,py,pw,ph);
     if(active){
         if(keys['a']||keys['arrowleft'])px-=3.5;if(keys['d']||keys['arrowright'])px+=3.5;
         if(isFlying){
             if(keys['w']||keys['arrowup'])py-=4;if(keys['s']||keys['arrowdown'])py+=4;
         }else{
-            let jumpPressed=keys['w']||keys[' ']||keys['arrowup'];
-            if(jumpPressed&&isG){vy=-7.2;isG=false;}
-            vy+=g;py+=vy;
+            let j=keys['w']||keys[' ']||keys['arrowup'];
+            if(j&&isG){vy=-7.2;isG=false;}vy+=g;py+=vy;
         }
         let onPlat=false;
         plat.forEach(p=>{
@@ -104,7 +106,7 @@ function loop(){
             }
         });
         if(!onPlat&&!isFlying)isG=false;
-        items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){msg.style.display='block';active=false;}});
+        items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){spawnParts(i.x+i.w/2,i.y+i.h/2);msg.style.display='block';active=false;}});
         if(py>700)killPlayer();
     }ctx.restore();requestAnimationFrame(loop);
 }loop();
