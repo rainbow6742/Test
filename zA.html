@@ -1,0 +1,101 @@
+<!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#0d0d1a;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
+<div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.6);padding:10px;border-radius:6px;border:1px solid #333;">
+    <div style="font-size:16px;font-weight:bold;color:#00bcff;">Tower of Hellish Jumps</div>
+    <div style="font-size:12px;margin-top:3px;color:#eee;">Checkpoint: <span id="chk" style="color:#f33;font-weight:bold;">Not Saved</span></div>
+    <div style="font-size:10px;color:#aaa;margin-top:2px;">Code <span style="color:#0fcc;">31718</span> toggles Fly (W/S)</div>
+    <input id="chat" placeholder="Commands..." style="margin-top:6px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:3px;border-radius:4px;width:140px;">
+</div>
+<div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(15,15,25,0.95);padding:20px;border-radius:10px;text-align:center;border:2px solid #ffd700;width:240px;">
+    <h3 style="margin:0 0 10px 0;color:#ffd700;">TOWER CONQUEROR!</h3>
+    <button onclick="restartObby()" style="padding:6px 15px;background:#ffd700;border:none;font-weight:bold;cursor:pointer;border-radius:4px;color:#111;">Scale Again</button>
+</div>
+<canvas id="c"></canvas>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
+let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500;
+const plat=[
+    {x:250,y:550,w:300,h:20,t:'spawn'},
+    {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
+    {x:360,y:320,w:50,h:12,t:'move',mx:40,baseY:320,mode:'v'},{x:480,y:280,w:60,h:12},{x:540,y:230,w:40,h:12},{x:460,y:180,w:50,h:12},
+    {x:280,y:140,w:120,h:15,t:'checkpoint'},
+    {x:210,y:80,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:20,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-40,w:45,h:12,t:'rainbow',state:'idle',timer:0},
+    {x:380,y:-100,w:80,h:12,t:'plat'},{x:280,y:-150,w:40,h:12},{x:200,y:-165,w:12,h:50,t:'lava'},{x:180,y:-210,w:50,h:12},
+    {x:280,y:-260,w:55,h:12,t:'move',mx:90,baseX:280,mode:'h'},{x:460,y:-310,w:50,h:12},{x:530,y:-330,w:12,h:60,t:'lava'},
+    {x:410,y:-370,w:40,h:12,t:'rainbow',state:'idle',timer:0},{x:310,y:-420,w:40,h:12,t:'rainbow',state:'idle',timer:0},
+    {x:320,y:-480,w:160,h:20,t:'goal'}
+],items=[{x:390,y:-520,w:20,h:40,t:'trophy',c:'#ffd700'}];
+const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
+const killPlayer=()=>{
+    px=respawnX;py=respawnY;vy=0;isG=false;
+    plat.forEach(p=>{if(p.t==='rainbow'){p.state='idle';p.timer=0;}});
+};
+const restartObby=()=>{
+    hasCheckpoint=false;isFlying=false;respawnX=390;respawnY=500;killPlayer();msg.style.display='none';active=true;
+    document.getElementById('chk').textContent="Not Saved";document.getElementById('chk').style.color="#f33";
+};
+const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
+window.onkeydown=(e)=>{
+    keys[e.key.toLowerCase()]=true;
+    if(e.key==='Enter'&&document.activeElement===chat){
+        let v=chat.value.trim().toLowerCase();
+        if(v==='/reset')killPlayer();
+        if(v==='31718'){isFlying=!isFlying;vy=0;}
+        if(v==='/skip'){
+            let cp=plat.find(p=>p.t==='checkpoint');
+            if(!hasCheckpoint){respawnX=cp.x+50;respawnY=cp.y-30;hasCheckpoint=true;killPlayer();}
+            else{respawnX=390;respawnY=-500;killPlayer();}
+        }
+        chat.value='';chat.blur();
+    }
+};
+window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
+function loop(){
+    ctx.fillStyle='#0d0d1a';ctx.fillRect(0,0,c.width,c.height);ctx.save();
+    ctx.translate(c.width/2-px,c.height/2-py);tick+=0.04;
+    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=4;ctx.strokeRect(150,-600,500,1200);
+    plat.forEach(p=>{
+        if(p.t==='move'){
+            let lastX=p.x,lastY=p.y;
+            if(p.mode==='h'){p.x=p.baseX+Math.sin(tick)*p.mx;p.vx=p.x-lastX;p.vy=0;}
+            else{p.y=p.baseY+Math.sin(tick)*p.mx;p.vy=p.y-lastY;p.vx=0;}
+        }
+        if(p.t==='rainbow'){
+            if(p.state==='stepped'){p.timer++;if(p.timer>=75){p.state='gone';p.timer=0;}}
+            else if(p.state==='gone'){p.timer++;if(p.timer>=200){p.state='idle';p.timer=0;}}
+            ctx.fillStyle=p.state=='idle'?`hsla(${tick*40+p.x},100%,60%,1)`:p.state=='stepped'?`hsla(${tick*40+p.x},100%,45%,${1-(p.timer/75)})`:'rgba(0,0,0,0)';
+        }else{ctx.fillStyle=p.t=='spawn'?'#00e676':p.t=='checkpoint'?'#00b0ff':p.t=='lava'?'#ff1744':p.t=='goal'?'#ffd700':'#424242';}
+        if(p.t!=='rainbow'||p.state!=='gone'){
+            ctx.fillRect(p.x,p.y,p.w,p.h);
+            if(p.t!=='lava'){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(p.x,p.y,p.w,3);}
+        }
+    });
+    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
+    ctx.fillStyle=isFlying?'#00e5ff':'#ff3366';ctx.fillRect(px,py,pw,ph);
+    if(active){
+        if(keys['a']||keys['arrowleft'])px-=3.5;if(keys['d']||keys['arrowright'])px+=3.5;
+        if(isFlying){
+            if(keys['w']||keys['arrowup'])py-=4;if(keys['s']||keys['arrowdown'])py+=4;
+        }else{
+            if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-7.2;isG=false;}vy+=g;py+=vy;
+        }
+        let onPlat=false;
+        plat.forEach(p=>{
+            if(p.t==='rainbow'&&p.state==='gone')return;
+            if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
+            let coll=px+pw>p.x+2&&px<p.x+p.w-2&&py+ph>=p.y&&py+ph-vy<=p.y+8;
+            if(!isFlying&&p.t!=='lava'&&coll){
+                py=p.y-ph;vy=0;isG=true;onPlat=true;
+                if(p.t==='move'){px+=p.vx;py+=p.vy;}
+                if(p.t==='rainbow'&&p.state==='idle')p.state='stepped';
+                if(p.t==='checkpoint'&&!hasCheckpoint){
+                    hasCheckpoint=true;respawnX=p.x+p.w/2-pw/2;respawnY=p.y-ph-10;
+                    document.getElementById('chk').textContent="SAVED!";document.getElementById('chk').style.color="#00b0ff";
+                }
+            }
+        });
+        if(!onPlat&&!isFlying)isG=false;
+        items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){msg.style.display='block';active=false;}});
+        if(py>700)killPlayer();
+    }ctx.restore();requestAnimationFrame(loop);
+}loop();
+</script></body></html>
