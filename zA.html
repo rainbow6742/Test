@@ -16,14 +16,14 @@ let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,h
 const plat=[
     {x:250,y:550,w:300,h:20,t:'spawn'},
     {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
-    {x:360,y:320,w:50,h:12,t:'move',mx:40,baseY:320,mode:'v'},{x:480,y:280,w:60,h:12},{x:540,y:230,w:40,h:12},{x:460,y:180,w:50,h:12},
-    {x:280,y:140,w:120,h:15,t:'checkpoint'},
-    {x:210,y:80,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:20,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-40,w:45,h:12,t:'rainbow',state:'idle',timer:0},
-    {x:380,y:-100,w:80,h:12,t:'plat'},{x:280,y:-150,w:40,h:12},{x:200,y:-165,w:12,h:50,t:'lava'},{x:180,y:-210,w:50,h:12},
-    {x:280,y:-260,w:55,h:12,t:'move',mx:90,baseX:280,mode:'h'},{x:460,y:-310,w:50,h:12},{x:530,y:-330,w:12,h:60,t:'lava'},
-    {x:410,y:-370,w:40,h:12,t:'rainbow',state:'idle',timer:0},{x:310,y:-420,w:40,h:12,t:'rainbow',state:'idle',timer:0},
-    {x:320,y:-480,w:160,h:20,t:'goal'}
-],items=[{x:390,y:-520,w:20,h:40,t:'trophy',c:'#ffd700'}];
+    {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},{x:460,y:250,w:60,h:12},{x:540,y:210,w:40,h:12},{x:440,y:170,w:50,h:12},
+    {x:280,y:130,w:120,h:15,t:'checkpoint'},
+    {x:210,y:70,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:10,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-50,w:45,h:12,t:'rainbow',state:'idle',timer:0},
+    {x:380,y:-110,w:80,h:12,t:'plat'},{x:280,y:-160,w:40,h:12},{x:200,y:-175,w:12,h:50,t:'lava'},{x:180,y:-220,w:50,h:12},
+    {x:280,y:-270,w:55,h:12,t:'move',mx:90,baseX:280,mode:'h'},{x:460,y:-320,w:50,h:12},{x:530,y:-340,w:12,h:60,t:'lava'},
+    {x:410,y:-380,w:40,h:12,t:'rainbow',state:'idle',timer:0},{x:310,y:-430,w:40,h:12,t:'rainbow',state:'idle',timer:0},
+    {x:320,y:-490,w:160,h:20,t:'goal'}
+],items=[{x:390,y:-530,w:20,h:40,t:'trophy',c:'#ffd700'}];
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 const killPlayer=()=>{
     px=respawnX;py=respawnY;vy=0;isG=false;
@@ -43,7 +43,7 @@ window.onkeydown=(e)=>{
         if(v==='/skip'){
             let cp=plat.find(p=>p.t==='checkpoint');
             if(!hasCheckpoint){respawnX=cp.x+50;respawnY=cp.y-30;hasCheckpoint=true;killPlayer();}
-            else{respawnX=390;respawnY=-500;killPlayer();}
+            else{respawnX=390;respawnY=-510;killPlayer();}
         }
         chat.value='';chat.blur();
     }
@@ -77,8 +77,7 @@ function loop(){
             if(keys['w']||keys['arrowup'])py-=4;if(keys['s']||keys['arrowdown'])py+=4;
         }else{
             let jumpPressed=keys['w']||keys[' ']||keys['arrowup'];
-            if(jumpPressed&&isG){vy=-7.5;isG=false;}
-            if(!jumpPressed&&vy<-2)vy=-2; // Variable height: cut upward velocity if button released early
+            if(jumpPressed&&isG){vy=-7.2;isG=false;}
             vy+=g;py+=vy;
         }
         let onPlat=false;
@@ -86,7 +85,6 @@ function loop(){
             if(p.t==='rainbow'&&p.state==='gone')return;
             if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
             if(p.t!=='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){
-                // Landing on top of platform (only if falling down)
                 if(vy>=0&&py+ph-vy<=p.y+8){
                     py=p.y-ph;vy=0;isG=true;onPlat=true;
                     if(p.t==='move'){px+=p.vx;py+=p.vy;}
@@ -96,7 +94,6 @@ function loop(){
                         document.getElementById('chk').textContent="SAVED!";document.getElementById('chk').style.color="#00b0ff";
                     }
                 } 
-                // Bumping head from underneath platform (reverse velocity cleanly, no snapping)
                 else if(vy<0&&py-vy>=p.y+p.h-6){py=p.y+p.h;vy=0.5;}
             }
         });
