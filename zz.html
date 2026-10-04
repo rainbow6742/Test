@@ -12,29 +12,28 @@
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
-let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,currentStage=1;
-let respawnX=50,respawnY=200;
+let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,currentStage=1,isFlying=false,respawnX=50,respawnY=200;
 
-// Dynamic Level Generator (Massive 240+ platform course with exactly 4 sparse Checkpoints)
+// Dynamic Level Generator (240 platforms, gaps compressed to a reachable 180px)
 const plat=[{x:20,y:260,w:100,h:20,t:'spawn'}];
 const totalPlatforms = 240; 
 
 for(let i=0; i<totalPlatforms; i++){
-    let sx=160+i*230, sy=230-(i%3)*20, types=['norm','plat','move','rainbow'], t=types[i%4];
+    let sx=140+i*180, sy=230-(i%3)*15, types=['norm','plat','move','rainbow'], t=types[i%4];
     
-    // Smoothly adjusting jump metrics to keep gameplay long but 100% physically possible
-    plat.push({x:sx,y:sy,w:45,h:15,t:t,mx:t==='move'?25:0,baseX:sx,state:'idle',timer:0});
+    // Balanced platform metrics: width remains 45px, horizontal gap tightly set to 180px
+    plat.push({x:sx,y:sy,w:45,h:15,t:t,mx:t==='move'?20:0,baseX:sx,state:'idle',timer:0});
     
     if(t==='plat') plat.push({x:sx+12,y:sy-10,w:20,h:10,t:'lava'});
     
     // Generates exactly 4 checkpoints evenly spaced out across the marathon layout
-    if(i===48) plat.push({x:sx+60,y:sy+20,w:120,h:20,t:'checkpoint',s:2});
-    if(i===96) plat.push({x:sx+60,y:sy+20,w:120,h:20,t:'checkpoint',s:3});
-    if(i===144) plat.push({x:sx+60,y:sy+20,w:120,h:20,t:'checkpoint',s:4});
-    if(i===192) plat.push({x:sx+60,y:sy+20,w:120,h:20,t:'checkpoint',s:5});
+    if(i===48) plat.push({x:sx+50,y:sy+20,w:100,h:20,t:'checkpoint',s:2});
+    if(i===96) plat.push({x:sx+50,y:sy+20,w:100,h:20,t:'checkpoint',s:3});
+    if(i===144) plat.push({x:sx+50,y:sy+20,w:100,h:20,t:'checkpoint',s:4});
+    if(i===192) plat.push({x:sx+50,y:sy+20,w:100,h:20,t:'checkpoint',s:5});
 }
 
-const finalX=160+totalPlatforms*230+100;
+const finalX=140+totalPlatforms*180+100;
 plat.push({x:finalX,y:240,w:100,h:20,t:'goal'});
 const items=[{x:finalX+40,y:200,w:20,h:40,t:'trophy',c:'#ffd700'}];
 
@@ -101,5 +100,5 @@ function loop(){
         items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){msg.style.display='block';active=false;}});
         if(py>500)killPlayer();
     }ctx.restore();requestAnimationFrame(loop);
-}let isFlying=false;loop();
+}loop();
 </script></body></html>
