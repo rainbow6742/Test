@@ -76,21 +76,28 @@ function loop(){
         if(isFlying){
             if(keys['w']||keys['arrowup'])py-=4;if(keys['s']||keys['arrowdown'])py+=4;
         }else{
-            if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-7.2;isG=false;}vy+=g;py+=vy;
+            let jumpPressed=keys['w']||keys[' ']||keys['arrowup'];
+            if(jumpPressed&&isG){vy=-7.5;isG=false;}
+            if(!jumpPressed&&vy<-2)vy=-2; // Variable height: cut upward velocity if button released early
+            vy+=g;py+=vy;
         }
         let onPlat=false;
         plat.forEach(p=>{
             if(p.t==='rainbow'&&p.state==='gone')return;
             if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
-            let coll=px+pw>p.x+2&&px<p.x+p.w-2&&py+ph>=p.y&&py+ph-vy<=p.y+8;
-            if(!isFlying&&p.t!=='lava'&&coll){
-                py=p.y-ph;vy=0;isG=true;onPlat=true;
-                if(p.t==='move'){px+=p.vx;py+=p.vy;}
-                if(p.t==='rainbow'&&p.state==='idle')p.state='stepped';
-                if(p.t==='checkpoint'&&!hasCheckpoint){
-                    hasCheckpoint=true;respawnX=p.x+p.w/2-pw/2;respawnY=p.y-ph-10;
-                    document.getElementById('chk').textContent="SAVED!";document.getElementById('chk').style.color="#00b0ff";
-                }
+            if(p.t!=='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){
+                // Landing on top of platform (only if falling down)
+                if(vy>=0&&py+ph-vy<=p.y+8){
+                    py=p.y-ph;vy=0;isG=true;onPlat=true;
+                    if(p.t==='move'){px+=p.vx;py+=p.vy;}
+                    if(p.t==='rainbow'&&p.state==='idle')p.state='stepped';
+                    if(p.t==='checkpoint'&&!hasCheckpoint){
+                        hasCheckpoint=true;respawnX=p.x+p.w/2-pw/2;respawnY=p.y-ph-10;
+                        document.getElementById('chk').textContent="SAVED!";document.getElementById('chk').style.color="#00b0ff";
+                    }
+                } 
+                // Bumping head from underneath platform (reverse velocity cleanly, no snapping)
+                else if(vy<0&&py-vy>=p.y+p.h-6){py=p.y+p.h;vy=0.5;}
             }
         });
         if(!onPlat&&!isFlying)isG=false;
