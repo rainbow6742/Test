@@ -16,7 +16,12 @@ let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,h
 const plat=[
     {x:250,y:550,w:300,h:20,t:'spawn'},
     {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
-    {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},{x:460,y:250,w:60,h:12},{x:540,y:210,w:40,h:12},{x:540,y:172,w:40,h:12}, // Made into a clean headhitter right above the x:540 platform
+    {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},
+    
+    // Completely updated Headhitter Section right before the Blue Checkpoint
+    {x:460,y:230,w:45,h:12}, // Bottom platform of the headhitter pair
+    {x:460,y:175,w:45,h:12}, // Top platform (Must jump completely out and around this to land on it)
+    
     {x:280,y:130,w:120,h:15,t:'checkpoint'},
     {x:210,y:70,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:10,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-50,w:45,h:12,t:'rainbow',state:'idle',timer:0},
     {x:380,y:-110,w:80,h:12,t:'plat'},{x:280,y:-160,w:40,h:12},{x:200,y:-175,w:12,h:50,t:'lava'},{x:180,y:-220,w:50,h:12},
