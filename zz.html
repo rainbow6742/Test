@@ -65,9 +65,9 @@ function loop(){
     plat.forEach(p=>{
         if(p.t==='move'){let lastX=p.x;p.x=p.baseX+Math.sin(tick)*p.mx;p.vx=p.x-lastX;}
         if(p.t==='rainbow'){
-            if(p.state==='stepped'){p.timer++;if(p.timer>=180){p.state='gone';p.timer=0;}}
+            if(p.state==='stepped'){p.timer++;if(p.timer>=90){p.state='gone';p.timer=0;}} // 90 frames = 1.5 seconds (2x faster)
             else if(p.state==='gone'){p.timer++;if(p.timer>=480){p.state='idle';p.timer=0;}}
-            ctx.fillStyle=p.state==='idle'?`hsla(${tick*30+p.x},100%,60%,1)`:p.state==='stepped'?`hsla(${tick*30+p.x},100%,45%,${1-(p.timer/180)})` : 'rgba(0,0,0,0)';
+            ctx.fillStyle=p.state==='idle'?`hsla(${tick*30+p.x},100%,60%,1)`:p.state==='stepped'?`hsla(${tick*30+p.x},100%,45%,${1-(p.timer/90)})` : 'rgba(0,0,0,0)';
         }else{ctx.fillStyle=p.t==='spawn'?'#0c8':p.t==='checkpoint'?'#0bc':p.t==='lava'?'#f33':p.t==='goal'?'#fa0':'#555';}
         if(p.t!=='rainbow'||p.state!=='gone')ctx.fillRect(p.x,p.y,p.w,p.h);
         if(p.t==='checkpoint'||p.t==='spawn'||p.t==='goal'){ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x,p.y-4,p.w,4);}
@@ -80,7 +80,7 @@ function loop(){
         vy+=g;py+=vy;let onPlatform=false;
         plat.forEach(p=>{
             if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
-            let collides=px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6;
+            let collides=px+pw>p.x+4&&px<p.x+p.w-4&&py+ph>=p.y&&py+ph-vy<=p.y+6; // Restrict footing to inside width (-4px padding)
             if(p.t==='rainbow'&&p.state==='gone')collides=false;
             if(p.t!=='lava'&&collides){
                 py=p.y-ph;vy=0;isG=true;onPlatform=true;
