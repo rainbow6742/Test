@@ -18,9 +18,9 @@ const plat=[
     {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
     {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},
     
-    // HEADHITTER: Perfectly stacked, identical matching widths and alignments
+    // HEADHITTER: Bottom base platform remains steady, top platform is now less wide (w:28) to allow easier wrap-around jumps
     {x:460,y:230,w:45,h:12}, 
-    {x:460,y:175,w:45,h:12}, 
+    {x:460,y:175,w:28,h:12}, 
     
     {x:280,y:130,w:120,h:15,t:'checkpoint'},
     {x:210,y:70,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:10,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-50,w:45,h:12,t:'rainbow',state:'idle',timer:0},
