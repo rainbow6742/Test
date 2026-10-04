@@ -1,90 +1,236 @@
-<!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#111;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
-<div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.5);padding:10px;border-radius:6px;">
-    <div style="font-size:18px;font-weight:bold;color:#fa0;">Easiest Game Ever (Web Edition)</div>
-    <div style="font-size:13px;margin-top:4px;color:#eee;">Endings Found: <span id="found">0</span> / 18</div>
-    <input id="chat" placeholder="Type commands here..." style="margin-top:8px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:4px;border-radius:4px;width:150px;">
-</div>
-<div id="lb" style="position:absolute;top:15px;right:15px;z-index:10;background:rgba(0,0,0,0.7);padding:12px;border-radius:6px;font-size:11px;width:190px;max-height:80vh;overflow-y:auto;">
-    <h4 style="margin:0 0 6px 0;color:#0fcc;border-bottom:1px solid #444;padding-bottom:2px;">Discovered Endings</h4><div id="elist" style="color:#aaa;line-height:1.4;"></div>
-</div>
-<div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(20,20,20,0.95);padding:25px;border-radius:10px;text-align:center;border:2px solid #fa0;box-shadow:0 0 15px rgba(255,170,0,0.4);width:280px;">
-    <h2 id="m-tit" style="margin:0 0 10px 0;color:#fa0;">ENDING UNLOCKED!</h2><p id="m-desc" style="margin:0 0 15px 0;font-size:13px;color:#ddd;"></p>
-    <button onclick="resetGame()" style="padding:6px 20px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;border-radius:4px;color:#111;">Respawn / Try Again</button>
-</div>
-<canvas id="c"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox 2D Obby Clone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #191B1D; /* Roblox dark theme background */
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            color: white;
+        }
+        #game-ui {
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0px #000;
+        }
+        #game-canvas {
+            background: linear-gradient(to bottom, #5ce1e6, #38b6ff); /* Classic sky skybox gradient */
+            border: 4px solid #3a3f44;
+            border-radius: 8px;
+            box-shadow: 0px 10px 20px rgba(0,0,0,0.5);
+        }
+        .instructions {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #aaaaaa;
+        }
+        .instructions span {
+            color: #00e676;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-ui">Stage: <span id="stage-count">1</span></div>
+    <canvas id="game-canvas" width="800" height="400"></canvas>
+    <p class="instructions">Press <span>SPACEBAR</span> or <span>UP ARROW</span> to jump over the Roblox Lava Blocks!</p>
+
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),elist=document.getElementById('elist'),msg=document.getElementById('msg');
-let keys={},px=40,py=100,pw=20,ph=20,g=0.3,vy=0,isG=false,bx=120,by=200,br=12,bvx=0,bvy=0,worldCol='#111',active=true,jumps=0,afk=0,konami='',clicks=0;
-const plat=[{x:-40,y:260,w:230,h:20},{x:250,y:260,w:120,h:20},{x:440,y:260,w:60,h:20},{x:100,y:140,w:40,h:15,t:'cloud'},{x:290,y:170,w:40,h:15,t:'fake'}];
-const items=[{x:460,y:230,w:20,h:30,t:'trophy',c:'#fa0'},{x:300,y:240,w:18,h:20,t:'cheese',c:'#ff0'},{x:0,y:230,w:20,h:30,t:'trash',c:'#7a7'}];
-const endings={
-    'fell':{n:'1. The Void',d:'You completely missed the platforms and fell into the void.'},'win':{n:'2. You Won',d:'You walked across the path and touched the golden trophy! Easy!'},
-    'reset':{n:'3. Reset Command',d:'You opened the console and manually used /reset.'},'super':{n:'4. Super Win',d:'You went through the trouble of pushing the physics ball into the trophy.'},
-    'cheese':{n:'5. Cheese World',d:'You pushed the yellow ball into the void and turned on cheese mode.'},'toxic':{n:'6. Toxic Death',d:'You touched the green radioactive container.'},
-    'dance':{n:'7. Dance Party',d:'You typed /dance into the console and threw an absolute rager.'},'secret':{n:'8. Secret Wall',d:'You bypassed the track completely and ran far left.'},
-    'cloud':{n:'9. Sky High',d:'You successfully jumped onto the hidden platform high in the sky.'},'fake':{n:'10. Betrayal',d:'You tried to stand on the red platform, but it instantly vanished.'},
-    'afk':{n:'11. Couch Potato',d:'You stood completely still at the spawn point for 10 straight seconds.'},'bunny':{n:'12. Bunny Hopper',d:'You spammed the jump button 25 times in a single life.'},
-    'cheat':{n:'13. Script Kitty',d:'You typed /cheat directly into the text command console.'},'fly':{n:'14. Gravity Defied',d:'You typed /fly to alter your physics property dimensions.'},
-    'rich':{n:'15. Pay to Win',d:'You typed /donate to spend fake currency on the developer.'},'color':{n:'16. Inversion',d:'You typed /disco to radically warp the world color values.'},
-    'konami':{n:'17. Retro Gamer',d:'Entered secret code: Up Up Down Down Left Right Left Right.'},'clicker':{n:'18. Screen Masher',d:'Left-clicked the background gameplay canvas 15 times.'}
-};
-let unlocked=JSON.parse(localStorage.getItem('rob_ends3'))||[];
-const saveEnd=(k)=>{
-    if(!unlocked.includes(k)){unlocked.push(k);localStorage.setItem('rob_ends3',JSON.stringify(unlocked));}
-    document.getElementById('m-tit').textContent=endings[k].n;document.getElementById('m-desc').textContent=endings[k].d;msg.style.display='block';active=false;updateUI();
-};
-const updateUI=()=>{
-    document.getElementById('found').textContent=unlocked.length;
-    elist.innerHTML=Object.keys(endings).map(k=>`<div style="color:${unlocked.includes(k)?'#0fcc':'#555'}">${unlocked.includes(k)?'✓':'?'} ${endings[k].n}</div>`).join('');
-};
-const resetGame=()=>{
-    px=40;py=100;vy=0;bx=120;by=200;bvx=bvy=0;worldCol='#111';msg.style.display='none';active=true;chat.value='';chat.blur();jumps=afk=clicks=0;konami='';
-};
-const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();updateUI();
-window.onkeydown=(e)=>{
-    keys[e.key.toLowerCase()]=true;
-    if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key))konami+=e.key.toLowerCase();
-    if(konami.endsWith('arrowuparrowuparrowdownarrowdownarrowleftarrowrightarrowleftarrowright')&&active)saveEnd('konami');
-    if(e.key==='Enter'&&document.activeElement===chat){
-        let v=chat.value.trim().toLowerCase();
-        if(v==='/dance'&&active)saveEnd('dance');if(v==='/reset'&&active)saveEnd('reset');if(v==='/cheat'&&active)saveEnd('cheat');
-        if(v==='/fly'&&active){py-=150;saveEnd('fly');}if(v==='/donate'&&active)saveEnd('rich');
-        if(v==='/disco'&&active){worldCol='#3a1f5d';saveEnd('color');}chat.value='';chat.blur();
-    }
-};
-window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
-c.onmousedown=()=>{clicks++;if(clicks>15&&active)saveEnd('clicker');};
-const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
-function loop(){
-    ctx.fillStyle=worldCol;ctx.fillRect(0,0,c.width,c.height);ctx.save();ctx.translate(c.width/2-px,c.height/2-py);
-    plat.forEach(p=>{ctx.fillStyle=p.t==='cloud'?'#8ee':p.t==='fake'?'#a44':'#444';ctx.fillRect(p.x,p.y,p.w,p.h);});
-    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
-    ctx.fillStyle='#0fcc';ctx.fillRect(px,py,pw,ph);ctx.fillStyle='#ffff33';ctx.beginPath();ctx.arc(bx,by,br,0,7);ctx.fill();
-    if(active){
-        if(keys['a']||keys['arrowleft'])px-=3;if(keys['d']||keys['arrowright'])px+=3;
-        if(!keys['a']&&!keys['d']&&!keys['w']&&!keys[' '])afk++;else afk=0;if(afk>600)saveEnd('afk');
-        if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-6.5;isG=false;jumps++;if(jumps>=25)saveEnd('bunny');}
-        vy+=g;py+=vy;isG=false;
-        plat.forEach(p=>{
-            if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6){
-                if(p.t==='fake'){p.y+=200;saveEnd('fake');return;}
-                py=p.y-ph;vy=0;isG=true;if(p.t==='cloud')saveEnd('cloud');
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
+    const stageElement = document.getElementById("stage-count");
+
+    // Game Variables
+    let stage = 1;
+    let gameSpeed = 5;
+    let isGameOver = false;
+
+    // Player Object (Roblox "Noob" / Blocky Avatar style)
+    const player = {
+        x: 80,
+        y: 300,
+        width: 35,
+        height: 50,
+        gravity: 0.6,
+        lift: -12,
+        velocity: 0,
+        isGrounded: false,
+        draw() {
+            // Head (Yellow)
+            ctx.fillStyle = "#FFD11A";
+            ctx.fillRect(this.x + 7, this.y, 21, 15);
+            // Torso (Blue)
+            ctx.fillStyle = "#0066FF";
+            ctx.fillRect(this.x, this.y + 15, this.width, 22);
+            // Legs (Green)
+            ctx.fillStyle = "#22AA33";
+            ctx.fillRect(this.x + 2, this.y + 37, 13, 13);
+            ctx.fillRect(this.x + 20, this.y + 37, 13, 13);
+        },
+        update() {
+            this.velocity += this.gravity;
+            this.y += this.velocity;
+
+            // Ground floor collision (y = 350 is ground level)
+            if (this.y + this.height >= 350) {
+                this.y = 350 - this.height;
+                this.velocity = 0;
+                this.isGrounded = true;
+            } else {
+                this.isGrounded = false;
             }
-        });
-        bvy+=g;bx+=bvx;by+=bvy;bvx*=0.98;
-        plat.forEach(p=>{if(bx+br>p.x&&bx-br<p.x+p.w&&by+br>=p.y&&by+br-bvy<=p.y+6){by=p.y-br;bvy=-bvy*0.4;bvx*=0.8;}});
-        let dist=Math.hypot(bx-(px+pw/2),by-(py+ph/2));
-        if(dist<br+pw/2){let ang=Math.atan2(by-(py+ph/2),bx-(px+pw/2));bvx=Math.cos(ang)*4;bvy=Math.sin(ang)*4-2;}
-        items.forEach(i=>{
-            if(boxColl({x:px,y:py,w:pw,h:ph},i)){
-                if(i.t==='trophy')saveEnd('win');if(i.t==='trash')saveEnd('toxic');
-                if(i.t==='cheese')worldCol='#443d1a';
+        },
+        jump() {
+            if (this.isGrounded) {
+                this.velocity = this.lift;
             }
-            if(bx+br>i.x&&bx-br<i.x+i.w&&by+br>i.y&&by-br<i.y+i.h&&i.t==='trophy')saveEnd('super');
-        });
-        if(py>400)saveEnd('fell');if(by>400&&worldCol==='#111'){worldCol='#ffea6b';saveEnd('cheese');}
-        if(px<-100)saveEnd('secret');
+        }
+    };
+
+    // Obstacle Array (Roblox bright red studs / lava blocks)
+    let obstacles = [];
+
+    class Obstacle {
+        constructor() {
+            this.width = 25 + Math.random() * 20; // Random widths
+            this.height = 30 + Math.random() * 30; // Random heights
+            this.x = canvas.width;
+            this.y = 350 - this.height;
+        }
+        draw() {
+            // Draw Roblox Lava Red killing brick
+            ctx.fillStyle = "#FF0000";
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+            
+            // Neon neon glow line effect
+            ctx.strokeStyle = "#FF6666";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+        }
+        update() {
+            this.x -= gameSpeed;
+        }
     }
-    ctx.restore();requestAnimationFrame(loop);
-}loop();
-</script></body></html>
+
+    // Static Environment Base Floor
+    void function drawEnvironment() {
+        // Base plate (Gray checkerboard simulation)
+        ctx.fillStyle = "#A3A7AC";
+        ctx.fillRect(0, 350, canvas.width, 50);
+        ctx.fillStyle = "#8E9296";
+        ctx.fillRect(0, 350, canvas.width, 5); // Base trim
+    }
+
+    // Spawn mechanism logic
+    let spawnTimer = 0;
+    function handleObstacles() {
+        spawnTimer++;
+        if (spawnTimer > Math.max(50, 120 - stage * 5)) { 
+            obstacles.push(new Obstacle());
+            spawnTimer = 0;
+        }
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            obstacles[i].update();
+            obstacles[i].draw();
+
+            // Collision check (Bounding box)
+            if (
+                player.x < obstacles[i].x + obstacles[i].width &&
+                player.x + player.width > obstacles[i].x &&
+                player.y < obstacles[i].y + obstacles[i].height &&
+                player.y + player.height > obstacles[i].y
+            ) {
+                isGameOver = true;
+            }
+
+            // Safe pass check (Score point / stage increase)
+            if (obstacles[i].x + obstacles[i].width < player.x && !obstacles[i].passed) {
+                obstacles[i].passed = true;
+                stage++;
+                gameSpeed += 0.3; // Speed scaling
+                stageElement.innerText = stage;
+            }
+
+            // Clear memory when blocks leave view screen
+            if (obstacles[i].x + obstacles[i].width < 0) {
+                obstacles.splice(i, 1);
+            }
+        }
+    }
+
+    function resetGame() {
+        obstacles = [];
+        stage = 1;
+        gameSpeed = 5;
+        player.y = 200;
+        player.velocity = 0;
+        stageElement.innerText = stage;
+        isGameOver = false;
+        animate();
+    }
+
+    // Render loop engine
+    function animate() {
+        if (isGameOver) {
+            // Draw standard Roblox "Oof!" Game Over screen overlay
+            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = "#FFFFFF";
+            ctx.font = "bold 32px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText("Oof! You hit the Lava!", canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.font = "20px Arial";
+            ctx.fillStyle = "#00e676";
+            ctx.fillText("Press SPACEBAR to Respawn", canvas.width / 2, canvas.height / 2 + 20);
+            return;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Environment Background
+        drawEnvironment();
+
+        // Player Actions
+        player.update();
+        player.draw();
+
+        // Obstacles Actions
+        handleObstacles();
+
+        requestAnimationFrame(animate);
+    }
+
+    // Input Controller
+    window.addEventListener("keydown", (e) => {
+        if (e.code === "Space" || e.code === "ArrowUp") {
+            if (isGameOver) {
+                resetGame();
+            } else {
+                player.jump();
+            }
+        }
+    });
+
+    // Start Game
+    animate();
+</script>
+</body>
+</html>
