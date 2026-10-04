@@ -16,25 +16,25 @@ let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,ha
 let respawnX=50,respawnY=200;
 const plat=[
     {x:20,y:260,w:100,h:20,t:'spawn'},
-    {x:180,y:230,w:45,h:15},{x:285,y:200,w:45,h:15},{x:390,y:230,w:45,h:15},
-    {x:490,y:250,w:40,h:15,t:'plat'},{x:495,y:240,w:30,h:10,t:'lava'},{x:580,y:210,w:45,h:15},
-    {x:670,y:250,w:40,h:15,t:'plat'},{x:675,y:240,w:30,h:10,t:'lava'},{x:765,y:210,w:45,h:15},
-    {x:870,y:240,w:40,h:15,t:'move',mx:40,baseX:870},{x:1000,y:200,w:40,h:15,t:'move',mx:-40,baseX:1000},
-    {x:1120,y:240,w:50,h:15,t:'rainbow',state:'idle',timer:0},{x:1230,y:210,w:50,h:15,t:'rainbow',state:'idle',timer:0},{x:1340,y:240,w:50,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:1460,y:260,w:120,h:20,t:'checkpoint'},
-    {x:1640,y:230,w:40,h:15},{x:1740,y:255,w:40,h:15,t:'plat'},{x:1745,y:245,w:30,h:10,t:'lava'},{x:1840,y:210,w:40,h:15},
-    {x:1940,y:255,w:40,h:15,t:'plat'},{x:1945,y:245,w:30,h:10,t:'lava'},
-    {x:2040,y:230,w:40,h:15},{x:2140,y:190,w:40,h:15},{x:2240,y:240,w:40,h:15},
-    {x:2340,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2430,y:200,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2520,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:2620,y:240,w:40,h:15,t:'move',mx:60,baseX:2620},{x:2760,y:200,w:40,h:15,t:'move',mx:-60,baseX:2760},
-    {x:2900,y:250,w:40,h:15,t:'plat'},{x:2905,y:240,w:30,h:10,t:'lava'},{x:3000,y:220,w:40,h:15,t:'plat'},{x:3005,y:210,w:30,h:10,t:'lava'},{x:3100,y:190,w:40,h:15,t:'plat'},{x:3105,y:180,w:30,h:10,t:'lava'},
-    {x:3200,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3290,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3380,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:3490,y:230,w:35,h:15},{x:3590,y:210,w:35,h:15},{x:3690,y:190,w:35,h:15},{x:3800,y:255,w:100,h:20,t:'plat'},{x:3805,y:245,w:90,h:10,t:'lava'},
-    {x:3950,y:240,w:40,h:15,t:'move',mx:50,baseX:3950},{x:4090,y:210,w:40,h:15,t:'move',mx:-50,baseX:4090},
-    {x:4220,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:4310,y:220,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:4400,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:4500,y:240,w:40,h:15,t:'move',mx:80,baseX:4500},{x:4670,y:240,w:100,h:20,t:'goal'}
+    {x:160,y:230,w:45,h:15},{x:255,y:200,w:45,h:15},{x:350,y:230,w:45,h:15},
+    {x:445,y:250,w:40,h:15,t:'plat'},{x:450,y:240,w:30,h:10,t:'lava'},{x:535,y:210,w:45,h:15},
+    {x:625,y:250,w:40,h:15,t:'plat'},{x:630,y:240,w:30,h:10,t:'lava'},{x:715,y:210,w:45,h:15},
+    {x:810,y:240,w:40,h:15,t:'move',mx:25,baseX:810},{x:925,y:200,w:40,h:15,t:'move',mx:-25,baseX:925},
+    {x:1030,y:240,w:50,h:15,t:'rainbow',state:'idle',timer:0},{x:1130,y:210,w:50,h:15,t:'rainbow',state:'idle',timer:0},{x:1230,y:240,w:50,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:1330,y:260,w:120,h:20,t:'checkpoint'},
+    {x:1495,y:230,w:40,h:15},{x:1585,y:255,w:40,h:15,t:'plat'},{x:1590,y:245,w:30,h:10,t:'lava'},{x:1675,y:210,w:40,h:15},
+    {x:1765,y:255,w:40,h:15,t:'plat'},{x:1770,y:245,w:30,h:10,t:'lava'},
+    {x:1855,y:230,w:40,h:15},{x:1945,y:190,w:40,h:15},{x:2035,y:240,w:40,h:15},
+    {x:2125,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2210,y:200,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2295,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:2385,y:240,w:40,h:15,t:'move',mx:35,baseX:2385},{x:2505,y:200,w:40,h:15,t:'move',mx:-35,baseX:2505},
+    {x:2625,y:250,w:40,h:15,t:'plat'},{x:2630,y:240,w:30,h:10,t:'lava'},{x:2715,y:220,w:40,h:15,t:'plat'},{x:2720,y:210,w:30,h:10,t:'lava'},{x:2805,y:190,w:40,h:15,t:'plat'},{x:2810,y:180,w:30,h:10,t:'lava'},
+    {x:2895,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:2985,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3075,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:3165,y:230,w:35,h:15},{x:3250,y:210,w:35,h:15},{x:3335,y:190,w:35,h:15},{x:3420,y:255,w:100,h:20,t:'plat'},{x:3425,y:245,w:90,h:10,t:'lava'},
+    {x:3560,y:240,w:40,h:15,t:'move',mx:30,baseX:3560},{x:3680,y:210,w:40,h:15,t:'move',mx:-30,baseX:3680},
+    {x:3790,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3880,y:220,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3970,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:4065,y:240,w:40,h:15,t:'move',mx:45,baseX:4065},{x:4210,y:240,w:100,h:20,t:'goal'}
 ];
-const items=[{x:4710,y:200,w:20,h:40,t:'trophy',c:'#fa0'}];
+const items=[{x:4250,y:200,w:20,h:40,t:'trophy',c:'#fa0'}];
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 const killPlayer=()=>{
     px=respawnX;py=respawnY;vy=0;isG=false;
@@ -53,7 +53,7 @@ window.onkeydown=(e)=>{
         if(v==='/skip'){
             let cp=plat.find(p=>p.t==='checkpoint');
             if(!hasCheckpoint){respawnX=cp.x+40;respawnY=cp.y-40;hasCheckpoint=true;killPlayer();}
-            else{respawnX=4680;respawnY=200;killPlayer();}
+            else{respawnX=4220;respawnY=200;killPlayer();}
         }
         chat.value='';chat.blur();
     }
@@ -65,7 +65,7 @@ function loop(){
     plat.forEach(p=>{
         if(p.t==='move'){let lastX=p.x;p.x=p.baseX+Math.sin(tick)*p.mx;p.vx=p.x-lastX;}
         if(p.t==='rainbow'){
-            if(p.state==='stepped'){p.timer++;if(p.timer>=90){p.state='gone';p.timer=0;}} // 90 frames = 1.5 seconds (2x faster)
+            if(p.state==='stepped'){p.timer++;if(p.timer>=90){p.state='gone';p.timer=0;}}
             else if(p.state==='gone'){p.timer++;if(p.timer>=480){p.state='idle';p.timer=0;}}
             ctx.fillStyle=p.state==='idle'?`hsla(${tick*30+p.x},100%,60%,1)`:p.state==='stepped'?`hsla(${tick*30+p.x},100%,45%,${1-(p.timer/90)})` : 'rgba(0,0,0,0)';
         }else{ctx.fillStyle=p.t==='spawn'?'#0c8':p.t==='checkpoint'?'#0bc':p.t==='lava'?'#f33':p.t==='goal'?'#fa0':'#555';}
@@ -80,7 +80,7 @@ function loop(){
         vy+=g;py+=vy;let onPlatform=false;
         plat.forEach(p=>{
             if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
-            let collides=px+pw>p.x+4&&px<p.x+p.w-4&&py+ph>=p.y&&py+ph-vy<=p.y+6; // Restrict footing to inside width (-4px padding)
+            let collides=px+pw>p.x+4&&px<p.x+p.w-4&&py+ph>=p.y&&py+ph-vy<=p.y+6;
             if(p.t==='rainbow'&&p.state==='gone')collides=false;
             if(p.t!=='lava'&&collides){
                 py=p.y-ph;vy=0;isG=true;onPlatform=true;
