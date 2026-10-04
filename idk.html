@@ -3,305 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Dash</title>
+    <title>The Password Game - Mini Clone</title>
     <style>
         body {
-            background-color: #05050a;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9fbff;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            padding: 40px 20px;
             margin: 0;
-            overflow: hidden;
-            user-select: none;
         }
 
         h1 {
-            margin: 0 0 5px 0;
-            font-size: 2.2rem;
-            letter-spacing: 3px;
-            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            color: #111;
         }
 
-        #score-board {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            color: #ff0077;
-            font-weight: bold;
-            text-shadow: 0 0 5px #ff0077;
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
         }
 
         #game-container {
-            position: relative;
-            border: 4px solid #00ffff;
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
-            border-radius: 6px;
-            background: #0a0a16;
+            width: 100%;
+            max-width: 550px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
         }
 
-        canvas {
+        label {
+            font-weight: 600;
             display: block;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
         }
 
-        .controls {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 0.9rem;
-            color: #71759b;
+        textarea {
+            width: 100%;
+            height: 80px;
+            padding: 12px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-family: monospace;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #3b82f6;
+        }
+
+        #rules-list {
+            margin-top: 25px;
+            display: flex;
+            flex-direction: column-reverse; /* Newest rules appear on top */
+            gap: 12px;
+        }
+
+        .rule-card {
+            background: #fff5f5;
+            border: 2px solid #feb2b2;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .rule-card.passed {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .rule-card.passed .icon::before {
+            content: "✅";
+        }
+
+        .rule-card:not(.passed) .icon::before {
+            content: "❌";
+        }
+
+        .rule-text {
+            font-size: 0.95rem;
+            font-weight: 500;
             line-height: 1.4;
         }
 
-        kbd {
-            background: #16162d;
-            border: 1px solid #3d3d75;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #00ffff;
+        .rule-card.passed .rule-text {
+            color: #166534;
+            text-decoration: line-through;
+        }
+
+        .rule-card:not(.passed) .rule-text {
+            color: #991b1b;
+        }
+
+        #win-message {
+            display: none;
+            background: #dcfce7;
+            border: 2px solid #86efac;
+            color: #14532d;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
-    <h1>NEON DASH</h1>
-    <div id="score-board">ATTEMPT <span id="attempt-count">1</span></div>
+    <h1>The Password Game</h1>
+    <div class="subtitle">Please choose a password.</div>
 
     <div id="game-container">
-        <canvas id="gameCanvas" width="800" height="350"></canvas>
-    </div>
-
-    <div class="controls">
-        Press <kbd>SPACEBAR</kbd>, <kbd>UP ARROW</kbd>, or <kbd>LEFT CLICK</kbd> to jump.<br>
-        Hold down the key to buffer jumps continuously!
+        <label for="password-input">Choose your password:</label>
+        <textarea id="password-input" placeholder="Type here..."></textarea>
+        
+        <div id="win-message">🎉 Congratulations! Your password is secure!</div>
+        <div id="rules-list"></div>
     </div>
 
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const input = document.getElementById('password-input');
+        const rulesList = document.getElementById('rules-list');
+        const winMessage = document.getElementById('win-message');
 
-        // Game Configuration
-        const GRAVITY = 1.1;
-        const JUMP_FORCE = -15;
-        const SPEED = 7;
-        const GROUND_Y = canvas.height - 60;
+        // Define the rules database
+        const rules = [
+            { id: 1, text: "Your password must be at least 5 characters.", check: p => p.length >= 5 },
+            { id: 2, text: "Your password must include a number.", check: p => /\d/.test(p) },
+            { id: 3, text: "Your password must include an uppercase letter.", check: p => /[A-Z]/.test(p) },
+            { id: 4, text: "Your password must include a special character.", check: p => /[^A-Za-z0-9]/.test(p) },
+            { id: 5, text: "The digits in your password must add up to 25.", check: p => {
+                const digits = p.match(/\d/g);
+                if (!digits) return false;
+                const sum = digits.reduce((acc, curr) => acc + parseInt(curr), 0);
+                return sum === 25;
+            }},
+            { id: 6, text: "Your password must include a month of the year.", check: p => {
+                const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+                return months.some(m => p.toLowerCase().includes(m));
+            }},
+            { id: 7, text: "Your password must include a Roman numeral (I, V, X, L, C, D, M).", check: p => /[IVXLCDM]/.test(p) },
+            { id: 8, text: "Your password must include one of our sponsors: Pepsi, Starbucks, or Shell.", check: p => {
+                return ['pepsi', 'starbucks', 'shell'].some(s => p.toLowerCase().includes(s));
+            }}
+        ];
 
-        // Player (Cube) State
-        let player = {
-            x: 100,
-            y: GROUND_Y - 40,
-            width: 40,
-            height: 40,
-            vy: 0,
-            isGrounded: false,
-            rotation: 0,
-            trail: []
-        };
+        // Track which rules are currently visible to the player
+        let visibleRulesCount = 1;
 
-        // Obstacles array and Attempt counter
-        let obstacles = [];
-        let attempt = 1;
-        let isActionActive = false; // Monitors if jump input is held down
-        let spawnTimer = 0;
+        function evaluateRules() {
+            const password = input.value;
+            rulesList.innerHTML = '';
+            let allPassed = true;
+            let currentVisibleTarget = 1;
 
-        // Input Handlers
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space" || e.code === "ArrowUp") {
-                e.preventDefault();
-                isActionActive = true;
-            }
-        });
-        window.addEventListener("keyup", (e) => {
-            if (e.code === "Space" || e.code === "ArrowUp") {
-                isActionActive = false;
-            }
-        });
-        canvas.addEventListener("mousedown", () => { isActionActive = true; });
-        window.addEventListener("mouseup", () => { isActionActive = false; });
+            // Step through rules to find out what needs to be displayed
+            for (let i = 0; i < rules.length; i++) {
+                const rule = rules[i];
+                const passed = rule.check(password);
 
-        function resetGame() {
-            player.y = GROUND_Y - player.height;
-            player.vy = 0;
-            player.rotation = 0;
-            player.trail = [];
-            obstacles = [];
-            spawnTimer = 0;
-            document.getElementById("attempt-count").innerText = attempt;
-        }
+                if (i < currentVisibleTarget) {
+                    // Create rule element
+                    const card = document.createElement('div');
+                    card.className = `rule-card ${passed ? 'passed' : ''}`;
+                    card.innerHTML = `
+                        <div class="icon"></div>
+                        <div class="rule-text">Rule ${rule.id}: ${rule.text}</div>
+                    `;
+                    rulesList.appendChild(card);
 
-        function spawnObstacles() {
-            spawnTimer--;
-            if (spawnTimer <= 0) {
-                // Randomize spacing variants
-                spawnTimer = Math.floor(Math.random() * 50) + 70; 
-                
-                // Randomly decide between a single spike or double spike
-                let type = Math.random() > 0.4 ? "single" : "double";
-                
-                obstacles.push({
-                    x: canvas.width + 50,
-                    type: type,
-                    width: type === "single" ? 34 : 68,
-                    height: 38
-                });
-            }
-        }
-
-        function update() {
-            // Apply jump physics if input is held and player is on the ground
-            if (isActionActive && player.isGrounded) {
-                player.vy = JUMP_FORCE;
-                player.isGrounded = false;
-            }
-
-            // Apply gravity
-            player.vy += GRAVITY;
-            player.y += player.vy;
-
-            // Ground collision check
-            if (player.y >= GROUND_Y - player.height) {
-                player.y = GROUND_Y - player.height;
-                player.vy = 0;
-                player.isGrounded = true;
-                
-                // Snap rotation cleanly back to 90 degree increments upon landing
-                player.rotation = Math.round(player.rotation / 90) * 90;
-            } else {
-                // Spin the cube mid-air
-                player.rotation += 4.5;
-            }
-
-            // Store tail trail particles
-            if (player.isGrounded) {
-                player.trail.push({ x: player.x, y: player.y + player.height - 5 });
-            } else {
-                player.trail.push({ x: player.x, y: player.y + player.height / 2 });
-            }
-            if (player.trail.length > 15) player.trail.shift();
-
-            // Move and manage obstacles
-            spawnObstacles();
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                let obs = obstacles[i];
-                obs.x -= SPEED;
-
-                // Collision Detection Box
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.width > obs.x &&
-                    player.y < GROUND_Y &&
-                    player.y + player.height > GROUND_Y - obs.height
-                ) {
-                    attempt++;
-                    resetGame();
-                    return;
-                }
-
-                // Delete offscreen elements
-                if (obs.x < -100) {
-                    obstacles.splice(i, 1);
-                }
-            }
-        }
-
-        function draw() {
-            // Background Clear
-            ctx.fillStyle = "#0a0a16";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Decorative Grid Lines in Background
-            ctx.strokeStyle = "rgba(0, 255, 255, 0.04)";
-            ctx.lineWidth = 1;
-            let gridOffset = (attempt * SPEED) % 40; 
-            for (let x = -gridOffset; x < canvas.width; x += 40) {
-                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, GROUND_Y); ctx.stroke();
-            }
-
-            // Draw Ground Floor Line
-            ctx.strokeStyle = "#00ffff";
-            ctx.lineWidth = 4;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "#00ffff";
-            ctx.beginPath();
-            ctx.moveTo(0, GROUND_Y);
-            ctx.lineTo(canvas.width, GROUND_Y);
-            ctx.stroke();
-
-            // Draw Player Jump Trail
-            ctx.shadowBlur = 0;
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = "rgba(255, 0, 119, 0.5)";
-            ctx.beginPath();
-            for (let i = 0; i < player.trail.length; i++) {
-                player.trail[i].x -= SPEED; // Shift trail with world movement
-                if (i === 0) ctx.moveTo(player.trail[i].x, player.trail[i].y);
-                else ctx.lineTo(player.trail[i].x, player.trail[i].y);
-            }
-            ctx.stroke();
-
-            // Draw Spikes (Obstacles)
-            ctx.fillStyle = "#ff0055";
-            ctx.strokeStyle = "#ffb3cd";
-            ctx.lineWidth = 2;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = "#ff0055";
-
-            obstacles.forEach(obs => {
-                if (obs.type === "single") {
-                    ctx.beginPath();
-                    ctx.moveTo(obs.x, GROUND_Y);
-                    ctx.lineTo(obs.x + obs.width / 2, GROUND_Y - obs.height);
-                    ctx.lineTo(obs.x + obs.width, GROUND_Y);
-                    ctx.closePath();
-                    ctx.fill(); ctx.stroke();
-                } else {
-                    // Double Spike Layout
-                    for (let n = 0; n < 2; n++) {
-                        let sx = obs.x + (n * 34);
-                        ctx.beginPath();
-                        ctx.moveTo(sx, GROUND_Y);
-                        ctx.lineTo(sx + 17, GROUND_Y - obs.height);
-                        ctx.lineTo(sx + 34, GROUND_Y);
-                        ctx.closePath();
-                        ctx.fill(); ctx.stroke();
+                    if (!passed) {
+                        allPassed = false;
+                        // Stop revealing further rules if this one isn't solved
+                        break;
+                    } else {
+                        // If it passed, we unlock visibility for the next rule
+                        currentVisibleTarget = Math.max(currentVisibleTarget, i + 2);
                     }
                 }
-            });
+            }
 
-            // Draw Player Icon (Rotating Cube)
-            ctx.save();
-            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-            ctx.rotate((player.rotation * Math.PI) / 180);
-            
-            // Cube outer neon shell
-            ctx.fillStyle = "#00ffff";
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "#00ffff";
-            ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
-            
-            // Inner core face look
-            ctx.fillStyle = "#0a0a16";
-            ctx.shadowBlur = 0;
-            ctx.fillRect(-player.width / 3, -player.height / 3, (player.width / 3) * 2, (player.height / 3) * 2);
-            
-            // Eyes decoration
-            ctx.fillStyle = "#00ffff";
-            ctx.fillRect(-10, -8, 6, 6);
-            ctx.fillRect(4, -8, 6, 6);
-            
-            ctx.restore();
+            // Cap the target to the rules length
+            visibleRulesCount = Math.min(currentVisibleTarget, rules.length);
+
+            // Win condition check
+            if (allPassed && visibleRulesCount === rules.length && rules[rules.length - 1].check(password)) {
+                winMessage.style.display = 'block';
+            } else {
+                winMessage.style.display = 'none';
+            }
         }
 
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Run Engine
-        resetGame();
-        gameLoop();
+        input.addEventListener('input', evaluateRules);
+        
+        // Run initial evaluation on load
+        evaluateRules();
     </script>
 </body>
 </html>
