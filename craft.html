@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Craft 3D</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            border: 4px solid #444;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: #78a7ff; /* Sky color */
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: white;
+            box-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        }
+        #crosshair::before { top: 4px; left: 0; width: 10px; height: 2px; }
+        #crosshair::after { top: 0; left: 4px; width: 2px; height: 10px; }
+        .controls {
+            margin-top: 15px;
+            max-width: 500px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+        kbd {
+            background: #333;
+            border: 1px solid #555;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="ui">Block: <span id="block-type">DIRT</span></div>
+        <div id="crosshair"></div>
+        <canvas id="renderCanvas" width="640" height="360"></canvas>
+    </div>
+
+    <div class="controls">
+        <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> Move | <kbd>←</kbd> <kbd>→</kbd> Look Left/Right | <kbd>Space</kbd> Jump<br>
+        <kbd>Left Click</kbd> Destroy Block | <kbd>Right Click</kbd> Place Block | <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> Change Material
+    </div>
+
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // World setup (16x16 grid, 4 layers high)
+        const MAP_WIDTH = 16;
+        const MAP_DEPTH = 16;
+        const MAP_HEIGHT = 4;
+        
+        // Colors mapping to block IDs
+        const BLOCK_COLORS = {
+            0: null,            // Air
+            1: '#557a2b',       // Grass (Top)
+            2: '#866043',       // Dirt
+            3: '#737373'        // Stone
+        };
+        const BLOCK_NAMES = { 1: 'GRASS', 2: 'DIRT', 3: 'STONE' };
+
+        // Initialize 3D map array
+        let map = [];
+        for (let x = 0; x < MAP_WIDTH; x++) {
+            map[x] = [];
+            for (let z = 0; z < MAP_DEPTH; z++) {
+                map[x][z] = [];
+                for (let y = 0; y < MAP_HEIGHT; y++) {
+                    // Layer 0 is stone, layer 1 is dirt, layer 2 is grass, layer 3 is air
+                    map[x][z][y] = y === 0 ? 3 : (y === 1 ? 2 : (y === 2 ? 1 : 0));
+                }
+            }
+        }
+
+        // Player state
+        let player = {
+            x: 8.5,
+            y: 3.0, // Eye level
+            z: 8.5,
+            angle: 0, // Facing direction in radians
+            selectedBlock: 1
+        };
+
+        // Key states
+        let keys = {};
+        window.addEventListener('keydown', e => { 
+            keys[e.key.toLowerCase()] = true; 
+            if(['1','2','3'].includes(e.key)) {
+                player.selectedBlock = parseInt(e.key);
+                document.getElementById('block-type').innerText = BLOCK_NAMES[player.selectedBlock];
+            }
+        });
+        window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+        // Build / Destroy Actions via Canvas Clicks
+        canvas.addEventListener('mousedown', e => {
+            e.preventDefault();
+            // Simple Raycast forward into the center grid row
+            let targetX = Math.floor(player.x + Math.cos(player.angle) * 2);
+            let targetZ = Math.floor(player.z + Math.sin(player.angle) * 2);
+            let targetY = Math.floor(player.y - 0.5);
+
+            if (targetX >= 0 && targetX < MAP_WIDTH && targetZ >= 0 && targetZ < MAP_DEPTH) {
+                if (e.button === 0) { // Left Click = Destroy
+                    if(targetY >= 0 && targetY < MAP_HEIGHT) map[targetX][targetZ][targetY] = 0;
+                } else if (e.button === 2) { // Right Click = Place
+                    let placeY = targetY;
+                    if(map[targetX][targetZ][targetY] !== 0) placeY += 1; // Stack up if target is full
+                    if(placeY >= 0 && placeY < MAP_HEIGHT) {
+                        map[targetX][targetZ][placeY] = player.selectedBlock;
+                    }
+                }
+            }
+        });
+        canvas.addEventListener('contextmenu', e => e.preventDefault()); // Disable right-click menu
+
+        function updatePhysics() {
+            let moveSpeed = 0.05;
+            let rotSpeed = 0.04;
+
+            // Rotation
+            if (keys['arrowleft']) player.angle -= rotSpeed;
+            if (keys['arrowright']) player.angle += rotSpeed;
+
+            // Forward/Backward/Strafe
+            let dx = 0;
+            let dz = 0;
+            if (keys['w']) { dx += Math.cos(player.angle); dz += Math.sin(player.angle); }
+            if (keys['s']) { dx -= Math.cos(player.angle); dz -= Math.sin(player.angle); }
+            if (keys['a']) { dx += Math.sin(player.angle); dz -= Math.cos(player.angle); }
+            if (keys['d']) { dx -= Math.sin(player.angle); dz += Math.cos(player.angle); }
+
+            // Apply movement safely inside boundaries
+            let newX = player.x + dx * moveSpeed;
+            let newZ = player.z + dz * moveSpeed;
+            if (newX > 0 && newX < MAP_WIDTH) player.x = newX;
+            if (newZ > 0 && newZ < MAP_DEPTH) player.z = newZ;
+        }
+
+        // Pseudo 3D Engine engine via Vertical Slice Raycasting
+        function render() {
+            ctx.fillStyle = "#78a7ff"; // Sky
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#4a4a4a"; // Bedrock ground background
+            ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+
+            const fov = Math.PI / 3;
+            const halfFov = fov / 2;
+            const numRays = canvas.width;
+
+            // Raycast across columns
+            for (let i = 0; i < numRays; i++) {
+                let rayAngle = (player.angle - halfFov) + (i / numRays) * fov;
+                let distance = 0;
+                let hitBlock = 0;
+                let blockY = 0;
+
+                let cos = Math.cos(rayAngle);
+                let sin = Math.sin(rayAngle);
+
+                // Step outward along the view ray
+                while (distance < 12) {
+                    distance += 0.1;
+                    let checkX = Math.floor(player.x + cos * distance);
+                    let checkZ = Math.floor(player.z + sin * distance);
+
+                    if (checkX >= 0 && checkX < MAP_WIDTH && checkZ >= 0 && checkZ < MAP_DEPTH) {
+                        // Check highest filled layer at this map cell
+                        for(let y = MAP_HEIGHT - 1; y >= 0; y--) {
+                            if (map[checkX][checkZ][y] > 0) {
+                                hitBlock = map[checkX][checkZ][y];
+                                blockY = y;
+                                break;
+                            }
+                        }
+                        if (hitBlock > 0) break;
+                    }
+                }
+
+                if (hitBlock > 0) {
+                    // Correct perspective fish-eye effect
+                    let correctedDist = distance * Math.cos(rayAngle - player.angle);
+                    let blockHeight = Math.floor((canvas.height / correctedDist));
+
+                    // Dynamic sizing offset based on layer elevation
+                    let elevationOffset = (blockY - 1.5) * (blockHeight * 0.6);
+                    
+                    let drawTop = (canvas.height / 2) - (blockHeight / 2) - elevationOffset;
+
+                    // Light depth shading shading
+                    ctx.fillStyle = BLOCK_COLORS[hitBlock];
+                    ctx.globalAlpha = Math.max(0.2, 1 - (correctedDist / 12));
+                    ctx.fillRect(i, drawTop, 1, blockHeight);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        function gameLoop() {
+            updatePhysics();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
