@@ -27,14 +27,14 @@ const plat=[
     {x:1855,y:230,w:40,h:15},{x:1945,y:190,w:40,h:15},{x:2035,y:240,w:40,h:15},
     {x:2125,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2210,y:200,w:35,h:15,t:'rainbow',state:'idle',timer:0},{x:2295,y:240,w:35,h:15,t:'rainbow',state:'idle',timer:0},
     {x:2385,y:240,w:40,h:15,t:'move',mx:35,baseX:2385},{x:2505,y:200,w:40,h:15,t:'move',mx:-35,baseX:2505},
-    {x:2625,y:250,w:40,h:15,t:'plat'},{x:2655,y:240,w:10,h:10,t:'lava'},{x:2715,y:220,w:40,h:15,t:'plat'},{x:2745,y:210,w:10,h:10,t:'lava'},{x:2805,y:190,w:40,h:15,t:'plat'},{x:2835,y:180,w:10,h:10,t:'lava'},
-    {x:2895,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:2985,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3075,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:3165,y:230,w:35,h:15},{x:3250,y:210,w:35,h:15},{x:3335,y:190,w:35,h:15},{x:3420,y:255,w:100,h:20,t:'plat'},{x:3425,y:245,w:90,h:10,t:'lava'},
-    {x:3560,y:240,w:40,h:15,t:'move',mx:30,baseX:3560},{x:3680,y:210,w:40,h:15,t:'move',mx:-30,baseX:3680},
-    {x:3790,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3880,y:220,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3970,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},
-    {x:4065,y:240,w:40,h:15,t:'move',mx:45,baseX:4065},{x:4210,y:240,w:100,h:20,t:'goal'}
+    {x:2625,y:250,w:60,h:15,t:'plat'},{x:2675,y:240,w:10,h:10,t:'lava'},{x:2735,y:220,w:60,h:15,t:'plat'},{x:2785,y:210,w:10,h:10,t:'lava'},{x:2845,y:190,w:60,h:15,t:'plat'},{x:2895,y:180,w:10,h:10,t:'lava'},
+    {x:2955,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3045,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3135,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:3225,y:230,w:35,h:15},{x:3310,y:210,w:35,h:15},{x:3395,y:190,w:35,h:15},{x:3480,y:255,w:100,h:20,t:'plat'},{x:3485,y:245,w:90,h:10,t:'lava'},
+    {x:3620,y:240,w:40,h:15,t:'move',mx:30,baseX:3620},{x:3740,y:210,w:40,h:15,t:'move',mx:-30,baseX:3740},
+    {x:3850,y:240,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:3940,y:220,w:40,h:15,t:'rainbow',state:'idle',timer:0},{x:4030,y:200,w:40,h:15,t:'rainbow',state:'idle',timer:0},
+    {x:4125,y:240,w:40,h:15,t:'move',mx:45,baseX:4125},{x:4270,y:240,w:100,h:20,t:'goal'}
 ];
-const items=[{x:4250,y:200,w:20,h:40,t:'trophy',c:'#ffd700'}];
+const items=[{x:4310,y:200,w:20,h:40,t:'trophy',c:'#ffd700'}];
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 const killPlayer=()=>{
     px=respawnX;py=respawnY;vy=0;isG=false;
@@ -54,12 +54,12 @@ window.onkeydown=(e)=>{
         if(v==='/skip'){
             let cp=plat.find(p=>p.t==='checkpoint');
             if(!hasCheckpoint){respawnX=cp.x+40;respawnY=cp.y-40;hasCheckpoint=true;killPlayer();}
-            else{respawnX=4220;respawnY=200;killPlayer();}
+            else{respawnX=4280;respawnY=200;killPlayer();}
         }
         chat.value='';chat.blur();
     }
 };
-window.onkeydown=(e)=>{keys[e.key.toLowerCase()]=true;if(e.key==='Enter'&&document.activeElement===chat){let v=chat.value.trim().toLowerCase();if(v==='/reset')killPlayer();if(v==='31718'){isFlying=!isFlying;vy=0;}if(v==='/skip'){let cp=plat.find(p=>p.t==='checkpoint');if(!hasCheckpoint){respawnX=cp.x+40;respawnY=cp.y-40;hasCheckpoint=true;killPlayer();}else{respawnX=4220;respawnY=200;killPlayer();}}chat.value='';chat.blur();}};window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
+window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
 function loop(){
     ctx.fillStyle='#111';ctx.fillRect(0,0,c.width,c.height);ctx.save();ctx.translate(c.width/2-px,c.height/2-py);
     tick+=0.04;
