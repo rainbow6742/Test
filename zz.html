@@ -2,7 +2,7 @@
 <div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.5);padding:10px;border-radius:6px;">
     <div style="font-size:18px;font-weight:bold;color:#ff3366;">Mega-Hard Obby (Web Edition)</div>
     <div style="font-size:13px;margin-top:4px;color:#eee;">Checkpoint Status: <span id="chk" style="color:#0fcc;font-weight:bold;">Not Saved</span></div>
-    <div style="font-size:11px;color:#aaa;margin-top:2px;">Type /reset to respawn or /skip to cheat</div>
+    <div style="font-size:11px;color:#aaa;margin-top:2px;">Type secret code 31718 to toggle Fly Mode (W/S to go up/down)</div>
     <input id="chat" placeholder="Type commands here..." style="margin-top:8px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:4px;border-radius:4px;width:160px;">
 </div>
 <div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(20,20,20,0.95);padding:25px;border-radius:10px;text-align:center;border:2px solid #ff3366;box-shadow:0 0 15px rgba(255,51,102,0.4);width:280px;">
@@ -12,7 +12,7 @@
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
-let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false;
+let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false;
 let respawnX=50,respawnY=200;
 const plat=[
     {x:20,y:260,w:100,h:20,t:'spawn'},
@@ -41,7 +41,7 @@ const killPlayer=()=>{
     plat.forEach(p=>{if(p.t==='rainbow'){p.state='idle';p.timer=0;}});
 };
 const restartObby=()=>{
-    hasCheckpoint=false;respawnX=50;respawnY=200;killPlayer();msg.style.display='none';active=true;
+    hasCheckpoint=false;isFlying=false;respawnX=50;respawnY=200;killPlayer();msg.style.display='none';active=true;
     document.getElementById('chk').textContent="Not Saved";document.getElementById('chk').style.color="#ff3366";
 };
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
@@ -50,6 +50,7 @@ window.onkeydown=(e)=>{
     if(e.key==='Enter'&&document.activeElement===chat){
         let v=chat.value.trim().toLowerCase();
         if(v==='/reset')killPlayer();
+        if(v==='31718'){isFlying=!isFlying;vy=0;}
         if(v==='/skip'){
             let cp=plat.find(p=>p.t==='checkpoint');
             if(!hasCheckpoint){respawnX=cp.x+40;respawnY=cp.y-40;hasCheckpoint=true;killPlayer();}
@@ -72,17 +73,22 @@ function loop(){
         if(p.t!=='rainbow'||p.state!=='gone')ctx.fillRect(p.x,p.y,p.w,p.h);
         if(p.t==='checkpoint'||p.t==='spawn'||p.t==='goal'){ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(p.x,p.y-4,p.w,4);}
     });
-    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.y,i.y,i.w,i.h);});
-    ctx.fillStyle='#ff3366';ctx.fillRect(px,py,pw,ph);
+    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
+    ctx.fillStyle=isFlying?'#0fcc':'#ff3366';ctx.fillRect(px,py,pw,ph);
     if(active){
         if(keys['a']||keys['arrowleft'])px-=3.2;if(keys['d']||keys['arrowright'])px+=3.2;
-        if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-6.8;isG=false;}
-        vy+=g;py+=vy;let onPlatform=false;
+        if(isFlying){
+            if(keys['w']||keys['arrowup'])py-=3.5;if(keys['s']||keys['arrowdown'])py+=3.5;
+        }else{
+            if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-6.8;isG=false;}
+            vy+=g;py+=vy;
+        }
+        let onPlatform=false;
         plat.forEach(p=>{
             if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
             let collides=px+pw>p.x+4&&px<p.x+p.w-4&&py+ph>=p.y&&py+ph-vy<=p.y+6;
             if(p.t==='rainbow'&&p.state==='gone')collides=false;
-            if(p.t!=='lava'&&collides){
+            if(!isFlying&&p.t!=='lava'&&collides){
                 py=p.y-ph;vy=0;isG=true;onPlatform=true;
                 if(p.t==='move')px+=p.vx;
                 if(p.t==='rainbow'&&p.state==='idle')p.state='stepped';
@@ -92,7 +98,7 @@ function loop(){
                 }
             }
         });
-        if(!onPlatform)isG=false;
+        if(!onPlatform&&!isFlying)isG=false;
         items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){msg.style.display='block';active=false;}});
         if(py>500)killPlayer();
     }
