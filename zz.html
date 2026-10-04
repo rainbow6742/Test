@@ -28,7 +28,7 @@
             text-shadow: 2px 2px 0px #000;
         }
         #game-canvas {
-            background: linear-gradient(to bottom, #5ce1e6, #38b6ff); /* Classic sky skybox gradient */
+            background: linear-gradient(to bottom, #5ce1e6, #38b6ff); /* Classic sky box gradient */
             border: 4px solid #3a3f44;
             border-radius: 8px;
             box-shadow: 0px 10px 20px rgba(0,0,0,0.5);
@@ -51,186 +51,190 @@
     <p class="instructions">Press <span>SPACEBAR</span> or <span>UP ARROW</span> to jump over the Roblox Lava Blocks!</p>
 
 <script>
-    const canvas = document.getElementById("game-canvas");
-    const ctx = canvas.getContext("2d");
-    const stageElement = document.getElementById("stage-count");
+    // Wait for the window to completely load before running the game engine
+    window.onload = function() {
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
+        const stageElement = document.getElementById("stage-count");
 
-    // Game Variables
-    let stage = 1;
-    let gameSpeed = 5;
-    let isGameOver = false;
+        // Game Variables
+        let stage = 1;
+        let gameSpeed = 5;
+        let isGameOver = false;
 
-    // Player Object (Roblox "Noob" / Blocky Avatar style)
-    const player = {
-        x: 80,
-        y: 300,
-        width: 35,
-        height: 50,
-        gravity: 0.6,
-        lift: -12,
-        velocity: 0,
-        isGrounded: false,
-        draw() {
-            // Head (Yellow)
-            ctx.fillStyle = "#FFD11A";
-            ctx.fillRect(this.x + 7, this.y, 21, 15);
-            // Torso (Blue)
-            ctx.fillStyle = "#0066FF";
-            ctx.fillRect(this.x, this.y + 15, this.width, 22);
-            // Legs (Green)
-            ctx.fillStyle = "#22AA33";
-            ctx.fillRect(this.x + 2, this.y + 37, 13, 13);
-            ctx.fillRect(this.x + 20, this.y + 37, 13, 13);
-        },
-        update() {
-            this.velocity += this.gravity;
-            this.y += this.velocity;
+        // Player Object (Roblox "Noob" / Blocky Avatar style)
+        const player = {
+            x: 80,
+            y: 300,
+            width: 35,
+            height: 50,
+            gravity: 0.6,
+            lift: -12,
+            velocity: 0,
+            isGrounded: false,
+            draw() {
+                // Head (Yellow)
+                ctx.fillStyle = "#FFD11A";
+                ctx.fillRect(this.x + 7, this.y, 21, 15);
+                // Torso (Blue)
+                ctx.fillStyle = "#0066FF";
+                ctx.fillRect(this.x, this.y + 15, this.width, 22);
+                // Legs (Green)
+                ctx.fillStyle = "#22AA33";
+                ctx.fillRect(this.x + 2, this.y + 37, 13, 13);
+                ctx.fillRect(this.x + 20, this.y + 37, 13, 13);
+            },
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
 
-            // Ground floor collision (y = 350 is ground level)
-            if (this.y + this.height >= 350) {
+                // Ground floor collision (y = 350 is ground level)
+                if (this.y + this.height >= 350) {
+                    this.y = 350 - this.height;
+                    this.velocity = 0;
+                    this.isGrounded = true;
+                } else {
+                    this.isGrounded = false;
+                }
+            },
+            jump() {
+                if (this.isGrounded) {
+                    this.velocity = this.lift;
+                }
+            }
+        };
+
+        // Obstacle Array (Roblox bright red studs / lava blocks)
+        let obstacles = [];
+
+        class Obstacle {
+            constructor() {
+                this.width = 25 + Math.random() * 20; // Random widths
+                this.height = 30 + Math.random() * 30; // Random heights
+                this.x = canvas.width;
                 this.y = 350 - this.height;
-                this.velocity = 0;
-                this.isGrounded = true;
-            } else {
-                this.isGrounded = false;
+                this.passed = false;
             }
-        },
-        jump() {
-            if (this.isGrounded) {
-                this.velocity = this.lift;
+            draw() {
+                // Draw Roblox Lava Red killing brick
+                ctx.fillStyle = "#FF0000";
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Neon glow line effect
+                ctx.strokeStyle = "#FF6666";
+                ctx.lineWidth = 3;
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
             }
-        }
-    };
-
-    // Obstacle Array (Roblox bright red studs / lava blocks)
-    let obstacles = [];
-
-    class Obstacle {
-        constructor() {
-            this.width = 25 + Math.random() * 20; // Random widths
-            this.height = 30 + Math.random() * 30; // Random heights
-            this.x = canvas.width;
-            this.y = 350 - this.height;
-        }
-        draw() {
-            // Draw Roblox Lava Red killing brick
-            ctx.fillStyle = "#FF0000";
-            ctx.fillRect(this.x, this.y, this.width, this.height);
-            
-            // Neon neon glow line effect
-            ctx.strokeStyle = "#FF6666";
-            ctx.lineWidth = 3;
-            ctx.strokeRect(this.x, this.y, this.width, this.height);
-        }
-        update() {
-            this.x -= gameSpeed;
-        }
-    }
-
-    // Static Environment Base Floor
-    void function drawEnvironment() {
-        // Base plate (Gray checkerboard simulation)
-        ctx.fillStyle = "#A3A7AC";
-        ctx.fillRect(0, 350, canvas.width, 50);
-        ctx.fillStyle = "#8E9296";
-        ctx.fillRect(0, 350, canvas.width, 5); // Base trim
-    }
-
-    // Spawn mechanism logic
-    let spawnTimer = 0;
-    function handleObstacles() {
-        spawnTimer++;
-        if (spawnTimer > Math.max(50, 120 - stage * 5)) { 
-            obstacles.push(new Obstacle());
-            spawnTimer = 0;
-        }
-
-        for (let i = obstacles.length - 1; i >= 0; i--) {
-            obstacles[i].update();
-            obstacles[i].draw();
-
-            // Collision check (Bounding box)
-            if (
-                player.x < obstacles[i].x + obstacles[i].width &&
-                player.x + player.width > obstacles[i].x &&
-                player.y < obstacles[i].y + obstacles[i].height &&
-                player.y + player.height > obstacles[i].y
-            ) {
-                isGameOver = true;
-            }
-
-            // Safe pass check (Score point / stage increase)
-            if (obstacles[i].x + obstacles[i].width < player.x && !obstacles[i].passed) {
-                obstacles[i].passed = true;
-                stage++;
-                gameSpeed += 0.3; // Speed scaling
-                stageElement.innerText = stage;
-            }
-
-            // Clear memory when blocks leave view screen
-            if (obstacles[i].x + obstacles[i].width < 0) {
-                obstacles.splice(i, 1);
+            update() {
+                this.x -= gameSpeed;
             }
         }
-    }
 
-    function resetGame() {
-        obstacles = [];
-        stage = 1;
-        gameSpeed = 5;
-        player.y = 200;
-        player.velocity = 0;
-        stageElement.innerText = stage;
-        isGameOver = false;
-        animate();
-    }
-
-    // Render loop engine
-    function animate() {
-        if (isGameOver) {
-            // Draw standard Roblox "Oof!" Game Over screen overlay
-            ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.fillStyle = "#FFFFFF";
-            ctx.font = "bold 32px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("Oof! You hit the Lava!", canvas.width / 2, canvas.height / 2 - 20);
-            
-            ctx.font = "20px Arial";
-            ctx.fillStyle = "#00e676";
-            ctx.fillText("Press SPACEBAR to Respawn", canvas.width / 2, canvas.height / 2 + 20);
-            return;
+        // Static Environment Base Floor
+        function drawEnvironment() {
+            // Base plate (Gray ground)
+            ctx.fillStyle = "#A3A7AC";
+            ctx.fillRect(0, 350, canvas.width, 50);
+            ctx.fillStyle = "#8E9296";
+            ctx.fillRect(0, 350, canvas.width, 5); // Base trim
         }
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Spawn mechanism logic
+        let spawnTimer = 0;
+        function handleObstacles() {
+            spawnTimer++;
+            if (spawnTimer > Math.max(50, 120 - stage * 5)) { 
+                obstacles.push(new Obstacle());
+                spawnTimer = 0;
+            }
 
-        // Environment Background
-        drawEnvironment();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].update();
+                obstacles[i].draw();
 
-        // Player Actions
-        player.update();
-        player.draw();
+                // Collision check (Bounding box)
+                if (
+                    player.x < obstacles[i].x + obstacles[i].width &&
+                    player.x + player.width > obstacles[i].x &&
+                    player.y < obstacles[i].y + obstacles[i].height &&
+                    player.y + player.height > obstacles[i].y
+                ) {
+                    isGameOver = true;
+                }
 
-        // Obstacles Actions
-        handleObstacles();
+                // Safe pass check (Score point / stage increase)
+                if (obstacles[i].x + obstacles[i].width < player.x && !obstacles[i].passed) {
+                    obstacles[i].passed = true;
+                    stage++;
+                    gameSpeed += 0.3; // Speed scaling
+                    stageElement.innerText = stage;
+                }
 
-        requestAnimationFrame(animate);
-    }
+                // Clear memory when blocks leave view screen
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
 
-    // Input Controller
-    window.addEventListener("keydown", (e) => {
-        if (e.code === "Space" || e.code === "ArrowUp") {
+        function resetGame() {
+            obstacles = [];
+            stage = 1;
+            gameSpeed = 5;
+            player.y = 200;
+            player.velocity = 0;
+            stageElement.innerText = stage;
+            isGameOver = false;
+            animate();
+        }
+
+        // Render loop engine
+        function animate() {
             if (isGameOver) {
-                resetGame();
-            } else {
-                player.jump();
+                // Draw standard Roblox "Oof!" Game Over screen overlay
+                ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = "#FFFFFF";
+                ctx.font = "bold 32px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("Oof! You hit the Lava!", canvas.width / 2, canvas.height / 2 - 20);
+                
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "#00e676";
+                ctx.fillText("Press SPACEBAR to Respawn", canvas.width / 2, canvas.height / 2 + 20);
+                return;
             }
-        }
-    });
 
-    // Start Game
-    animate();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Environment Background
+            drawEnvironment();
+
+            // Player Actions
+            player.update();
+            player.draw();
+
+            // Obstacles Actions
+            handleObstacles();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Input Controller
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                if (isGameOver) {
+                    resetGame();
+                } else {
+                    player.jump();
+                }
+            }
+        });
+
+        // Start Game
+        animate();
+    };
 </script>
 </body>
 </html>
