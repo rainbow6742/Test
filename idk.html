@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Dash</title>
+    <style>
+        body {
+            background-color: #05050a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 0 0 5px 0;
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+        }
+
+        #score-board {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #ff0077;
+            font-weight: bold;
+            text-shadow: 0 0 5px #ff0077;
+        }
+
+        #game-container {
+            position: relative;
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+            border-radius: 6px;
+            background: #0a0a16;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .controls {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #71759b;
+            line-height: 1.4;
+        }
+
+        kbd {
+            background: #16162d;
+            border: 1px solid #3d3d75;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #00ffff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NEON DASH</h1>
+    <div id="score-board">ATTEMPT <span id="attempt-count">1</span></div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="350"></canvas>
+    </div>
+
+    <div class="controls">
+        Press <kbd>SPACEBAR</kbd>, <kbd>UP ARROW</kbd>, or <kbd>LEFT CLICK</kbd> to jump.<br>
+        Hold down the key to buffer jumps continuously!
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Game Configuration
+        const GRAVITY = 1.1;
+        const JUMP_FORCE = -15;
+        const SPEED = 7;
+        const GROUND_Y = canvas.height - 60;
+
+        // Player (Cube) State
+        let player = {
+            x: 100,
+            y: GROUND_Y - 40,
+            width: 40,
+            height: 40,
+            vy: 0,
+            isGrounded: false,
+            rotation: 0,
+            trail: []
+        };
+
+        // Obstacles array and Attempt counter
+        let obstacles = [];
+        let attempt = 1;
+        let isActionActive = false; // Monitors if jump input is held down
+        let spawnTimer = 0;
+
+        // Input Handlers
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                e.preventDefault();
+                isActionActive = true;
+            }
+        });
+        window.addEventListener("keyup", (e) => {
+            if (e.code === "Space" || e.code === "ArrowUp") {
+                isActionActive = false;
+            }
+        });
+        canvas.addEventListener("mousedown", () => { isActionActive = true; });
+        window.addEventListener("mouseup", () => { isActionActive = false; });
+
+        function resetGame() {
+            player.y = GROUND_Y - player.height;
+            player.vy = 0;
+            player.rotation = 0;
+            player.trail = [];
+            obstacles = [];
+            spawnTimer = 0;
+            document.getElementById("attempt-count").innerText = attempt;
+        }
+
+        function spawnObstacles() {
+            spawnTimer--;
+            if (spawnTimer <= 0) {
+                // Randomize spacing variants
+                spawnTimer = Math.floor(Math.random() * 50) + 70; 
+                
+                // Randomly decide between a single spike or double spike
+                let type = Math.random() > 0.4 ? "single" : "double";
+                
+                obstacles.push({
+                    x: canvas.width + 50,
+                    type: type,
+                    width: type === "single" ? 34 : 68,
+                    height: 38
+                });
+            }
+        }
+
+        function update() {
+            // Apply jump physics if input is held and player is on the ground
+            if (isActionActive && player.isGrounded) {
+                player.vy = JUMP_FORCE;
+                player.isGrounded = false;
+            }
+
+            // Apply gravity
+            player.vy += GRAVITY;
+            player.y += player.vy;
+
+            // Ground collision check
+            if (player.y >= GROUND_Y - player.height) {
+                player.y = GROUND_Y - player.height;
+                player.vy = 0;
+                player.isGrounded = true;
+                
+                // Snap rotation cleanly back to 90 degree increments upon landing
+                player.rotation = Math.round(player.rotation / 90) * 90;
+            } else {
+                // Spin the cube mid-air
+                player.rotation += 4.5;
+            }
+
+            // Store tail trail particles
+            if (player.isGrounded) {
+                player.trail.push({ x: player.x, y: player.y + player.height - 5 });
+            } else {
+                player.trail.push({ x: player.x, y: player.y + player.height / 2 });
+            }
+            if (player.trail.length > 15) player.trail.shift();
+
+            // Move and manage obstacles
+            spawnObstacles();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                let obs = obstacles[i];
+                obs.x -= SPEED;
+
+                // Collision Detection Box
+                if (
+                    player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < GROUND_Y &&
+                    player.y + player.height > GROUND_Y - obs.height
+                ) {
+                    attempt++;
+                    resetGame();
+                    return;
+                }
+
+                // Delete offscreen elements
+                if (obs.x < -100) {
+                    obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            // Background Clear
+            ctx.fillStyle = "#0a0a16";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Decorative Grid Lines in Background
+            ctx.strokeStyle = "rgba(0, 255, 255, 0.04)";
+            ctx.lineWidth = 1;
+            let gridOffset = (attempt * SPEED) % 40; 
+            for (let x = -gridOffset; x < canvas.width; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, GROUND_Y); ctx.stroke();
+            }
+
+            // Draw Ground Floor Line
+            ctx.strokeStyle = "#00ffff";
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#00ffff";
+            ctx.beginPath();
+            ctx.moveTo(0, GROUND_Y);
+            ctx.lineTo(canvas.width, GROUND_Y);
+            ctx.stroke();
+
+            // Draw Player Jump Trail
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "rgba(255, 0, 119, 0.5)";
+            ctx.beginPath();
+            for (let i = 0; i < player.trail.length; i++) {
+                player.trail[i].x -= SPEED; // Shift trail with world movement
+                if (i === 0) ctx.moveTo(player.trail[i].x, player.trail[i].y);
+                else ctx.lineTo(player.trail[i].x, player.trail[i].y);
+            }
+            ctx.stroke();
+
+            // Draw Spikes (Obstacles)
+            ctx.fillStyle = "#ff0055";
+            ctx.strokeStyle = "#ffb3cd";
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#ff0055";
+
+            obstacles.forEach(obs => {
+                if (obs.type === "single") {
+                    ctx.beginPath();
+                    ctx.moveTo(obs.x, GROUND_Y);
+                    ctx.lineTo(obs.x + obs.width / 2, GROUND_Y - obs.height);
+                    ctx.lineTo(obs.x + obs.width, GROUND_Y);
+                    ctx.closePath();
+                    ctx.fill(); ctx.stroke();
+                } else {
+                    // Double Spike Layout
+                    for (let n = 0; n < 2; n++) {
+                        let sx = obs.x + (n * 34);
+                        ctx.beginPath();
+                        ctx.moveTo(sx, GROUND_Y);
+                        ctx.lineTo(sx + 17, GROUND_Y - obs.height);
+                        ctx.lineTo(sx + 34, GROUND_Y);
+                        ctx.closePath();
+                        ctx.fill(); ctx.stroke();
+                    }
+                }
+            });
+
+            // Draw Player Icon (Rotating Cube)
+            ctx.save();
+            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+            ctx.rotate((player.rotation * Math.PI) / 180);
+            
+            // Cube outer neon shell
+            ctx.fillStyle = "#00ffff";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#00ffff";
+            ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+            
+            // Inner core face look
+            ctx.fillStyle = "#0a0a16";
+            ctx.shadowBlur = 0;
+            ctx.fillRect(-player.width / 3, -player.height / 3, (player.width / 3) * 2, (player.height / 3) * 2);
+            
+            // Eyes decoration
+            ctx.fillStyle = "#00ffff";
+            ctx.fillRect(-10, -8, 6, 6);
+            ctx.fillRect(4, -8, 6, 6);
+            
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Run Engine
+        resetGame();
+        gameLoop();
+    </script>
+</body>
+</html>
