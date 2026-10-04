@@ -1,75 +1,103 @@
 <!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#111;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
 <div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.5);padding:10px;border-radius:6px;">
     <div style="font-size:18px;font-weight:bold;color:#fa0;">Easiest Game Ever (Web Edition)</div>
-    <div style="font-size:13px;margin-top:4px;color:#eee;">Endings Found: <span id="found">0</span> / 8</div>
-    <input id="chat" placeholder="Type /dance here..." style="margin-top:8px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:4px;border-radius:4px;width:150px;">
+    <div style="font-size:13px;margin-top:4px;color:#eee;">Endings Found: <span id="found">0</span> / 28</div>
+    <input id="chat" placeholder="Type commands here..." style="margin-top:8px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:4px;border-radius:4px;width:150px;">
 </div>
-<div id="lb" style="position:absolute;top:15px;right:15px;z-index:10;background:rgba(0,0,0,0.7);padding:12px;border-radius:6px;font-size:12px;width:180px;max-height:80vh;overflow-y:auto;">
+<div id="lb" style="position:absolute;top:15px;right:15px;z-index:10;background:rgba(0,0,0,0.7);padding:12px;border-radius:6px;font-size:11px;width:200px;max-height:80vh;overflow-y:auto;">
     <h4 style="margin:0 0 6px 0;color:#0fcc;border-bottom:1px solid #444;padding-bottom:2px;">Discovered Endings</h4><div id="elist" style="color:#aaa;line-height:1.4;"></div>
 </div>
 <div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(20,20,20,0.95);padding:25px;border-radius:10px;text-align:center;border:2px solid #fa0;box-shadow:0 0 15px rgba(255,170,0,0.4);width:280px;">
-    <h2 id="m-tit" style="margin:0 0 10px 0;color:#fa0;">ENDING UNLOCKED!</h2><p id="m-desc" style="margin:0 0 15px 0;font-size:14px;color:#ddd;"></p>
+    <h2 id="m-tit" style="margin:0 0 10px 0;color:#fa0;">ENDING UNLOCKED!</h2><p id="m-desc" style="margin:0 0 15px 0;font-size:13px;color:#ddd;"></p>
     <button onclick="resetGame()" style="padding:6px 20px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;border-radius:4px;color:#111;">Respawn / Try Again</button>
 </div>
 <canvas id="c"></canvas>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),elist=document.getElementById('elist'),msg=document.getElementById('msg');
-let keys={},px=40,py=100,pw=20,ph=20,g=0.3,vy=0,isG=false,bx=120,by=200,br=12,bvx=0,bvy=0,worldCol='#111',active=true;
-const plat=[{x:-40,y:260,w:230,h:20,t:'normal'},{x:250,y:260,w:120,h:20,t:'normal'},{x:440,y:260,w:60,h:20,t:'normal'}];
-const items=[{x:460,y:230,w:20,h:30,t:'trophy',c:'#fa0'},{x:300,y:240,w:18,h:20,t:'cheese',c:'#ff0'},{x:0,y:230,w:20,h:30,t:'trash',c:'#7a7'}];
+let keys={},px=40,py=100,pw=20,ph=20,g=0.3,vy=0,isG=false,bx=120,by=200,br=12,bvx=0,bvy=0,worldCol='#111',active=true,jumps=0,steps=0,afk=0,konami='',clicks=0,lavaFrame=0;
+const plat=[{x:-40,y:260,w:230,h:20},{x:250,y:260,w:120,h:20},{x:440,y:260,w:60,h:20},{x:100,y:140,w:40,h:15,t:'cloud'},{x:290,y:170,w:40,h:15,t:'fake'},{x:-150,y:350,w:800,h:20,t:'lava'},{x:550,y:260,w:100,h:20,t:'space'}];
+const items=[{x:460,y:230,w:20,h:30,t:'trophy',c:'#fa0'},{x:300,y:240,w:18,h:20,t:'cheese',c:'#ff0'},{x:0,y:230,w:20,h:30,t:'trash',c:'#7a7'},{x:110,y:110,w:15,h:15,t:'star',c:'#fff'},{x:-120,y:220,w:25,h:40,t:'door',c:'#b52'}];
 const endings={
-    'fell':{n:'The "Fell" Ending',d:'You completely missed the platforms and fell into the void.'},
-    'win':{n:'The "You Won" Ending',d:'You walked across the path and touched the glorious golden trophy! Easy!'},
-    'reset':{n:'The "Reset" Ending',d:'You opened the console or your mind and manually reset your character.'},
-    'super':{n:'The "Super Win" Ending',d:'You went through the trouble of pushing the physics ball all the way to the trophy.'},
-    'cheese':{n:'The "Cheese World" Ending',d:'You pushed the yellow ball into the void and plunged the game world into Cheese mode!'},
-    'toxic':{n:'The "Toxic Death" Ending',d:'You inspected the green radioactive waste container closely... too closely.'},
-    'dance':{n:'The "Dance Party" Ending',d:'You typed /dance into the console and threw an absolute rager.'},
-    'secret':{n:'The "Secret Wall" Ending',d:'You completely bypassed the paths and ran directly through the secret invisible door.'}
+    'win':{n:'1. You Won',d:'Walked across and touched the golden trophy.'},'fell':{n:'2. The Void',d:'You completely missed the track and fell.'},
+    'reset':{n:'3. Hard Reset',d:'Manually typed /reset in the chat panel.'},'super':{n:'4. Super Win',d:'Pushed the yellow physics ball into the trophy.'},
+    'cheese':{n:'5. Cheese Void',d:'Pushed the ball deep into the lower depths.'},'toxic':{n:'6. Toxic Sludge',d:'Touched the radioactive container.'},
+    'dance':{n:'7. Dance Party',d:'Typed /dance and groove-locked your game.'},'secret':{n:'8. Far Out',d:'Sprinted insanely far left through the void wall.'},
+    'lava':{n:'9. Floor is Lava',d:'Fell below onto the hidden red platform zone.'},'cloud':{n:'10. Sky High',d:'Discovered and stepped onto the upper sky platform.'},
+    'fake':{n:'11. Betrayal',d:'Stood on a platform that completely vanished.'},'star':{n:'12. Star Collector',d:'Grabbed the hidden glowing white space star.'},
+    'door':{n:'13. Backrooms',d:'Bypassed the start and opened the ancient brown door.'},'afk':{n:'14. Couch Potato',d:'Stood perfectly still for 10 full seconds.'},
+    'marathon':{n:'15. Marathon',d:'Walked left and right continuously over 800 paces.'},'bunny':{n:'16. Bunny Hop',d:'Spammed the jump button 25 times in a single life.'},
+    'cheat':{n:'17. Script Kitty',d:'Typed /cheat into the terminal.'},'fly':{n:'18. Gravity Defied',d:'Typed /fly into the command terminal.'},
+    'rich':{n:'19. Pay to Win',d:'Typed /donate to give the creator fake money.'},'color':{n:'20. Disco Mode',d:'Typed /disco to invert the canvas visuals.'},
+    'glitch':{n:'21. Speedrunner',d:'Clipped your character deep inside the spawn block.'},'konami':{n:'22. Retro Gamer',d:'Entered code: up up down down left right left right.'},
+    'clicker':{n:'23. Cookie Clicker',d:'Clicked the background canvas 15 times.'},'corner':{n:'24. Top Left Trap',d:'Jumped into the extreme top left viewport corner.'},
+    'bounce':{n:'25. Headbutt',d:'Bounced the physics ball directly onto your own skull.'},'giant':{n:'26. Mega Player',d:'Typed /big to break the structural grid.'},
+    'shrink':{n:'27. Ant-Man',d:'Typed /small to minimize into structural atomic lines.'},'inspect':{n:'28. Investigator',d:'Right-clicked anywhere on the main viewport.'}
 };
-let unlocked=JSON.parse(localStorage.getItem('rob_ends'))||[];
+let unlocked=JSON.parse(localStorage.getItem('rob_ends2'))||[];
 const saveEnd=(k)=>{
-    if(!unlocked.includes(k)){unlocked.push(k);localStorage.setItem('rob_ends',JSON.stringify(unlocked));}
-    document.getElementById('m-tit').textContent=endings[k].n;document.getElementById('m-desc').textContent=endings[k].d;
-    msg.style.display='block';active=false;updateUI();
+    if(!unlocked.includes(k)){unlocked.push(k);localStorage.setItem('rob_ends2',JSON.stringify(unlocked));}
+    G('m-tit').textContent=endings[k].n;G('m-desc').textContent=endings[k].d;msg.style.display='block';active=false;updateUI();
 };
 const updateUI=()=>{
-    document.getElementById('found').textContent=unlocked.length;
+    G('found').textContent=unlocked.length;
     elist.innerHTML=Object.keys(endings).map(k=>`<div style="color:${unlocked.includes(k)?'#0fcc':'#555'}">${unlocked.includes(k)?'✓':'?'} ${endings[k].n}</div>`).join('');
 };
 const resetGame=()=>{
-    px=40;py=100;vy=0;bx=120;by=200;bvx=bvy=0;worldCol='#111';msg.style.display='none';active=true;chat.value='';chat.blur();
+    px=40;py=100;vy=0;bx=120;by=200;bvx=bvy=0;worldCol='#111';msg.style.display='none';active=true;chat.value='';chat.blur();jumps=steps=afk=clicks=0;konami='';
 };
 const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();updateUI();
-window.onkeydown=(e)=>{keys[e.key.toLowerCase()]=true;if(e.key==='Enter'&&document.activeElement===chat){if(chat.value.trim()==='/dance'&&active)saveEnd('dance');else if(chat.value.trim()==='/reset'&&active)saveEnd('reset');chat.value='';chat.blur();}};
+window.onkeydown=(e)=>{
+    keys[e.key.toLowerCase()]=true;let k=e.key.toLowerCase();
+    if(['arrowup','arrowdown','arrowleft','arrowright'].includes(e.key))konami+=e.key[5].toLowerCase();
+    if(konami.endsWith('uuddlrlr')&&active)saveEnd('konami');
+    if(e.key==='Enter'&&document.activeElement===chat){
+        let val=chat.value.trim().toLowerCase();
+        if(val==='/dance'&&active)saveEnd('dance');if(val==='/reset'&&active)saveEnd('reset');if(val==='/cheat'&&active)saveEnd('cheat');
+        if(val==='/fly'&&active){py-=150;saveEnd('fly');}if(val==='/donate'&&active)saveEnd('rich');if(val==='/disco'&&active){worldCol='#301934';saveEnd('color');}
+        if(val==='/big'&&active){pw=50;ph=50;saveEnd('giant');}if(val==='/small'&&active){pw=5;ph=5;saveEnd('shrink');}chat.value='';chat.blur();
+    }
+};
 window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
+c.onmousedown=()=>{clicks++;if(clicks>=15&&active)saveEnd('clicker');};
+window.oncontextmenu=(e)=>{e.preventDefault();if(active)saveEnd('inspect');};
 const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
 function loop(){
-    ctx.fillStyle=worldCol;ctx.fillRect(0,0,c.width,c.height);
-    ctx.save();ctx.translate(c.width/2-px,c.height/2-py);
-    plat.forEach(p=>{ctx.fillStyle='#444';ctx.fillRect(p.x,p.y,p.w,p.h);});
-    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
-    ctx.fillStyle='#0fcc';ctx.fillRect(px,py,pw,ph);
-    ctx.fillStyle='#ffff33';ctx.beginPath();ctx.arc(bx,by,br,0,7);ctx.fill();
+    ctx.fillStyle=worldCol;ctx.fillRect(0,0,c.width,c.height);ctx.save();ctx.translate(c.width/2-px,c.height/2-py);
+    lavaFrame=(lavaFrame+0.1)%Math.PI;
+    plat.forEach(p=>{
+        ctx.fillStyle=p.t==='cloud'?'#8ee':p.t==='fake'?'#a44':p.t==='lava'?`rgb(${200+Math.sin(lavaFrame)*55},50,0)`:p.t==='space'?'#448':'#444';
+        ctx.fillRect(p.x,p.y,p.w,p.h);
+    });
+    items.forEach(i=> { ctx.fillStyle=i.c; ctx.fillRect(i.x,i.y,i.w,i.h); });
+    ctx.fillStyle='#0fcc';ctx.fillRect(px,py,pw,ph);ctx.fillStyle='#ffff33';ctx.beginPath();ctx.arc(bx,by,br,0,7);ctx.fill();
     if(active){
-        if(keys['a']||keys['arrowleft'])px-=3;if(keys['d']||keys['arrowright'])px+=3;
-        if((keys['w']||keys[' '])&&isG){vy=-6.5;isG=false;}
+        if(keys['a']||keys['arrowleft']){px-=3;steps++;}if(keys['d']||keys['arrowright']){px+3;px+=3;steps++;}
+        if(!keys['a']&&!keys['d']&&!keys['w']&&!keys[' '])afk++;else afk=0;if(afk>600)saveEnd('afk');if(steps>800)saveEnd('marathon');
+        if((keys['w']||keys[' '])&&isG){vy=-6.5;isG=false;jumps++;if(jumps>=25)saveEnd('bunny');}
         vy+=g;py+=vy;isG=false;
-        plat.forEach(p=>{if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6){py=p.y-ph;vy=0;isG=true;}});
+        plat.forEach(p=>{
+            if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6){
+                if(p.t==='fake'){p.y+=100;saveEnd('fake');}if(p.t==='lava')saveEnd('lava');
+                py=p.y-ph;vy=0;isG=true;if(p.t==='cloud')saveEnd('cloud');
+            }
+        });
         bvy+=g;bx+=bvx;by+=bvy;bvx*=0.98;
         plat.forEach(p=>{if(bx+br>p.x&&bx-br<p.x+p.w&&by+br>=p.y&&by+br-bvy<=p.y+6){by=p.y-br;bvy=-bvy*0.4;bvx*=0.8;}});
         let dist=Math.hypot(bx-(px+pw/2),by-(py+ph/2));
-        if(dist<br+pw/2){let ang=Math.atan2(by-(py+ph/2),bx-(px+pw/2));bvx=Math.cos(ang)*4;bvy=Math.sin(ang)*4-2;}
+        if(dist<br+pw/2){
+            let ang=Math.atan2(by-(py+ph/2),bx-(px+pw/2));bvx=Math.cos(ang)*4;bvy=Math.sin(ang)*4-2;
+            if(by<py)saveEnd('bounce');
+        }
         items.forEach(i=>{
             if(boxColl({x:px,y:py,w:pw,h:ph},i)){
-                if(i.t==='trophy')saveEnd('win');if(i.t==='trash')saveEnd('toxic');
+                if(i.t==='trophy')saveEnd('win');if(i.t==='trash')saveEnd('toxic');if(i.t==='star')saveEnd('star');if(i.t==='door')saveEnd('door');
                 if(i.t==='cheese')worldCol='#443d1a';
             }
             if(bx+br>i.x&&bx-br<i.x+i.w&&by+br>i.y&&by-br<i.y+i.h&&i.t==='trophy')saveEnd('super');
         });
-        if(py>400)saveEnd('fell');if(by>400&&worldCol==='#111'){worldCol='#ffea6b';saveEnd('cheese');}
-        if(px<-100)saveEnd('secret');
+        if(py>500)saveEnd('fell');if(by>400&&worldCol==='#111'){worldCol='#ffea6b';saveEnd('cheese');}
+        if(px<-300)saveEnd('secret');if(px===-40&&py===240)saveEnd('glitch');if(px<-200&&py<-200)saveEnd('corner');
     }
     ctx.restore();requestAnimationFrame(loop);
-}loop();
+}const G=id=>document.getElementById(id);loop();
 </script></body></html>
