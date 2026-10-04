@@ -1,240 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox 2D Obby Clone</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            background-color: #191B1D; /* Roblox dark theme background */
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-            color: white;
-        }
-        #game-ui {
-            margin-bottom: 10px;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px 0px #000;
-        }
-        #game-canvas {
-            background: linear-gradient(to bottom, #5ce1e6, #38b6ff); /* Classic sky box gradient */
-            border: 4px solid #3a3f44;
-            border-radius: 8px;
-            box-shadow: 0px 10px 20px rgba(0,0,0,0.5);
-        }
-        .instructions {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #aaaaaa;
-        }
-        .instructions span {
-            color: #00e676;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="game-ui">Stage: <span id="stage-count">1</span></div>
-    <canvas id="game-canvas" width="800" height="400"></canvas>
-    <p class="instructions">Press <span>SPACEBAR</span> or <span>UP ARROW</span> to jump over the Roblox Lava Blocks!</p>
-
+<!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#111;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
+<div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.5);padding:10px;border-radius:6px;">
+    <div style="font-size:18px;font-weight:bold;color:#0fcc;">Roblox-Style Obby (Web Edition)</div>
+    <div style="font-size:13px;margin-top:4px;color:#eee;">Stage: <span id="stg">1</span> / 4 | Checkpoint: <span id="chk">Saved</span></div>
+    <input id="chat" placeholder="Type /skip or /reset here..." style="margin-top:8px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:4px;border-radius:4px;width:160px;">
+</div>
+<div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(20,20,20,0.95);padding:25px;border-radius:10px;text-align:center;border:2px solid #0fcc;box-shadow:0 0 15px rgba(0,255,204,0.4);width:280px;">
+    <h2 id="m-tit" style="margin:0 0 10px 0;color:#0fcc;">OBBY COMPLETE!</h2><p id="m-desc" style="margin:0 0 15px 0;font-size:13px;color:#ddd;">You conquered all the platforms and reached the golden trophy!</p>
+    <button onclick="restartObby()" style="padding:6px 20px;background:#0fcc;border:none;font-weight:bold;cursor:pointer;border-radius:4px;color:#111;">Play Again</button>
+</div>
+<canvas id="c"></canvas>
 <script>
-    // Wait for the window to completely load before running the game engine
-    window.onload = function() {
-        const canvas = document.getElementById("game-canvas");
-        const ctx = canvas.getContext("2d");
-        const stageElement = document.getElementById("stage-count");
-
-        // Game Variables
-        let stage = 1;
-        let gameSpeed = 5;
-        let isGameOver = false;
-
-        // Player Object (Roblox "Noob" / Blocky Avatar style)
-        const player = {
-            x: 80,
-            y: 300,
-            width: 35,
-            height: 50,
-            gravity: 0.6,
-            lift: -12,
-            velocity: 0,
-            isGrounded: false,
-            draw() {
-                // Head (Yellow)
-                ctx.fillStyle = "#FFD11A";
-                ctx.fillRect(this.x + 7, this.y, 21, 15);
-                // Torso (Blue)
-                ctx.fillStyle = "#0066FF";
-                ctx.fillRect(this.x, this.y + 15, this.width, 22);
-                // Legs (Green)
-                ctx.fillStyle = "#22AA33";
-                ctx.fillRect(this.x + 2, this.y + 37, 13, 13);
-                ctx.fillRect(this.x + 20, this.y + 37, 13, 13);
-            },
-            update() {
-                this.velocity += this.gravity;
-                this.y += this.velocity;
-
-                // Ground floor collision (y = 350 is ground level)
-                if (this.y + this.height >= 350) {
-                    this.y = 350 - this.height;
-                    this.velocity = 0;
-                    this.isGrounded = true;
-                } else {
-                    this.isGrounded = false;
-                }
-            },
-            jump() {
-                if (this.isGrounded) {
-                    this.velocity = this.lift;
-                }
-            }
-        };
-
-        // Obstacle Array (Roblox bright red studs / lava blocks)
-        let obstacles = [];
-
-        class Obstacle {
-            constructor() {
-                this.width = 25 + Math.random() * 20; // Random widths
-                this.height = 30 + Math.random() * 30; // Random heights
-                this.x = canvas.width;
-                this.y = 350 - this.height;
-                this.passed = false;
-            }
-            draw() {
-                // Draw Roblox Lava Red killing brick
-                ctx.fillStyle = "#FF0000";
-                ctx.fillRect(this.x, this.y, this.width, this.height);
-                
-                // Neon glow line effect
-                ctx.strokeStyle = "#FF6666";
-                ctx.lineWidth = 3;
-                ctx.strokeRect(this.x, this.y, this.width, this.height);
-            }
-            update() {
-                this.x -= gameSpeed;
-            }
+const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
+let keys={},px=50,py=200,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,currentStage=1;
+let respawnX=50,respawnY=200;
+const plat=[
+    {x:20,y:260,w:100,h:20,t:'spawn'},{x:180,y:230,w:50,h:15,t:'normal'},{x:290,y:200,w:50,h:15,t:'normal'},{x:400,y:240,w:120,h:20,t:'checkpoint',s:2},
+    {x:580,y:240,w:30,h:15,t:'normal'},{x:670,y:210,w:20,h:50,t:'lava'},{x:750,y:240,w:30,h:15,t:'normal'},{x:850,y:240,w:120,h:20,t:'checkpoint',s:3},
+    {x:1030,y:240,w:40,h:15,t:'normal'},{x:1130,y:170,w:30,h:100,t:'lava'},{x:1220,y:240,w:40,h:15,t:'normal'},{x:1320,y:240,w:120,h:20,t:'checkpoint',s:4},
+    {x:1500,y:240,w:40,h:15,t:'move',mx:60,baseX:1500},{x:1640,y:200,w:40,h:15,t:'move',mx:-60,baseX:1640},{x:1780,y:240,w:100,h:20,t:'goal'}
+];
+const items=[{x:1820,y:200,w:20,h:40,t:'trophy',c:'#fa0'}];
+const killPlayer=()=>{
+    px=respawnX;py=respawnY;vy=0;
+};
+const restartObby=()=>{
+    currentStage=1;respawnX=50;respawnY=200;killPlayer();msg.style.display='none';active=true;
+};
+const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
+window.onkeydown=(e)=>{
+    keys[e.key.toLowerCase()]=true;
+    if(e.key==='Enter'&&document.activeElement===chat){
+        let v=chat.value.trim().toLowerCase();
+        if(v==='/reset')killPlayer();
+        if(v==='/skip'&&currentStage<4){
+            let nextCheck=plat.find(p=>p.t==='checkpoint'&&p.s===currentStage+1);
+            if(nextCheck){respawnX=nextCheck.x+40;respawnY=nextCheck.y-40;currentStage++;killPlayer();}
         }
-
-        // Static Environment Base Floor
-        function drawEnvironment() {
-            // Base plate (Gray ground)
-            ctx.fillStyle = "#A3A7AC";
-            ctx.fillRect(0, 350, canvas.width, 50);
-            ctx.fillStyle = "#8E9296";
-            ctx.fillRect(0, 350, canvas.width, 5); // Base trim
+        chat.value='';chat.blur();
+    }
+};
+window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
+const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
+function loop(){
+    ctx.fillStyle='#111';ctx.fillRect(0,0,c.width,c.height);ctx.save();ctx.translate(c.width/2-px,c.height/2-py);
+    tick+=0.04;
+    plat.forEach(p=>{
+        if(p.t==='move')p.x=p.baseX+Math.sin(tick)*p.mx;
+        ctx.fillStyle=p.t==='spawn'?'#0c8':p.t==='checkpoint'?'#0bc':p.t==='lava'?'#f33':p.t==='goal'?'#fa0':'#555';
+        ctx.fillRect(p.x,p.y,p.w,p.h);
+        if(p.t==='checkpoint'||p.t==='spawn'||p.t==='goal'){
+            ctx.fillStyle='rgba(255,255,255,0.15)';
+            ctx.fillRect(p.x,p.y-4,p.w,4);
         }
-
-        // Spawn mechanism logic
-        let spawnTimer = 0;
-        function handleObstacles() {
-            spawnTimer++;
-            if (spawnTimer > Math.max(50, 120 - stage * 5)) { 
-                obstacles.push(new Obstacle());
-                spawnTimer = 0;
-            }
-
-            for (let i = obstacles.length - 1; i >= 0; i--) {
-                obstacles[i].update();
-                obstacles[i].draw();
-
-                // Collision check (Bounding box)
-                if (
-                    player.x < obstacles[i].x + obstacles[i].width &&
-                    player.x + player.width > obstacles[i].x &&
-                    player.y < obstacles[i].y + obstacles[i].height &&
-                    player.y + player.height > obstacles[i].y
-                ) {
-                    isGameOver = true;
-                }
-
-                // Safe pass check (Score point / stage increase)
-                if (obstacles[i].x + obstacles[i].width < player.x && !obstacles[i].passed) {
-                    obstacles[i].passed = true;
-                    stage++;
-                    gameSpeed += 0.3; // Speed scaling
-                    stageElement.innerText = stage;
-                }
-
-                // Clear memory when blocks leave view screen
-                if (obstacles[i].x + obstacles[i].width < 0) {
-                    obstacles.splice(i, 1);
-                }
-            }
-        }
-
-        function resetGame() {
-            obstacles = [];
-            stage = 1;
-            gameSpeed = 5;
-            player.y = 200;
-            player.velocity = 0;
-            stageElement.innerText = stage;
-            isGameOver = false;
-            animate();
-        }
-
-        // Render loop engine
-        function animate() {
-            if (isGameOver) {
-                // Draw standard Roblox "Oof!" Game Over screen overlay
-                ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                ctx.fillStyle = "#FFFFFF";
-                ctx.font = "bold 32px Arial";
-                ctx.textAlign = "center";
-                ctx.fillText("Oof! You hit the Lava!", canvas.width / 2, canvas.height / 2 - 20);
-                
-                ctx.font = "20px Arial";
-                ctx.fillStyle = "#00e676";
-                ctx.fillText("Press SPACEBAR to Respawn", canvas.width / 2, canvas.height / 2 + 20);
-                return;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Environment Background
-            drawEnvironment();
-
-            // Player Actions
-            player.update();
-            player.draw();
-
-            // Obstacles Actions
-            handleObstacles();
-
-            requestAnimationFrame(animate);
-        }
-
-        // Input Controller
-        window.addEventListener("keydown", (e) => {
-            if (e.code === "Space" || e.code === "ArrowUp") {
-                if (isGameOver) {
-                    resetGame();
-                } else {
-                    player.jump();
+    });
+    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
+    ctx.fillStyle='#0fcc';ctx.fillRect(px,py,pw,ph);
+    if(active){
+        if(keys['a']||keys['arrowleft'])px-=3.2;if(keys['d']||keys['arrowright'])px+=3.2;
+        if((keys['w']||keys[' '||keys['arrowup']])&&isG){vy=-6.8;isG=false;}
+        vy+=g;py+=vy;let stoodOnPlat=false;
+        plat.forEach(p=>{
+            if(px+pw>p.x&&px<p.x+p.w&&py+ph>=p.y&&py+ph-vy<=p.y+6){
+                if(p.t==='lava'){killPlayer();return;}
+                py=p.y-ph;vy=0;isG=true;stoodOnPlat=true;
+                if(p.t==='checkpoint'&&p.s>currentStage){
+                    currentStage=p.s;respawnX=p.x+p.w/2-pw/2;respawnY=p.y-ph-10;
+                    document.getElementById('chk').textContent="Stage "+p.s;
                 }
             }
         });
-
-        // Start Game
-        animate();
-    };
-</script>
-</body>
-</html>
+        document.getElementById('stg').textContent=currentStage;
+        items.forEach(i=>{
+            if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){msg.style.display='block';active=false;}
+        });
+        if(py>500)killPlayer();
+    }
+    ctx.restore();requestAnimationFrame(loop);
+}loop();
+</script></body></html>
