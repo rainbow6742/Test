@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breathe If Prime Challenge</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --water-color: #0f3460;
+            --air-color: #e94560;
+            --text-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s;
+        }
+
+        body.submerged {
+            background-color: var(--water-color);
+        }
+
+        .container {
+            text-align: center;
+            max-width: 600px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .rules {
+            font-size: 1rem;
+            color: #b2bec3;
+            margin-bottom: 30px;
+        }
+
+        #timer {
+            font-size: 6rem;
+            font-weight: bold;
+            font-family: monospace;
+            margin: 20px 0;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        #status {
+            font-size: 1.5rem;
+            font-weight: 600;
+            min-height: 40px;
+            margin-bottom: 20px;
+        }
+
+        .status-breathing { color: #00cec9; }
+        .status-submerged { color: #74b9ff; }
+        .status-gameover { color: #ff7675; }
+
+        #action-btn {
+            background-color: #0984e3;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+
+        #action-btn:active {
+            transform: scale(0.95);
+        }
+
+        #restart-btn {
+            display: none;
+            background-color: var(--air-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Underwater visual effect bubble particles */
+        .bubble {
+            position: absolute;
+            bottom: -20px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float Up 4s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-105vh) translateX(50px); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Breathe If Prime</h1>
+        <p class="rules">Hold <b>SPACEBAR</b> or the <b>BUTTON</b> to stay underwater. <br> Release to take a breath <b>ONLY</b> when the timer is a <b>PRIME NUMBER</b>!</p>
+        
+        <div id="timer">1</div>
+        <div id="status" class="status-breathing">SURFACED (BREATHING)</div>
+        
+        <button id="action-btn">HOLD TO DIVE</button>
+        <button id="restart-btn" onclick="resetGame()">Try Again</button>
+    </div>
+
+    <script>
+        let timerElement = document.getElementById('timer');
+        let statusElement = document.getElementById('status');
+        let actionBtn = document.getElementById('action-btn');
+        let restartBtn = document.getElementById('restart-btn');
+
+        let count = 1;
+        let gameInterval = null;
+        let isSubmerged = false;
+        let isGameOver = false;
+
+        // Helper function to check if a number is prime
+        function isPrime(n) {
+            if (n < 2) return false;
+            for (let i = 2; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+
+        // Main game tick loop running every 1 second
+        function gameTick() {
+            count++;
+            timerElement.innerText = count;
+
+            // If user is surfaced (breathing), check if current number is prime
+            if (!isSubmerged) {
+                if (!isPrime(count)) {
+                    triggerGameOver(`Eliminated! You breathed on ${count}, which is a composite number.`);
+                }
+            } else {
+                // Background bubble effects when underwater
+                if(Math.random() > 0.4) createBubble();
+            }
+        }
+
+        function startGame() {
+            if (!gameInterval && !isGameOver) {
+                gameInterval = setInterval(gameTick, 1000);
+            }
+        }
+
+        function triggerGameOver(message) {
+            isGameOver = true;
+            clearInterval(gameInterval);
+            gameInterval = null;
+            
+            document.body.classList.remove('submerged');
+            statusElement.innerText = message;
+            statusElement.className = "status-gameover";
+            actionBtn.style.display = 'none';
+            restartBtn.style.display = 'inline-block';
+        }
+
+        function dive() {
+            if (isGameOver) return;
+            isSubmerged = true;
+            document.body.classList.add('submerged');
+            statusElement.innerText = "UNDERWATER (HOLDING BREATH)";
+            statusElement.className = "status-submerged";
+            actionBtn.innerText = "RELEASE TO BREATHE";
+            startGame();
+        }
+
+        function surface() {
+            if (isGameOver) return;
+            isSubmerged = false;
+            document.body.classList.remove('submerged');
+            
+            // Check immediately upon releasing the button
+            if (!isPrime(count)) {
+                triggerGameOver(`Eliminated! You took a breath on ${count}, which is a composite number.`);
+            } else {
+                statusElement.innerText = `SURFACED (BREATHING ON PRIME: ${count})`;
+                statusElement.className = "status-breathing";
+                actionBtn.innerText = "HOLD TO DIVE";
+            }
+        }
+
+        function resetGame() {
+            count = 1;
+            isSubmerged = false;
+            isGameOver = false;
+            clearInterval(gameInterval);
+            gameInterval = null;
+
+            timerElement.innerText = count;
+            statusElement.innerText = "SURFACED (BREATHING)";
+            statusElement.className = "status-breathing";
+            
+            actionBtn.style.display = 'inline-block';
+            actionBtn.innerText = "HOLD TO DIVE";
+            restartBtn.style.display = 'none';
+            document.body.classList.remove('submerged');
+        }
+
+        // --- Event Listeners for Controls ---
+
+        // Mouse & Touch Controls for the Button
+        actionBtn.addEventListener('mousedown', (e) => { e.preventDefault(); dive(); });
+        actionBtn.addEventListener('mouseup', (e) => { e.preventDefault(); surface(); });
+        actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); dive(); });
+        actionBtn.addEventListener('touchend', (e) => { e.preventDefault(); surface(); });
+
+        // Keyboard Controls (Spacebar)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === "Space" && !isSubmerged && !isGameOver) {
+                e.preventDefault();
+                dive();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === "Space" && isSubmerged && !isGameOver) {
+                e.preventDefault();
+                surface();
+            }
+        });
+
+        // Procedural cosmetic bubbles generator
+        function createBubble() {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            let size = Math.random() * 15 + 5;
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${Math.random() * 100}vw`;
+            bubble.style.animationDuration = `${Math.random() * 2 + 2}s`;
+            document.body.appendChild(bubble);
+            setTimeout(() => bubble.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
