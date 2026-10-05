@@ -1,113 +1,68 @@
-<!DOCTYPE html><html><body style="margin:0;overflow:hidden;background:#0d0d1a;font-family:sans-serif;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;">
-<div style="position:absolute;top:15px;left:15px;z-index:10;pointer-events:none;background:rgba(0,0,0,0.6);padding:10px;border-radius:6px;border:1px solid #333;">
-    <div style="font-size:16px;font-weight:bold;color:#00bcff;">Tower of Hellish Jumps</div>
-    <div style="font-size:12px;margin-top:3px;color:#eee;">Checkpoint: <span id="chk" style="color:#f33;font-weight:bold;">Not Saved</span></div>
-    <div style="font-size:10px;color:#aaa;margin-top:2px;">Code <span style="color:#0fcc;">31718</span> toggles Fly (W/S)</div>
-    <input id="chat" placeholder="Commands..." style="margin-top:6px;pointer-events:auto;background:#222;color:#fff;border:1px solid #555;padding:3px;border-radius:4px;width:140px;">
-</div>
-<div id="msg" style="display:none;position:absolute;z-index:20;background:rgba(15,15,25,0.95);padding:20px;border-radius:10px;text-align:center;border:2px solid #ffd700;width:240px;">
-    <h3 style="margin:0 0 10px 0;color:#ffd700;">TOWER CONQUEROR!</h3>
-    <button onclick="restartObby()" style="padding:6px 15px;background:#ffd700;border:none;font-weight:bold;cursor:pointer;border-radius:4px;color:#111;">Scale Again</button>
-</div>
-<canvas id="c"></canvas>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Password Game: 20 Rules</title>
+    <style>
+        body { background: #f4f6fa; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        #box { width: 100%; max-width: 500px; background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        textarea { width: 100%; height: 80px; padding: 10px; box-sizing: border-box; font-size: 1.1rem; resize: vertical; }
+        #rules { margin-top: 15px; display: flex; flex-direction: column-reverse; gap: 8px; }
+        .rule { padding: 10px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; background: #fff5f5; border: 1px solid #feb2b2; color: #991b1b; }
+        .rule.ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; text-decoration: line-through; }
+        #win { display: none; background: #dcfce7; color: #14532d; padding: 15px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <h2>The Password Game (20 Rules)</h2>
+    <div id="box">
+        <div id="win">🎉 Perfect! Your password is mathematically and chaotically secure!</div>
+        <textarea id="input" placeholder="Type password here..."></textarea>
+        <div id="rules"></div>
+    </div>
 <script>
-const c=document.getElementById('c'),ctx=c.getContext('2d'),chat=document.getElementById('chat'),msg=document.getElementById('msg');
-let keys={},px=390,py=500,pw=20,ph=20,g=0.28,vy=0,isG=false,active=true,tick=0,hasCheckpoint=false,isFlying=false,respawnX=390,respawnY=500,parts=[];
-const spawnParts=(x,y)=>{
-    for(let i=0;i<60;i++)parts.push({x,y,vx:(Math.random()-0.5)*7,vy:(Math.random()-0.5)*7-2,c:`hsl(${Math.random()*360},100%,60%)`,s:Math.random()*4+2,a:1});
-};
-const plat=[
-    {x:250,y:550,w:300,h:20,t:'spawn'},
-    {x:260,y:490,w:50,h:12},{x:200,y:430,w:50,h:12},{x:200,y:370,w:120,h:12,t:'plat'},{x:250,y:360,w:25,h:10,t:'lava'}, 
-    {x:360,y:300,w:50,h:12,t:'move',mx:25,baseY:300,mode:'v'},
-    {x:460,y:230,w:45,h:12},{x:460,y:175,w:28,h:12}, 
-    {x:280,y:130,w:120,h:15,t:'checkpoint'},
-    {x:210,y:70,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:300,y:10,w:45,h:12,t:'rainbow',state:'idle',timer:0},{x:400,y:-50,w:45,h:12,t:'rainbow',state:'idle',timer:0},
-    {x:380,y:-100,w:35,h:12,t:'plat'},{x:280,y:-150,w:40,h:12},{x:200,y:-175,w:12,h:50,t:'lava'},{x:180,y:-220,w:50,h:12},
-    {x:280,y:-270,w:55,h:12,t:'move',mx:90,baseX:280,mode:'h'},{x:460,y:-320,w:50,h:12},{x:530,y:-340,w:12,h:60,t:'lava'},
-    {x:410,y:-380,w:40,h:12,t:'rainbow',state:'idle',timer:0},{x:310,y:-430,w:40,h:12,t:'rainbow',state:'idle',timer:0},
-    {x:320,y:-490,w:160,h:20,t:'goal'}
-],items=[{x:390,y:-530,w:20,h:40,t:'trophy',c:'#ffd700'}];
-const boxColl=(b1,b2)=>b1.x<b2.x+b2.w&&b1.x+b1.w>b2.x&&b1.y<b2.y+b2.h&&b1.y+b1.h>b2.y;
-const killPlayer=()=>{
-    px=respawnX;py=respawnY;vy=0;isG=false;
-    plat.forEach(p=>{if(p.t==='rainbow'){p.state='idle';p.timer=0;}});
-};
-const restartObby=()=>{
-    hasCheckpoint=false;isFlying=false;respawnX=390;respawnY=500;killPlayer();msg.style.display='none';active=true;parts=[];
-    document.getElementById('chk').textContent="Not Saved";document.getElementById('chk').style.color="#f33";
-};
-const res=()=>{c.width=window.innerWidth;c.height=window.innerHeight;};window.onresize=res;res();
-window.onkeydown=(e)=>{
-    keys[e.key.toLowerCase()]=true;
-    if(e.key==='Enter'&&document.activeElement===chat){
-        let v=chat.value.trim().toLowerCase();
-        if(v==='/reset')killPlayer();
-        if(v==='31718'){isFlying=!isFlying;vy=0;}
-        if(v==='/skip'){
-            let cp=plat.find(p=>p.t==='checkpoint');
-            if(!hasCheckpoint){respawnX=cp.x+50;respawnY=cp.y-30;hasCheckpoint=true;killPlayer();}
-            else{respawnX=390;respawnY=-510;killPlayer();}
+    const input = document.getElementById('input'), rulesDiv = document.getElementById('rules'), win = document.getElementById('win');
+    const targetLength = Math.floor(Math.random() * 10) + 35; // Target length scaled up for more rules
+
+    const rules = [
+        // Legacy Rules 1-10
+        { id: 1, txt: "Minimum 5 characters.", chk: p => p.length >= 5 },
+        { id: 2, txt: "Must include a number.", chk: p => /\d/.test(p) },
+        { id: 3, txt: "Must include an uppercase letter.", chk: p => /[A-Z]/.test(p) },
+        { id: 4, txt: "Must include a special character.", chk: p => /[^A-Za-z0-9]/.test(p) },
+        { id: 5, txt: "Digits must add up to exactly 25.", chk: p => (p.match(/\d/g) || []).reduce((a, b) => a + parseInt(b), 0) === 25 },
+        { id: 6, txt: "Must include a month (e.g., May).", chk: p => ['january','february','march','april','may','june','july','august','september','october','november','december'].some(m => p.toLowerCase().includes(m)) },
+        { id: 7, txt: "Must include a sponsor: Pepsi, Starbucks, or Shell.", chk: p => ['pepsi','starbucks','shell'].some(s => p.toLowerCase().includes(s)) },
+        { id: 8, txt: "Must include a Roman numeral (I, V, X, L, C, D, M).", chk: p => /[IVXLCDM]/.test(p) },
+        { id: 9, txt: "Must include a valid leap year.", chk: p => (p.match(/\d+/g) || []).some(n => { const y = parseInt(n); return (y%4===0 && y%100!==0) || y%400===0; }) },
+        
+        // 10 Brand New Interlocking Rules (10-20)
+        { id: 10, txt: "Must include a 5-letter Secret Wordle token: 'CRAZY'.", chk: p => p.toUpperCase().includes('CRAZY') },
+        { id: 11, txt: "Must contain a valid negative integer (e.g., -7).", chk: p => /-\d+/.test(p) },
+        { id: 12, txt: "Must contain the word 'AM' or 'PM' matching your computer's current time state.", chk: p => { const isPm = new Date().getHours() >= 12; return p.includes(isPm ? 'PM' : 'AM'); } },
+        { id: 13, txt: "Must contain at least two different mathematical operators (+, -, *, /).", chk: p => (p.match(/[\+\-\*\/]/g) || []).filter((v, i, a) => a.indexOf(v) === i).length >= 2 },
+        { id: 14, txt: "Must include a standard keyboard top-row sequence of 3 keys (e.g., qwe, rty, asd).", chk: p => ['qwe','wer','ert','rty','tyu','yui','uio','iop','asd','sdf','dfg','fgh','ghj','hjk','jkl'].some(s => p.toLowerCase().includes(s)) },
+        { id: 15, txt: "Must contain a chess piece name (pawn, rook, knight, bishop, queen, king).", chk: p => ['pawn','rook','knight','bishop','queen','king'].some(w => p.toLowerCase().includes(w)) },
+        { id: 16, txt: "Must contain a valid Hex Color code format (e.g., #FF00FF).", chk: p => /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/.test(p) },
+        { id: 17, txt: "Must contain at least 3 vowels side-by-side (e.g., 'aea' or 'oui').", chk: p => /[aeiou]{3,}/i.test(p) },
+        { id: 18, txt: "Must contain a valid web protocol prefix ('http://' or 'https://').", chk: p => /https?:\/\//.test(p) },
+        { id: 19, txt: "Anti-Repetitive rule: The same character cannot appear 3 times in a row consecutively.", chk: p => !/(.)\1\1/.test(p) },
+        { id: 20, txt: `Must be EXACTLY ${targetLength} characters long.`, chk: p => p.length === targetLength }
+    ];
+
+    function verify() {
+        const val = input.value; rulesDiv.innerHTML = ''; let okCount = 0;
+        for (let i = 0; i < rules.length; i++) {
+            const passed = rules[i].chk(val);
+            const card = document.createElement('div');
+            card.className = `rule ${passed ? 'ok' : ''}`;
+            card.innerText = `Rule ${rules[i].id}: ${rules[i].txt} ${passed ? '✅' : '❌'}`;
+            rulesDiv.appendChild(card);
+            if (!passed) break;
+            okCount++;
         }
-        chat.value='';chat.blur();
+        win.style.display = (okCount === rules.length) ? 'block' : 'none';
     }
-};
-window.onkeyup=(e)=>{keys[e.key.toLowerCase()]=false;};
-function loop(){
-    ctx.fillStyle='#0d0d1a';ctx.fillRect(0,0,c.width,c.height);ctx.save();
-    ctx.translate(c.width/2-px,c.height/2-py);tick+=0.04;
-    ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=4;ctx.strokeRect(150,-600,500,1200);
-    plat.forEach(p=>{
-        if(p.t==='move'){
-            let lastX=p.x,lastY=p.y;
-            if(p.mode==='h'){p.x=p.baseX+Math.sin(tick)*p.mx;p.vx=p.x-lastX;p.vy=0;}
-            else{p.y=p.baseY+Math.sin(tick)*p.mx;p.vy=p.y-lastY;p.vx=0;}
-        }
-        if(p.t==='rainbow'){
-            if(p.state==='stepped'){p.timer++;if(p.timer>=75){p.state='gone';p.timer=0;}}
-            else if(p.state==='gone'){p.timer++;if(p.timer>=200){p.state='idle';p.timer=0;}}
-            ctx.fillStyle=p.state=='idle'?`hsla(${tick*40+p.x},100%,60%,1)`:p.state=='stepped'?`hsla(${tick*40+p.x},100%,45%,${1-(p.timer/75)})`:'rgba(0,0,0,0)';
-        }else{ctx.fillStyle=p.t=='spawn'?'#00e676':p.t=='checkpoint'?'#00b0ff':p.t=='lava'?'#ff1744':p.t=='goal'?'#ffd700':'#424242';}
-        if(p.t!=='rainbow'||p.state!=='gone'){
-            ctx.fillRect(p.x,p.y,p.w,p.h);
-            if(p.t!=='lava'){ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(p.x,p.y,p.w,3);}
-        }
-    });
-    items.forEach(i=>{ctx.fillStyle=i.c;ctx.fillRect(i.x,i.y,i.w,i.h);});
-    parts.forEach((p,idx)=>{
-        p.x+=p.vx;p.y+=p.vy;p.vy+=0.05;p.a-=0.015;
-        if(p.a<=0){parts.splice(idx,1);return;}
-        ctx.fillStyle=p.c;ctx.globalAlpha=p.a;ctx.fillRect(p.x,p.y,p.s,p.s);ctx.globalAlpha=1;
-    });
-    ctx.fillStyle=isFlying?'#00e5ff':'#ff3366';ctx.fillRect(px,py,pw,ph);
-    if(active){
-        if(keys['a']||keys['arrowleft'])px-=3.5;if(keys['d']||keys['arrowright'])px+=3.5;
-        if(isFlying){
-            if(keys['w']||keys['arrowup'])py-=4;if(keys['s']||keys['arrowdown'])py+=4;
-        }else{
-            let j=keys['w']||keys[' ']||keys['arrowup'];
-            if(j&&isG){vy=-7.2;isG=false;}vy+=g;py+=vy;
-        }
-        let onPlat=false;
-        plat.forEach(p=>{
-            if(p.t==='rainbow'&&p.state==='gone')return;
-            if(p.t==='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){killPlayer();return;}
-            if(p.t!=='lava'&&boxColl({x:px,y:py,w:pw,h:ph},p)){
-                if(vy>=0&&py+ph-vy<=p.y+8){
-                    py=p.y-ph;vy=0;isG=true;onPlat=true;
-                    if(p.t==='move'){px+=p.vx;py+=p.vy;}
-                    if(p.t==='rainbow'&&p.state==='idle')p.state='stepped';
-                    if(p.t==='checkpoint'&&!hasCheckpoint){
-                        hasCheckpoint=true;respawnX=p.x+p.w/2-pw/2;respawnY=p.y-ph-10;
-                        document.getElementById('chk').textContent="SAVED!";document.getElementById('chk').style.color="#00b0ff";
-                    }
-                } 
-                else if(vy<0&&py-vy>=p.y+p.h-6){py=p.y+p.h;vy=0.5;}
-            }
-        });
-        if(!onPlat&&!isFlying)isG=false;
-        items.forEach(i=>{if(boxColl({x:px,y:py,w:pw,h:ph},i)&&i.t==='trophy'){spawnParts(i.x+i.w/2,i.y+i.h/2);msg.style.display='block';active=false;}});
-        if(py>700)killPlayer();
-    }ctx.restore();requestAnimationFrame(loop);
-}loop();
-</script></body></html>
+    input.addEventListener('input', verify); verify();
+</script>
+</body>
+</html>
