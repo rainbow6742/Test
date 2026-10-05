@@ -1,222 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Password Game - Mini Clone</title>
+    <title>The Password Game</title>
     <style>
-        body {
-            background-color: #f9fbff;
-            color: #333;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 20px;
-            margin: 0;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-            color: #111;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        #game-container {
-            width: 100%;
-            max-width: 550px;
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-
-        label {
-            font-weight: 600;
-            display: block;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
-        }
-
-        textarea {
-            width: 100%;
-            height: 80px;
-            padding: 12px;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-family: monospace;
-            resize: none;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            border-color: #3b82f6;
-        }
-
-        #rules-list {
-            margin-top: 25px;
-            display: flex;
-            flex-direction: column-reverse; /* Newest rules appear on top */
-            gap: 12px;
-        }
-
-        .rule-card {
-            background: #fff5f5;
-            border: 2px solid #feb2b2;
-            border-radius: 8px;
-            padding: 15px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .rule-card.passed {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-        }
-
-        .icon {
-            font-size: 1.2rem;
-            line-height: 1;
-        }
-
-        .rule-card.passed .icon::before {
-            content: "✅";
-        }
-
-        .rule-card:not(.passed) .icon::before {
-            content: "❌";
-        }
-
-        .rule-text {
-            font-size: 0.95rem;
-            font-weight: 500;
-            line-height: 1.4;
-        }
-
-        .rule-card.passed .rule-text {
-            color: #166534;
-            text-decoration: line-through;
-        }
-
-        .rule-card:not(.passed) .rule-text {
-            color: #991b1b;
-        }
-
-        #win-message {
-            display: none;
-            background: #dcfce7;
-            border: 2px solid #86efac;
-            color: #14532d;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin-top: 20px;
-        }
+        body { background: #f4f6fa; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        #box { width: 100%; max-width: 450px; background: white; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        textarea { width: 100%; height: 60px; padding: 10px; box-sizing: border-box; font-size: 1.1rem; }
+        #rules { margin-top: 15px; display: flex; flex-direction: column-reverse; gap: 8px; }
+        .rule { padding: 10px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; background: #fff5f5; border: 1px solid #feb2b2; color: #991b1b; }
+        .rule.ok { background: #f0fdf4; border-color: #bbf7d0; color: #166534; text-decoration: line-through; }
+        #win { display: none; background: #dcfce7; color: #14532d; padding: 15px; border-radius: 6px; text-align: center; font-weight: bold; margin-bottom: 15px; }
     </style>
 </head>
 <body>
-
-    <h1>The Password Game</h1>
-    <div class="subtitle">Please choose a password.</div>
-
-    <div id="game-container">
-        <label for="password-input">Choose your password:</label>
-        <textarea id="password-input" placeholder="Type here..."></textarea>
-        
-        <div id="win-message">🎉 Congratulations! Your password is secure!</div>
-        <div id="rules-list"></div>
+    <h2>The Password Game</h2>
+    <div id="box">
+        <div id="win">🎉 Secure Password Accepted!</div>
+        <textarea id="input" placeholder="Enter password..."></textarea>
+        <div id="rules"></div>
     </div>
+<script>
+    const input = document.getElementById('input'), rulesDiv = document.getElementById('rules'), win = document.getElementById('win');
+    const targetLength = Math.floor(Math.random() * 10) + 20;
 
-    <script>
-        const input = document.getElementById('password-input');
-        const rulesList = document.getElementById('rules-list');
-        const winMessage = document.getElementById('win-message');
+    const rules = [
+        { id: 1, txt: "Minimum 5 characters.", chk: p => p.length >= 5 },
+        { id: 2, txt: "Must include a number.", chk: p => /\d/.test(p) },
+        { id: 3, txt: "Must include an uppercase letter.", chk: p => /[A-Z]/.test(p) },
+        { id: 4, txt: "Must include a special character.", chk: p => /[^A-Za-z0-9]/.test(p) },
+        { id: 5, txt: "Digits must add up to exactly 25.", chk: p => (p.match(/\d/g) || []).reduce((a, b) => a + parseInt(b), 0) === 25 },
+        { id: 6, txt: "Must include a month (e.g., May).", chk: p => ['january','february','march','april','may','june','july','august','september','october','november','december'].some(m => p.toLowerCase().includes(m)) },
+        { id: 7, txt: "Must include a sponsor: Pepsi, Starbucks, or Shell.", chk: p => ['pepsi','starbucks','shell'].some(s => p.toLowerCase().includes(s)) },
+        { id: 8, txt: "Must include a Roman numeral (I, V, X, L, C, D, M).", chk: p => /[IVXLCDM]/.test(p) },
+        { id: 9, txt: "Must include a valid leap year.", chk: p => (p.match(/\d+/g) || []).some(n => { const y = parseInt(n); return (y%4===0 && y%100!==0) || y%400===0; }) },
+        { id: 10, txt: `Must be EXACTLY ${targetLength} characters long.`, chk: p => p.length === targetLength }
+    ];
 
-        // Define the rules database
-        const rules = [
-            { id: 1, text: "Your password must be at least 5 characters.", check: p => p.length >= 5 },
-            { id: 2, text: "Your password must include a number.", check: p => /\d/.test(p) },
-            { id: 3, text: "Your password must include an uppercase letter.", check: p => /[A-Z]/.test(p) },
-            { id: 4, text: "Your password must include a special character.", check: p => /[^A-Za-z0-9]/.test(p) },
-            { id: 5, text: "The digits in your password must add up to 25.", check: p => {
-                const digits = p.match(/\d/g);
-                if (!digits) return false;
-                const sum = digits.reduce((acc, curr) => acc + parseInt(curr), 0);
-                return sum === 25;
-            }},
-            { id: 6, text: "Your password must include a month of the year.", check: p => {
-                const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-                return months.some(m => p.toLowerCase().includes(m));
-            }},
-            { id: 7, text: "Your password must include a Roman numeral (I, V, X, L, C, D, M).", check: p => /[IVXLCDM]/.test(p) },
-            { id: 8, text: "Your password must include one of our sponsors: Pepsi, Starbucks, or Shell.", check: p => {
-                return ['pepsi', 'starbucks', 'shell'].some(s => p.toLowerCase().includes(s));
-            }}
-        ];
-
-        // Track which rules are currently visible to the player
-        let visibleRulesCount = 1;
-
-        function evaluateRules() {
-            const password = input.value;
-            rulesList.innerHTML = '';
-            let allPassed = true;
-            let currentVisibleTarget = 1;
-
-            // Step through rules to find out what needs to be displayed
-            for (let i = 0; i < rules.length; i++) {
-                const rule = rules[i];
-                const passed = rule.check(password);
-
-                if (i < currentVisibleTarget) {
-                    // Create rule element
-                    const card = document.createElement('div');
-                    card.className = `rule-card ${passed ? 'passed' : ''}`;
-                    card.innerHTML = `
-                        <div class="icon"></div>
-                        <div class="rule-text">Rule ${rule.id}: ${rule.text}</div>
-                    `;
-                    rulesList.appendChild(card);
-
-                    if (!passed) {
-                        allPassed = false;
-                        // Stop revealing further rules if this one isn't solved
-                        break;
-                    } else {
-                        // If it passed, we unlock visibility for the next rule
-                        currentVisibleTarget = Math.max(currentVisibleTarget, i + 2);
-                    }
-                }
-            }
-
-            // Cap the target to the rules length
-            visibleRulesCount = Math.min(currentVisibleTarget, rules.length);
-
-            // Win condition check
-            if (allPassed && visibleRulesCount === rules.length && rules[rules.length - 1].check(password)) {
-                winMessage.style.display = 'block';
-            } else {
-                winMessage.style.display = 'none';
-            }
+    function verify() {
+        const val = input.value; rulesDiv.innerHTML = ''; let okCount = 0;
+        for (let i = 0; i < rules.length; i++) {
+            const passed = rules[i].chk(val);
+            const card = document.createElement('div');
+            card.className = `rule ${passed ? 'ok' : ''}`;
+            card.innerText = `Rule ${rules[i].id}: ${rules[i].txt} ${passed ? '✅' : '❌'}`;
+            rulesDiv.appendChild(card);
+            if (!passed) break;
+            okCount++;
         }
-
-        input.addEventListener('input', evaluateRules);
-        
-        // Run initial evaluation on load
-        evaluateRules();
-    </script>
+        win.style.display = (okCount === rules.length) ? 'block' : 'none';
+    }
+    input.addEventListener('input', verify); verify();
+</script>
 </body>
 </html>
