@@ -1,33 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>System Error</title>
     <style>
-        body { height: 100vh; margin: 0; background: #111; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        #prankBtn {
-            position: absolute;
-            padding: 15px 30px;
-            font-size: 20px;
-            font-weight: bold;
-            background: #ff4757;
+        body {
+            background-color: #0078d7; /* Perfect Windows Blue */
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.1s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 10%;
+            height: 100vh;
+            margin: 0;
+            box-sizing: border-box;
+            cursor: none; /* Hides his mouse so he can't click away */
+            user-select: none;
         }
+        .sad-face { font-size: 80px; margin-bottom: 20px; }
+        .error-txt { font-size: 24px; line-height: 1.5; max-width: 800px; }
     </style>
 </head>
 <body>
-    <button id="prankBtn" onmouseover="dodge()">Click to Close Tab</button>
+    <!-- The trick: It waits for him to click ANYWHERE to trigger full screen -->
+    <div style="position:fixed; top:0; left:0; width:100%; height:100%;" onclick="launchPrank()"></div>
+
+    <div id="bsod" style="display:none;">
+        <div class="sad-face">:(</div>
+        <div class="error-txt">
+            Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.<br><br>
+            0% complete<br><br>
+            <span style="font-size: 16px;">Stop code: CRITICAL_PROCESS_DIED</span>
+        </div>
+    </div>
 
     <script>
-        function dodge() {
-            const btn = document.getElementById('prankBtn');
-            // Calculates a random spot on his screen to teleport to
-            const x = Math.random() * (window.innerWidth - btn.offsetWidth);
-            const y = Math.random() * (window.innerHeight - btn.offsetHeight);
-            btn.style.left = x + 'px';
-            btn.style.top = y + 'px';
+        function launchPrank() {
+            document.documentElement.requestFullscreen();
+            document.getElementById('bsod').style.display = 'block';
         }
     </script>
 </body>
