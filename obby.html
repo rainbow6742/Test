@@ -4,14 +4,14 @@
     <title>5x Obby Builder</title>
     <style>
         body { background: #111; color: #fff; font-family: sans-serif; text-align: center; margin: 20px; overflow: hidden; }
-        canvas { background: #223; border: 3px solid #fff; cursor: crosshair; }
+        canvas { background: #223; border: 3px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
         .btn { background: #444; color: #fff; border: none; padding: 6px 12px; margin: 0 4px 10px; cursor: pointer; font-weight: bold; }
         .active { background: #00ffcc; color: #000; }
     </style>
 </head>
 <body>
     <button id="mBtn" class="btn active">🎮 PLAY MODE</button>
-    Block: <select id="bSel" class="btn"><option value="safe">🟩 Ground</option><option value="lava">🟥 Lava</option><option value="win">🟨 Goal</option></select>
+    Block: <select id="bSel" class="btn" onchange="this.blur()"><option value="safe">🟩 Ground</option><option value="lava">🟥 Lava</option><option value="win">🟨 Goal</option></select>
     <button id="clr" class="btn" style="background:#800">Clear Custom</button><br>
     <canvas id="c" width="800" height="400"></canvas>
     <p>Move: <b>A/D / Arrows</b> | Jump: <b>W / Space</b> | Build: <b>Click canvas in BUILD mode</b></p>
@@ -31,13 +31,25 @@
         const p = { x:50, y:200, w:20, h:20, vx:0, vy:0, speed:5, jump:11, gnd:false };
         const reset = () => { p.x = 50; p.y = 200; p.vx = p.vy = camX = 0; };
 
-        window.onkeydown = (e) => keys[e.key] = true; window.onkeyup = (e) => keys[e.key] = false;
-        document.getElementById("mBtn").onclick = (e) => { isBuild = !isBuild; e.target.innerText = isBuild ? "🛠️ BUILD MODE" : "🎮 PLAY MODE"; e.target.classList.toggle("active"); };
-        document.getElementById("clr").onclick = () => cust = [];
-        canvas.onmousedown = (e) => { if(!isBuild) return; const r = canvas.getBoundingClientRect(); cust.push({ x: Math.floor(e.clientX - r.left + camX - 30), y: Math.floor(e.clientY - r.top - 10), w: 60, h: 20, t: document.getElementById("bSel").value }); };
+        window.onkeydown = (e) => { keys[e.key] = true; if(["Space","ArrowUp","ArrowDown"].includes(e.code) && !isBuild) e.preventDefault(); }; 
+        window.onkeyup = (e) => keys[e.key] = false;
+        
+        document.getElementById("mBtn").onclick = (e) => { 
+            isBuild = !isBuild; 
+            e.target.innerText = isBuild ? "🛠️ BUILD MODE" : "🎮 PLAY MODE"; 
+            e.target.classList.toggle("active");
+            e.target.blur();
+        };
+        document.getElementById("clr").onclick = (e) => { cust = []; e.target.blur(); };
+        
+        canvas.onmousedown = (e) => { 
+            if(!isBuild) return; 
+            const r = canvas.getBoundingClientRect(); 
+            cust.push({ x: Math.floor(e.clientX - r.left + camX - 30), y: Math.floor(e.clientY - r.top - 10), w: 60, h: 20, t: document.getElementById("bSel").value }); 
+        };
 
         function loop() {
-            let mv = (keys.ArrowRight||keys.d||keys.D) - (keys.ArrowLeft||keys.a||keys.A);
+            let mv = (keys.ArrowRight||keys.d||keys.D||false) - (keys.ArrowLeft||keys.a||keys.A||false);
             if (!isBuild) {
                 p.vx = mv * p.speed;
                 if ((keys.ArrowUp||keys.w||keys.W||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
@@ -46,10 +58,10 @@
                 p.gnd = false;
 
                 [...maps, ...cust].forEach(b => {
-                    if (p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.w > b.y) {
+                    if (p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.h > b.y) {
                         if (b.t === "lava") reset();
-                        else if (b.t === "win") { alert("🏆 Victory!"); reset(); }
-                        else if (p.vy > 0 && p.y + p.w - p.vy <= b.y) { p.y = b.y - p.w; p.vy = 0; p.gnd = true; }
+                        else if (b.t === "win") { setTimeout(() => { alert("🏆 Victory!"); reset(); }, 10); }
+                        else if (p.vy > 0 && p.y + p.h - p.vy <= b.y) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
                     }
                 });
                 camX = Math.max(0, Math.min(p.x - canvas.width / 3, vW - canvas.width));
