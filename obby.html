@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D HTML Web Obby</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #111;
+            color: #fff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 20px;
+            color: #aaa;
+        }
+        canvas {
+            background: linear-gradient(#1a2a6c, #b21f1f, #fdbb2d);
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Web Obby</h1>
+    <p>Controls: Use <b>Arrow Keys</b> or <b>WASD</b> to move and jump!</p>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Game Configuration
+        const gravity = 0.5;
+        
+        // Player Object
+        const player = {
+            x: 50,
+            y: 200,
+            width: 25,
+            height: 25,
+            color: "#00ffcc",
+            vx: 0,
+            vy: 0,
+            speed: 5,
+            jumpForce: 11,
+            grounded: false
+        };
+
+        // Platforms & Obstacles Layout
+        // type: "safe" (green), "lava" (red), "win" (gold)
+        const platforms = [
+            // Start Lobby
+            { x: 0, y: 320, width: 150, height: 80, type: "safe" },
+            
+            // First jump sequence
+            { x: 220, y: 280, width: 60, height: 20, type: "safe" },
+            { x: 340, y: 240, width: 60, height: 20, type: "safe" },
+            { x: 460, y: 200, width: 60, height: 20, type: "safe" },
+            
+            // Dangerous Red Lava Pit below the jumps
+            { x: 150, y: 380, width: 500, height: 20, type: "lava" },
+            
+            // Final stretch
+            { x: 580, y: 250, width: 80, height: 150, type: "safe" },
+            { x: 700, y: 200, width: 100, height: 200, type: "win" }
+        ];
+
+        // Key Input Tracker
+        const keys = {};
+
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
+
+        // Reset Player Position on Death
+        function resetPlayer() {
+            player.x = 50;
+            player.y = 200;
+            player.vx = 0;
+            player.vy = 0;
+        }
+
+        // Main Game Loop
+        function update() {
+            // Horizontal Movement
+            if (keys["ArrowRight"] || keys["d"] || keys["D"]) {
+                player.vx = player.speed;
+            } else if (keys["ArrowLeft"] || keys["a"] || keys["A"]) {
+                player.vx = -player.speed;
+            } else {
+                player.vx = 0;
+            }
+
+            // Jumping
+            if ((keys["ArrowUp"] || keys["w"] || keys["W"] || keys[" "]) && player.grounded) {
+                player.vy = -player.jumpForce;
+                player.grounded = false;
+            }
+
+            // Apply Gravity
+            player.vy += gravity;
+
+            // Update Position
+            player.x += player.vx;
+            player.y += player.vy;
+
+            // Boundaries
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            
+            // Void Check (If player falls off screen)
+            if (player.y > canvas.height) {
+                resetPlayer();
+            }
+
+            player.grounded = false;
+
+            // Collision Detection with Platforms
+            platforms.forEach(plat => {
+                // Check if overlapping
+                if (player.x < plat.x + plat.width &&
+                    player.x + player.width > plat.x &&
+                    player.y < plat.y + plat.height &&
+                    player.y + player.height > plat.y) {
+                    
+                    if (plat.type === "lava") {
+                        resetPlayer();
+                    } else if (plat.type === "win") {
+                        alert("🎉 You Beat the Obby!");
+                        resetPlayer();
+                    } else {
+                        // Safe land collision logic (top of platform)
+                        if (player.vy > 0 && player.y + player.height - player.vy <= plat.y) {
+                            player.y = plat.y - player.height;
+                            player.vy = 0;
+                            player.grounded = true;
+                        }
+                    }
+                }
+            });
+
+            // --- DRAWING ---
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Platforms
+            platforms.forEach(plat => {
+                if (plat.type === "lava") ctx.fillStyle = "#ff3333"; // Red Lava
+                else if (plat.type === "win") ctx.fillStyle = "#ffd700"; // Gold Goal
+                else ctx.fillStyle = "#44ff44"; // Green Platforms
+                
+                ctx.fillRect(plat.x, plat.y, plat.width, plat.height);
+            });
+
+            // Draw Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            requestAnimationFrame(update);
+        }
+
+        // Start Game
+        update();
+    </script>
+</body>
+</html>
