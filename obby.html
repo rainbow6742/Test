@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Saved Multi-Level Obby Builder</title>
+    <title>100% Void Canvas Obby Builder</title>
     <style>
         body { background: #111; color: #fff; font-family: sans-serif; text-align: center; margin: 20px; overflow: hidden; }
-        canvas { background: #1a1a2e; border: 3px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
+        canvas { background: #0b0b16; border: 3px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
         .btn { background: #444; color: #fff; border: none; padding: 6px 12px; margin: 0 4px 10px; cursor: pointer; font-weight: bold; vertical-align: middle; }
         .active { background: #00ffcc; color: #000; }
         select { vertical-align: middle; }
@@ -13,21 +13,21 @@
     </style>
 </head>
 <body>
-    <button id="mBtn" class="btn active">🎮 PLAY MODE</button>
+    <button id="mBtn" class="btn active">PLAY MODE</button>
     
     Level: 
     <select id="lvlSel" class="btn" onchange="switchLevel(); this.blur()">
-        <option value="0">Level 1</option>
-        <option value="1">Level 2</option>
-        <option value="2">Level 3</option>
+        <option value="0">Level 1 (Blank Void)</option>
+        <option value="1">Level 2 (Blank Void)</option>
+        <option value="2">Level 3 (Blank Void)</option>
     </select>
 
     Block: 
     <select id="bSel" class="btn" onchange="this.blur()">
-        <option value="safe">🟩 Block</option>
-        <option value="semi">🟪 Platfrom</option>
-        <option value="lava">🟥 Lava</option>
-        <option value="win">🟨 End</option>
+        <option value="safe">🟩 Solid Ground</option>
+        <option value="semi">🟪 Pass-Through</option>
+        <option value="lava">🟥 Lava Trap</option>
+        <option value="win">🟨 Goal Zone</option>
         <option value="erase">❌ Eraser Tool</option>
     </select>
 
@@ -42,35 +42,27 @@
         const canvas = document.getElementById("c"), ctx = canvas.getContext("2d"), vW = 4000, gS = 40;
         let camX = 0, isBuild = false, keys = {}, curLvl = 0;
 
-        const premadeMaps = [
-            [
-                {x:0, y:360, w:240, h:40, t:"safe", c:"#44ff44"}, {x:320, y:280, w:80, h:40, t:"safe", c:"#44ff44"}, {x:480, y:240, w:80, h:40, t:"semi", c:"#bb00ff"},
-                {x:640, y:160, w:120, h:40, t:"safe", c:"#44ff44"}, {x:240, y:360, w:3560, h:40, t:"lava", c:"#ff3333"}, {x:3760, y:120, w:160, h:280, t:"win", c:"#ffd700"}
-            ],
-            [{x:0, y:360, w:200, h:40, t:"safe", c:"#44ff44"}, {x:200, y:360, w:3600, h:40, t:"lava", c:"#ff3333"}, {x:3800, y:160, w:200, h:240, t:"win", c:"#ffd700"}],
-            [{x:0, y:360, w:200, h:40, t:"safe", c:"#44ff44"}, {x:200, y:360, w:3600, h:40, t:"lava", c:"#ff3333"}, {x:3800, y:160, w:200, h:240, t:"win", c:"#ffd700"}]
-        ];
-
+        // ALL PREMADE MAPS AND LAVA FLOORS ARE COMPLETELY REMOVED FROM ALL SLOTS
         let customLevels = [[], [], []];
 
         // --- LOCAL STORAGE FUNCTIONS ---
         function loadFromStorage() {
             try {
-                const savedData = localStorage.getItem("obby_custom_levels");
+                const savedData = localStorage.getItem("obby_void_levels");
                 if (savedData) { customLevels = JSON.parse(savedData); }
             } catch(e) { console.error("Could not load saves", e); }
         }
         function saveToStorage() {
-            localStorage.setItem("obby_custom_levels", JSON.stringify(customLevels));
+            localStorage.setItem("obby_void_levels", JSON.stringify(customLevels));
         }
 
         function getActiveBlocks() {
-            if (isBuild) return customLevels[curLvl];
-            return [...premadeMaps[curLvl], ...customLevels[curLvl]];
+            return customLevels[curLvl];
         }
 
-        const p = { x:40, y:200, w:24, h:24, vx:0, vy:0, speed:5, jump:10, gnd:false };
-        const reset = () => { p.x = 40; p.y = 200; p.vx = p.vy = camX = 0; };
+        // Changed starting coordinates to x:120, y:120 so the player spawns safely inside the canvas area to start placing blocks underneath themselves
+        const p = { x:120, y:120, w:24, h:24, vx:0, vy:0, speed:5, jump:10, gnd:false };
+        const reset = () => { p.x = 120; p.y = 120; p.vx = p.vy = camX = 0; };
 
         window.onkeydown = (e) => { keys[e.key] = true; if(["Space","ArrowUp","ArrowDown"].includes(e.code) && !isBuild) e.preventDefault(); }; 
         window.onkeyup = (e) => keys[e.key] = false;
@@ -78,7 +70,6 @@
         const bSel = document.getElementById("bSel");
         const cPick = document.getElementById("cPick");
         
-        // Match default color matching picker tool on dropdown switch
         bSel.oninput = () => {
             if(bSel.value === "safe") cPick.value = "#44ff44";
             if(bSel.value === "semi") cPick.value = "#bb00ff";
@@ -95,7 +86,7 @@
             e.target.blur(); reset();
         };
         
-        document.getElementById("clr").onclick = (e) => { customLevels[curLvl] = []; saveToStorage(); e.target.blur(); };
+        document.getElementById("clr").onclick = (e) => { customLevels[curLvl] = []; saveToStorage(); reset(); e.target.blur(); };
 
         function switchLevel() { curLvl = parseInt(document.getElementById("lvlSel").value); reset(); }
         
@@ -119,7 +110,7 @@
                     customLevels[curLvl][existingIdx].c = blockColor;
                 }
             }
-            saveToStorage(); // Auto-save edits instantly
+            saveToStorage();
         };
 
         function loop() {
@@ -143,6 +134,8 @@
 
                 if ((keys.ArrowUp||keys.w||keys.W||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
                 p.vy += 0.5; p.y += p.vy;
+                
+                // VOID FALL CHECK: If player drops past bottom of screen, they instantly reset/respawn
                 if (p.y > canvas.height) reset();
                 p.gnd = false;
 
@@ -152,7 +145,7 @@
                         else if (b.t === "win") { setTimeout(() => { alert("🏆 Level Cleared!"); reset(); }, 10); }
                         else if (b.t === "safe") {
                             if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; }
-                            else if (p.vy > 0) { p.y = b.y - p.h; p.vy = 0; gnd = true; p.gnd = true; }
+                            else if (p.vy > 0) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
                         } 
                         else if (b.t === "semi") {
                             if (p.vy > 0 && (p.y + p.h - p.vy) <= b.y) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
@@ -167,8 +160,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save(); ctx.translate(-camX, 0);
             
+            // Subtle building grid lines
             if (isBuild) {
-                ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+                ctx.strokeStyle = "rgba(255,255,255,0.05)"; ctx.lineWidth = 1;
                 for (let x = 0; x < vW; x += gS) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
                 for (let y = 0; y < canvas.height; y += gS) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(vW, y); ctx.stroke(); }
             }
@@ -183,7 +177,7 @@
             ctx.restore(); requestAnimationFrame(loop);
         }
         
-        loadFromStorage(); // Auto-load levels on startup
+        loadFromStorage();
         loop();
     </script>
 </body>
