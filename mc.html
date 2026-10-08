@@ -1,31 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
-        body {
-            background-color: black;
-            color: #333;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            cursor: none; /* Hides his mouse cursor for extra panic */
-        }
-    </style>
-</head>
-<body>
-
-    <!-- A fake error message that disappears into total blackness -->
-    <h1 id="msg">Loading system updates...</h1>
-
     <script>
-        // The moment he clicks anywhere on the page, it goes full black screen
-        document.addEventListener('click', function() {
-            document.documentElement.requestFullscreen();
-            document.getElementById('msg').style.display = 'none';
-        });
+        function prank() {
+            // Change the URL to whatever funny page or image you want
+            for (let i = 0; i < 7; i++) {
+                window.open("https://google.com", "_blank");
+            }
+        }
     </script>
+</head>
+<body onload="prank()">
+    <h1>Loading...</h1>
 </body>
 </html>
