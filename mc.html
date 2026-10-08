@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML5 Voxel Sandbox</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #78a7ff; /* Sky color */
+            font-family: sans-serif;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+            user-select: none;
+            pointer-events: none;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+            pointer-events: none;
+        }
+    </style>
+    <!-- Include Three.js via CDN -->
+    <script src="https://cloudflare.com"></script>
+</head>
+<body>
+
+    <div id="crosshair">+</div>
+    <div id="instructions">
+        <strong>Click screen to lock mouse & play</strong><br>
+        Move: W, A, S, D<br>
+        Look: Mouse movement
+    </div>
+
+    <script>
+        // --- 1. SETUP ENGINE & WORLD VARIABLES ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x78a7ff);
+        scene.fog = new THREE.FogExp2(0x78a7ff, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: false }); // Disable antialias for retro pixel feel
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Grid Dimensions (1 Chunk)
+        const chunkWidth = 32;
+        const chunkHeight = 16;
+        const worldMatrix = new Uint8Array(chunkWidth * chunkHeight * chunkWidth);
+
+        // Map 3D coordinate to flat array index
+        function getBlockIndex(x, y, z) {
+            if (x < 0 || x >= chunkWidth || y < 0 || y >= chunkHeight || z < 0 || z >= chunkWidth) return -1;
+            return x + y * chunkWidth + z * chunkWidth * chunkHeight;
+        }
+
+        // --- 2. GENERATE PROCEDURAL TERRAIN ---
+        for (let x = 0; x < chunkWidth; x++) {
+            for (let z = 0; z < chunkWidth; z++) {
+                // Generate a pseudo-random landscape height using sine/cosine curves
+                let height = Math.floor((Math.sin(x * 0.1) + Math.cos(z * 0.1)) * 3) + 6;
+                
+                for (let y = 0; y < chunkHeight; y++) {
+                    const idx = getBlockIndex(x, y, z);
+                    if (y < height - 2) {
+                        worldMatrix[idx] = 2; // Stone
+                    } else if (y < height) {
+                        worldMatrix[idx] = 3; // Dirt
+                    } else if (y === height) {
+                        worldMatrix[idx] = 1; // Grass
+                    } else {
+                        worldMatrix[idx] = 0; // Air
+                    }
+                }
+            }
+        }
+
+        // --- 3. OPTIMIZED BLOCK MESH GENERATION (CULLING) ---
+        // Colors corresponding to block IDs (1: Grass/Green, 2: Stone/Grey, 3: Dirt/Brown)
+        const blockColors = {
+            1: 0x55aa44, 
+            2: 0x888888, 
+            3: 0x866043
+        };
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const materialCache = {};
+
+        function getMaterial(color) {
+            if (!materialCache[color]) {
+                materialCache[color] = new THREE.MeshLambertMaterial({ color: color });
+            }
+            return materialCache[color];
+        }
+
+        // Instantiate blocks into the scene, drawing only visible ones
+        for (let x = 0; x < chunkWidth; x++) {
+            for (let y = 0; y < chunkHeight; y++) {
+                for (let z = 0; z < chunkWidth; z++) {
+                    const blockType = worldMatrix[getBlockIndex(x, y, z)];
+                    
+                    if (blockType > 0) {
+                        // Optimization check: is this block completely buried?
+                        let left   = x > 0 ? worldMatrix[getBlockIndex(x-1, y, z)] : 0;
+                        let right  = x < chunkWidth-1 ? worldMatrix[getBlockIndex(x+1, y, z)] : 0;
+                        let bottom = y > 0 ? worldMatrix[getBlockIndex(x, y-1, z)] : 0;
+                        let top    = y < chunkHeight-1 ? worldMatrix[getBlockIndex(x, y+1, z)] : 0;
+                        let back   = z > 0 ? worldMatrix[getBlockIndex(x, y, z-1)] : 0;
+                        let front  = z < chunkWidth-1 ? worldMatrix[getBlockIndex(x, y, z+1)] : 0;
+
+                        // If it is covered on all 6 sides, do not create a 3D mesh object for it
+                        if (left && right && bottom && top && back && front) continue;
+
+                        const mesh = new THREE.Mesh(geometry, getMaterial(blockColors[blockType]));
+                        mesh.position.set(x, y, z);
+                        scene.add(mesh);
+                    }
+                }
+            }
+        }
+
+        // --- 4. LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+        directionalLight.position.set(10, 20, 15);
+        scene.add(directionalLight);
+
+        // --- 5. PLAYER FIRST-PERSON CONTROLS ---
+        camera.position.set(chunkWidth / 2, chunkHeight + 2, chunkWidth / 2);
+
+        let keys = {};
+        let moveSpeed = 0.15;
+        let mouseX = 0, mouseY = 0;
+        const pitchObject = new THREE.Object3D(); // Handles up/down look
+        const yawObject = new THREE.Object3D();   // Handles left/right look
+
+        yawObject.position.set(chunkWidth / 2, chunkHeight + 2, chunkWidth / 2);
+        yawObject.add(pitchObject);
+        pitchObject.add(camera);
+        scene.add(yawObject);
+
+        // Lock pointer to capture mouse movement smoothly
+        window.addEventListener('click', () => {
+            document.body.requestPointerLock();
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === document.body) {
+                yawObject.rotation.y -= e.movementX * 0.002;
+                pitchObject.rotation.x -= e.movementY * 0.002;
+                pitchObject.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitchObject.rotation.x));
+            }
+        });
+
+        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+        // --- 6. GAME ENGINE LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Calculate directional vectors relative to camera angle
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(yawObject.quaternion).normalize();
+            const side = new THREE.Vector3(1, 0, 0).applyQuaternion(yawObject.quaternion).normalize();
+
+            if (keys['KeyW']) yawObject.position.addScaledVector(forward, moveSpeed);
+            if (keys['KeyS']) yawObject.position.addScaledVector(forward, -moveSpeed);
+            if (keys['KeyA']) yawObject.position.addScaledVector(side, -moveSpeed);
+            if (keys['KeyD']) yawObject.position.addScaledVector(side, moveSpeed);
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle resize dynamically
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
