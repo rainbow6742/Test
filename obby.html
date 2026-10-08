@@ -1,35 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>5x Obby Builder</title>
+    <title>Snapping Obby Builder</title>
     <style>
         body { background: #111; color: #fff; font-family: sans-serif; text-align: center; margin: 20px; overflow: hidden; }
-        canvas { background: #223; border: 3px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
+        canvas { background: #1a1a2e; border: 3px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
         .btn { background: #444; color: #fff; border: none; padding: 6px 12px; margin: 0 4px 10px; cursor: pointer; font-weight: bold; }
         .active { background: #00ffcc; color: #000; }
     </style>
 </head>
 <body>
     <button id="mBtn" class="btn active">🎮 PLAY MODE</button>
-    Block: <select id="bSel" class="btn" onchange="this.blur()"><option value="safe">🟩 Ground</option><option value="lava">🟥 Lava</option><option value="win">🟨 Goal</option></select>
+    Block: <select id="bSel" class="btn" onchange="this.blur()">
+        <option value="safe">🟩 Solid Ground</option>
+        <option value="semi">🟪 Pass-Through Platform</option>
+        <option value="lava">🟥 Lava Trap</option>
+        <option value="win">🟨 Goal Zone</option>
+    </select>
     <button id="clr" class="btn" style="background:#800">Clear Custom</button><br>
     <canvas id="c" width="800" height="400"></canvas>
     <p>Move: <b>A/D / Arrows</b> | Jump: <b>W / Space</b> | Build: <b>Click canvas in BUILD mode</b></p>
 
     <script>
-        const canvas = document.getElementById("c"), ctx = canvas.getContext("2d"), vW = 4000;
+        const canvas = document.getElementById("c"), ctx = canvas.getContext("2d"), vW = 4000, gS = 40;
         let camX = 0, isBuild = false, keys = {}, maps = [
-            {x:0, y:340, w:200, h:60, t:"safe"}, {x:280, y:290, w:60, h:20, t:"safe"}, {x:400, y:240, w:60, h:20, t:"safe"},
-            {x:520, y:190, w:60, h:20, t:"safe"}, {x:650, y:150, w:100, h:250, t:"safe"}, {x:200, y:390, w:3600, h:10, t:"lava"},
-            {x:850, y:250, w:60, h:20, t:"safe"}, {x:1000, y:200, w:60, h:20, t:"safe"}, {x:1200, y:160, w:100, h:240, t:"safe"},
-            {x:1400, y:280, w:60, h:20, t:"safe"}, {x:1600, y:220, w:60, h:20, t:"safe"}, {x:1800, y:150, w:120, h:250, t:"safe"},
-            {x:2100, y:250, w:50, h:20, t:"safe"}, {x:2300, y:200, w:50, h:20, t:"safe"}, {x:2500, y:150, w:100, h:250, t:"safe"},
-            {x:2750, y:250, w:60, h:20, t:"safe"}, {x:2950, y:200, w:60, h:20, t:"safe"}, {x:3150, y:160, w:100, h:240, t:"safe"},
-            {x:3400, y:220, w:60, h:20, t:"safe"}, {x:3600, y:170, w:60, h:20, t:"safe"}, {x:3800, y:120, w:150, h:280, t:"win"}
+            {x:0, y:360, w:240, h:40, t:"safe"}, {x:320, y:280, w:80, h:40, t:"safe"}, {x:480, y:240, w:80, h:40, t:"semi"},
+            {x:640, y:160, w:120, h:40, t:"safe"}, {x:240, y:360, w:3560, h:40, t:"lava"},
+            {x:880, y:240, w:80, h:40, t:"safe"}, {x:1040, y:160, w:80, h:40, t:"semi"}, {x:1200, y:200, w:120, h:40, t:"safe"},
+            {x:1440, y:280, w:80, h:40, t:"safe"}, {x:1640, y:200, w:80, h:40, t:"semi"}, {x:1840, y:160, w:120, h:40, t:"safe"},
+            {x:3760, y:120, w:160, h:280, t:"win"}
         ], cust = [];
 
-        const p = { x:50, y:200, w:20, h:20, vx:0, vy:0, speed:5, jump:11, gnd:false };
-        const reset = () => { p.x = 50; p.y = 200; p.vx = p.vy = camX = 0; };
+        const p = { x:40, y:200, w:24, h:24, vx:0, vy:0, speed:5, jump:10, gnd:false };
+        const reset = () => { p.x = 40; p.y = 200; p.vx = p.vy = camX = 0; };
 
         window.onkeydown = (e) => { keys[e.key] = true; if(["Space","ArrowUp","ArrowDown"].includes(e.code) && !isBuild) e.preventDefault(); }; 
         window.onkeyup = (e) => keys[e.key] = false;
@@ -42,38 +45,106 @@
         };
         document.getElementById("clr").onclick = (e) => { cust = []; e.target.blur(); };
         
+        // Grid Snapping Placement
         canvas.onmousedown = (e) => { 
             if(!isBuild) return; 
             const r = canvas.getBoundingClientRect(); 
-            cust.push({ x: Math.floor(e.clientX - r.left + camX - 30), y: Math.floor(e.clientY - r.top - 10), w: 60, h: 20, t: document.getElementById("bSel").value }); 
+            const worldX = e.clientX - r.left + camX;
+            const worldY = e.clientY - r.top;
+            
+            // Snap coordinates strictly to the 40x40 pixel grid lines
+            const snapX = Math.floor(worldX / gS) * gS;
+            const snapY = Math.floor(worldY / gS) * gS;
+            
+            // Prevent duplicated block overlapping stacking
+            if(![...maps, ...cust].some(b => b.x === snapX && b.y === snapY)) {
+                cust.push({ x: snapX, y: snapY, w: gS, h: gS, t: document.getElementById("bSel").value }); 
+            }
         };
 
         function loop() {
             let mv = (keys.ArrowRight||keys.d||keys.D||false) - (keys.ArrowLeft||keys.a||keys.A||false);
+            
             if (!isBuild) {
+                // Horizontal Physics Pass
                 p.vx = mv * p.speed;
-                if ((keys.ArrowUp||keys.w||keys.W||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
-                p.vy += 0.5; p.x += p.vx; p.y += p.vy;
-                if (p.x < 0) p.x = 0; if (p.x + p.w > vW) p.x = vW - p.w; if (p.y > canvas.height) reset();
-                p.gnd = false;
+                p.x += p.vx;
+                if (p.x < 0) p.x = 0; 
+                if (p.x + p.w > vW) p.x = vW - p.w;
 
+                // Horizontal Collision Checking
                 [...maps, ...cust].forEach(b => {
                     if (p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.h > b.y) {
                         if (b.t === "lava") reset();
                         else if (b.t === "win") { setTimeout(() => { alert("🏆 Victory!"); reset(); }, 10); }
-                        else if (p.vy > 0 && p.y + p.h - p.vy <= b.y) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
+                        else if (b.t === "safe") { // Solid block side walls
+                            if (p.vx > 0) p.x = b.x - p.w;
+                            if (p.vx < 0) p.x = b.x + b.w;
+                        }
                     }
                 });
+
+                // Vertical Physics Pass
+                if ((keys.ArrowUp||keys.w||keys.W||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
+                p.vy += 0.5; 
+                p.y += p.vy;
+                if (p.y > canvas.height) reset();
+                p.gnd = false;
+
+                // Vertical Collision Checking (Includes Head Bumping and Pass-Throughs)
+                [...maps, ...cust].forEach(b => {
+                    if (p.x < b.x + b.w && p.x + p.w > b.x && p.y < b.y + b.h && p.y + p.h > b.y) {
+                        if (b.t === "lava") reset();
+                        else if (b.t === "win") { setTimeout(() => { alert("🏆 Victory!"); reset(); }, 10); }
+                        else if (b.t === "safe") {
+                            // Hit head on bottom of solid blocks
+                            if (p.vy < 0) { p.y = b.y + b.h; p.vy = 0; }
+                            // Land safely on top
+                            else if (p.vy > 0) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
+                        } 
+                        else if (b.t === "semi") {
+                            // Land on pass-through platforms ONLY when falling downward from above them
+                            if (p.vy > 0 && (p.y + p.h - p.vy) <= b.y) { p.y = b.y - p.h; p.vy = 0; p.gnd = true; }
+                        }
+                    }
+                });
+                
                 camX = Math.max(0, Math.min(p.x - canvas.width / 3, vW - canvas.width));
             } else {
                 camX = Math.max(0, Math.min(camX + mv * 10, vW - canvas.width));
             }
 
+            // Render Output Pass
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save(); ctx.translate(-camX, 0);
-            [...maps, ...cust].forEach(b => { ctx.fillStyle = b.t==="lava" ? "#f33" : b.t==="win" ? "#fd0" : "#4f4"; ctx.fillRect(b.x, b.y, b.w, b.h); });
-            ctx.fillStyle = "#0fc"; ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.restore(); requestAnimationFrame(loop);
+            ctx.save(); 
+            ctx.translate(-camX, 0);
+            
+            // Draw visual editor helping grid layout when inside Build Mode
+            if (isBuild) {
+                ctx.strokeStyle = "rgba(255,255,255,0.08)";
+                ctx.lineWidth = 1;
+                for (let x = 0; x < vW; x += gS) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                for (let y = 0; y < canvas.height; y += gS) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(vW, y); ctx.stroke();
+                }
+            }
+
+            // Draw Level Geometry Architecture
+            [...maps, ...cust].forEach(b => { 
+                ctx.fillStyle = b.t==="lava" ? "#f33" : b.t==="win" ? "#fd0" : b.t==="semi" ? "#b0f" : "#4f4"; 
+                ctx.fillRect(b.x, b.y, b.w, b.h); 
+                // Add a top lip to semi-solid platforms so they look unique
+                if (b.t === "semi") { ctx.fillStyle = "#e0f"; ctx.fillRect(b.x, b.y, b.w, 6); }
+            });
+            
+            // Draw Main Character Token Cube
+            ctx.fillStyle = "#0fc"; 
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            
+            ctx.restore(); 
+            requestAnimationFrame(loop);
         }
         loop();
     </script>
