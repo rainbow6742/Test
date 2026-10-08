@@ -2,33 +2,30 @@
 <html>
 <head>
     <style>
-        body { height: 100vh; margin: 0; background: #111; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        #prankBtn {
-            position: absolute;
-            padding: 15px 30px;
-            font-size: 20px;
-            font-weight: bold;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.1s ease;
+        body {
+            background-color: black;
+            color: #333;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            cursor: none; /* Hides his mouse cursor for extra panic */
         }
     </style>
 </head>
 <body>
-    <button id="prankBtn" onmouseover="dodge()">Click to Close Tab</button>
+
+    <!-- A fake error message that disappears into total blackness -->
+    <h1 id="msg">Loading system updates...</h1>
 
     <script>
-        function dodge() {
-            const btn = document.getElementById('prankBtn');
-            // Calculates a random spot on his screen to teleport to
-            const x = Math.random() * (window.innerWidth - btn.offsetWidth);
-            const y = Math.random() * (window.innerHeight - btn.offsetHeight);
-            btn.style.left = x + 'px';
-            btn.style.top = y + 'px';
-        }
+        // The moment he clicks anywhere on the page, it goes full black screen
+        document.addEventListener('click', function() {
+            document.documentElement.requestFullscreen();
+            document.getElementById('msg').style.display = 'none';
+        });
     </script>
 </body>
 </html>
