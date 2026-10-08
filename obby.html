@@ -52,13 +52,44 @@
         function cloneSel() { let cls = []; cust[curLvl].forEach(b => { if(b.s) { cls.push({ x:b.x+gS, y:b.y, t:b.t, c:b.c, s:true }); b.s = false; } }); cust[curLvl].push(...cls); sv(); }
 
         function loop() {
-            let mv = (keys.ArrowRight||keys.d||keys.D) - (keys.ArrowLeft||keys.a||keys.A || 0);
+            let mv = (keys.ArrowRight||keys.d||keys.D||0) - (keys.ArrowLeft||keys.a||keys.A || 0);
             if (!isBuild) {
-                p.vx = mv * p.speed; p.x += p.vx; if (p.x < 0) p.x = 0; if (p.x + p.w > vW) p.x = vW - p.w;
-                cust[curLvl].forEach(b => { if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { if(b.t==="lava") reset(); else if(b.t==="win") { alert("🏆 Victory!"); reset(); } else if(b.t==="safe") { if(p.vx>0) p.x=b.x-p.w; if(p.vx<0) p.x=b.x+40; } } });
+                // 1. Horizontal Move & Check
+                p.vx = mv * p.speed; 
+                p.x += p.vx; 
+                if (p.x < 0) p.x = 0; if (p.x + p.w > vW) p.x = vW - p.w;
+                
+                cust[curLvl].forEach(b => { 
+                    if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { 
+                        if(b.t==="lava") reset(); 
+                        else if(b.t==="win") { alert("🏆 Victory!"); reset(); } 
+                        else if(b.t==="safe") { 
+                            if(p.vx>0) p.x=b.x-p.w; 
+                            else if(p.vx<0) p.x=b.x+40; 
+                        } 
+                    } 
+                });
+
+                // 2. Vertical Jump/Gravity Move & Check
                 if ((keys.ArrowUp||keys.w||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
-                p.vy += 0.5; p.y += p.vy; if(p.y > canvas.height) reset(); p.gnd = false;
-                cust[curLvl].forEach(b => { if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { if(b.t==="lava") reset(); else if(b.t==="win") { alert("🏆 Victory!"); reset(); } else if(b.t==="safe") { if(p.vy<0) { p.y=b.y+40; p.vy=0; } else if(p.vy>0) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } } else if(b.t==="semi" && p.vy>0 && (p.y+p.h-p.vy)<=b.y) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } } });
+                p.vy += 0.5; 
+                p.y += p.vy; 
+                if(p.y > canvas.height) reset(); 
+                p.gnd = false;
+
+                cust[curLvl].forEach(b => { 
+                    if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { 
+                        if(b.t==="lava") reset(); 
+                        else if(b.t==="win") { alert("🏆 Victory!"); reset(); } 
+                        else if(b.t==="safe") { 
+                            if(p.vy<0) { p.y=b.y+40; p.vy=0; } 
+                            else if(p.vy>0) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } 
+                        } 
+                        else if(b.t==="semi" && p.vy>0 && (p.y+p.h-p.vy)<=b.y) { 
+                            p.y=b.y-p.h; p.vy=0; p.gnd=true; 
+                        } 
+                    } 
+                });
                 camX = Math.max(0, Math.min(p.x - canvas.width/3, vW - canvas.width));
             } else { camX = Math.max(0, Math.min(camX + mv*12, vW - canvas.width)); }
             
