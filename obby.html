@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>GD Obby Builder</title>
+    <title>GD Obby Builder Pro</title>
     <style>
         body { background: #111; color: #fff; font-family: sans-serif; text-align: center; margin: 10px; overflow: hidden; user-select: none; }
         canvas { background: #070710; border: 2px solid #fff; cursor: crosshair; display: block; margin: 0 auto; }
-        .panel { background: #222; padding: 6px; border-radius: 6px; display: inline-flex; gap: 8px; align-items: center; margin-bottom: 5px; }
+        .panel { background: #222; padding: 6px; border-radius: 6px; display: inline-flex; gap: 6px; align-items: center; margin-bottom: 5px; flex-wrap: wrap; justify-content: center; }
         .btn { background: #444; color: #fff; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; border-radius: 4px; }
         .active { background: #0fc; color: #000; }
-        .gd-btn { background: #111; border: 1px solid #555; color: #0fc; width: 28px; height: 28px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .gd-btn { background: #111; border: 1px solid #555; color: #0fc; width: 34px; height: 28px; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 11px; }
+        .gd-btn:hover { background: #333; }
     </style>
 </head>
 <body>
@@ -16,23 +17,35 @@
         <button id="mBtn" class="btn active">🎮 PLAY</button>
         <select id="lvl" class="btn"><option value="0">Slot 1</option><option value="1">Slot 2</option></select>
         <select id="bSel" class="btn"><option value="safe">🟩 Block</option><option value="semi">🟪 Platform</option><option value="lava">🟥 Lava</option><option value="win">🟨 Goal</option></select>
-        <input type="color" id="cPick" value="#0fc" style="width:30px; height:25px; border:none; background:transparent;">
+        
+        <input type="color" id="cPick" value="#0fc" style="width:30px; height:25px; border:none; background:transparent; vertical-align: middle;">
+        <button class="btn" onclick="recolorSel()" style="background: #2a6f97; color: #fff;" title="Paint Selected Blocks">🎨 Paint</button>
+
         <button id="tB" class="btn active" onclick="swTool('build')">✏️ Draw</button>
         <button id="tS" class="btn" onclick="swTool('select')">🔍 Select</button>
-        <button class="gd-btn" onclick="mvSel(0,-40)">▲</button><button class="gd-btn" onclick="mvSel(0,40)">▼</button>
-        <button class="gd-btn" onclick="mvSel(-40,0)">◀</button><button class="gd-btn" onclick="mvSel(40,0)">▶</button>
-        <button class="gd-btn" onclick="cloneSel()" style="color:#fd0">🖨️</button>
-        <button class="gd-btn" onclick="delSel()" style="color:#f33">❌</button>
-        <button class="btn" onclick="cust[curLvl]=[];sv();reset();" style="background:#600">Clear</button>
+        
+        <!-- Nudge Transformations -->
+        <button class="gd-btn" onclick="mvSel(0,-40)" title="Move Up Full Grid">▲</button>
+        <button class="gd-btn" onclick="mvSel(0,-20)" style="color: #ffd700;" title="Move Up Half Grid">▲½</button>
+        <button class="gd-btn" onclick="mvSel(0,20)" style="color: #ffd700;" title="Move Down Half Grid">▼½</button>
+        <button class="gd-btn" onclick="mvSel(0,40)" title="Move Down Full Grid">▼</button>
+        <button class="gd-btn" onclick="mvSel(-40,0)">◀</button>
+        <button class="gd-btn" onclick="mvSel(40,0)">▶</button>
+        
+        <button class="gd-btn" onclick="cloneSel()" style="color:#fd0" title="Clone Selected">🖨️</button>
+        <button class="gd-btn" onclick="delSel()" style="color:#f33" title="Delete Selected">❌</button>
+        <button class="btn" onclick="if(confirm('Clear current slot?')){cust[curLvl]=[];sv();reset();}" style="background:#600">Clear</button>
     </div>
+    
     <canvas id="c" width="800" height="400"></canvas>
+    
     <script>
         const canvas = document.getElementById("c"), ctx = canvas.getContext("2d"), vW = 5000, gS = 40;
         let camX = 0, isBuild = false, keys = {}, curLvl = 0, tool = "build", isDown = false, sBox = null, cust = [[],[]];
         const p = { x:120, y:120, w:24, h:24, vx:0, vy:0, speed:5, jump:10.5, gnd:false };
         const reset = () => { p.x = 120; p.y = 120; p.vx = p.vy = camX = 0; deSel(); };
-        const getL = () => { try { const s = localStorage.getItem("gd_ob"); if(s) cust = JSON.parse(s); }catch(e){} };
-        const sv = () => localStorage.setItem("gd_ob", JSON.stringify(cust));
+        const getL = () => { try { const s = localStorage.getItem("gd_ob_v2"); if(s) cust = JSON.parse(s); }catch(e){} };
+        const sv = () => localStorage.setItem("gd_ob_v2", JSON.stringify(cust));
         
         window.onkeydown = (e) => { keys[e.key] = true; if(e.key === "Shift" && isBuild) swTool("select"); if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"&&isBuild){ e.preventDefault(); cloneSel(); } if(["Space","ArrowUp"].includes(e.code)&&!isBuild) e.preventDefault(); };
         window.onkeyup = (e) => { keys[e.key] = false; if(e.key === "Shift" && isBuild) swTool("build"); };
@@ -41,6 +54,7 @@
         
         function swTool(t) { tool = t; document.getElementById("tB").classList.toggle("active", t==="build"); document.getElementById("tS").classList.toggle("active", t==="select"); if(t==="build") deSel(); }
         const getM = (e) => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left + camX, y: e.clientY - r.top }; };
+        
         canvas.onmousedown = (e) => { if(!isBuild) return; isDown = true; const m = getM(e); if(tool==="select") sBox = { sx: m.x, sy: m.y, cx: m.x, cy: m.y }; else draw(m.x, m.y); };
         canvas.onmousemove = (e) => { if(!isBuild || !isDown) return; const m = getM(e); if(tool==="select"&&sBox) { sBox.cx = m.x; sBox.cy = m.y; let x1 = Math.min(sBox.sx, sBox.cx), x2 = Math.max(sBox.sx, sBox.cx), y1 = Math.min(sBox.sy, sBox.cy), y2 = Math.max(sBox.sy, sBox.cy); cust[curLvl].forEach(b => { let cx = b.x+20, cy = b.y+20; b.s = (cx>=x1 && cx<=x2 && cy>=y1 && cy<=y2); }); } else draw(m.x, m.y); };
         window.onmouseup = () => { isDown = false; sBox = null; };
@@ -50,48 +64,20 @@
         function mvSel(dx, dy) { cust[curLvl].forEach(b => { if(b.s) { b.x+=dx; b.y+=dy; } }); sv(); }
         function delSel() { cust[curLvl] = cust[curLvl].filter(b => !b.s); sv(); }
         function cloneSel() { let cls = []; cust[curLvl].forEach(b => { if(b.s) { cls.push({ x:b.x+gS, y:b.y, t:b.t, c:b.c, s:true }); b.s = false; } }); cust[curLvl].push(...cls); sv(); }
+        
+        // Target Recolor Functionality Engine
+        function recolorSel() { cust[curLvl].forEach(b => { if(b.s) b.c = document.getElementById("cPick").value; }); sv(); }
 
         function loop() {
             let mv = (keys.ArrowRight||keys.d||keys.D||0) - (keys.ArrowLeft||keys.a||keys.A || 0);
             if (!isBuild) {
-                // 1. Horizontal Move & Check
-                p.vx = mv * p.speed; 
-                p.x += p.vx; 
-                if (p.x < 0) p.x = 0; if (p.x + p.w > vW) p.x = vW - p.w;
-                
-                cust[curLvl].forEach(b => { 
-                    if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { 
-                        if(b.t==="lava") reset(); 
-                        else if(b.t==="win") { alert("🏆 Victory!"); reset(); } 
-                        else if(b.t==="safe") { 
-                            if(p.vx>0) p.x=b.x-p.w; 
-                            else if(p.vx<0) p.x=b.x+40; 
-                        } 
-                    } 
-                });
-
-                // 2. Vertical Jump/Gravity Move & Check
+                p.vx = mv * p.speed; p.x += p.vx; if (p.x < 0) p.x = 0; if (p.x + p.w > vW) p.x = vW - p.w;
+                cust[curLvl].forEach(b => { if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { if(b.t==="lava") reset(); else if(b.t==="win") { alert("🏆 Victory!"); reset(); } else if(b.t==="safe") { if(p.vx>0) p.x=b.x-p.w; else if(p.vx<0) p.x=b.x+40; } } });
                 if ((keys.ArrowUp||keys.w||keys[" "]) && p.gnd) { p.vy = -p.jump; p.gnd = false; }
-                p.vy += 0.5; 
-                p.y += p.vy; 
-                if(p.y > canvas.height) reset(); 
-                p.gnd = false;
-
-                cust[curLvl].forEach(b => { 
-                    if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { 
-                        if(b.t==="lava") reset(); 
-                        else if(b.t==="win") { alert("🏆 Victory!"); reset(); } 
-                        else if(b.t==="safe") { 
-                            if(p.vy<0) { p.y=b.y+40; p.vy=0; } 
-                            else if(p.vy>0) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } 
-                        } 
-                        else if(b.t==="semi" && p.vy>0 && (p.y+p.h-p.vy)<=b.y) { 
-                            p.y=b.y-p.h; p.vy=0; p.gnd=true; 
-                        } 
-                    } 
-                });
+                p.vy += 0.5; p.y += p.vy; if(p.y > canvas.height) reset(); p.gnd = false;
+                cust[curLvl].forEach(b => { if(p.x < b.x+40 && p.x+p.w > b.x && p.y < b.y+40 && p.y+p.h > b.y) { if(b.t==="lava") reset(); else if(b.t==="win") { alert("🏆 Victory!"); reset(); } else if(b.t==="safe") { if(p.vy<0) { p.y=b.y+40; p.vy=0; } else if(p.vy>0) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } } else if(b.t==="semi" && p.vy>0 && (p.y+p.h-p.vy)<=b.y) { p.y=b.y-p.h; p.vy=0; p.gnd=true; } } });
                 camX = Math.max(0, Math.min(p.x - canvas.width/3, vW - canvas.width));
-            } else { camX = Math.max(0, Math.min(camX + mv*12, vW - canvas.width)); }
+            } else { camX = Math.max(0, Math.min(camX + mv * 12, vW - canvas.width)); }
             
             ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.translate(-camX, 0);
             if (isBuild) { ctx.strokeStyle = "rgba(255,255,255,0.04)"; for (let x=0; x<vW; x+=40) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); ctx.stroke(); } }
