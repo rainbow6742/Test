@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Crowd Runner</title><style>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Crowd Runner - Tuned Speed</title><style>
 body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden}
 #g{position:relative;width:380px;height:640px}canvas{background:#1e293b;border-radius:8px;display:block}
 #u,#o{position:absolute;pointer-events:none}#u{top:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-weight:700}
@@ -10,7 +10,9 @@ button{padding:8px 20px;font-weight:700;border-radius:20px;border:none;backgroun
 <div id="o"><h2 id="ot"></h2><p id="os"></p><button onclick="init()">Play Again</button></div></div>
 <script>
 const c=document.getElementById('c'),x=c.getContext('2d'),tc=document.getElementById('tc'),td=document.getElementById('td'),o=document.getElementById('o'),ot=document.getElementById('ot'),os=document.getElementById('os');
-const L=16000,F=15000;let px,py,n,bh,over,boss,dr=0;
+const F=15000;let px,py,n,bh,over,boss,dr=0;
+// Speed lowered to 3.5 for comfortable reaction time
+const SPEED=3.5;
 const G=[[1200,'x',2,'+50',50],[2400,'-',25,'x3',3],[3600,'+70',70,'/2',2],[4800,'x1.5',1.5,'+100',100],
 [6000,'/3',3,'x2',2],[7200,'+75',75,'-40',40],[8400,'x4',4,'+50',50],[9600,'/2',2,'x2',2],
 [10800,'+100',100,'-50',50],[12000,'x3',3,'x1.5',1.5],[13200,'-60',60,'+120',120],[14400,'x2',2,'x3',3]];
@@ -24,11 +26,11 @@ function end(w,m){over=true;ot.innerText=w?'🎉 VICTORY!':'💀 DEFEAT';os.inne
 function loop(){
   if(over)return;
   if(!boss){
-    py+=8;td.innerText=Math.min(100,Math.floor(py/F*100))+'%';
+    py+=SPEED;td.innerText=Math.min(100,Math.floor(py/F*100))+'%';
     gState.forEach(g=>{
-      if(!g[5]&&py>=g[0]&&py<=g[0]+40){
+      if(!g[5]&&py>=g[0]&&py<=g[0]+35){
         g[5]=1;const left=px<190;
-        app(left?g[1][0]:g[3][0],left?g[2]:g[4]);
+        app(left?g[1]:g[3].charAt(0),left?g[2]:parseFloat(g[3].slice(1)));
       }
     });
     if(n<=0)end(0,'Wiped out!');if(py>=F)boss=true;
@@ -38,14 +40,17 @@ function loop(){
     else end(0,'Boss defeated you!');
   }
   tc.innerText='👥 '+n;
-  x.clearRect(0,0,380,640);const cy=500,cam=cy-py;
+  x.clearRect(0,0,380,640);
+  // Position the player lower (y=560) to see much further ahead
+  const cy=560,cam=cy-py;
   gState.forEach(g=>{
     const gy=g[0]+cam;
-    if(gy>-40&&gy<680){
-      x.fillStyle=g[1][0]==='-'||g[1][0]==='/'?'#ef4444c0':'#3b82f6c0';x.fillRect(20,gy-15,165,30);
-      x.fillStyle=g[3][0]==='-'||g[3][0]==='/'?'#ef4444c0':'#3b82f6c0';x.fillRect(195,gy-15,165,30);
+    if(gy>-50&&gy<690){
+      const leftRed=g[1]==='-'||g[1]==='/',rightRed=g[3].startsWith('-')||g[3].startsWith('/');
+      x.fillStyle=leftRed?'#ef4444c0':'#3b82f6c0';x.fillRect(20,gy-15,165,30);
+      x.fillStyle=rightRed?'#ef4444c0':'#3b82f6c0';x.fillRect(195,gy-15,165,30);
       x.fillStyle='#fff';x.font='bold 14px sans-serif';x.textAlign='center';
-      x.fillText(g[1][0]+g[2],102,gy+5);x.fillText(g[3][0]+g[4],277,gy+5);
+      x.fillText(g[1]+g[2],102,gy+5);x.fillText(g[3],277,gy+5);
     }
   });
   const by=F+cam;
