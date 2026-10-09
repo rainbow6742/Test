@@ -14,16 +14,12 @@
         #time { font-size:36px; color:#f33; font-weight:bold; margin-top:10px; }
         #map { width:100%; height:220px; background:#111; border:2px solid #f33; }
         
-        /* Popups & BSOD Styles */
         .fake-pop { position:absolute; width:220px; background:#1a0000; border:2px solid #f33; color:#f33; font-weight:bold; box-shadow:0 0 10px rgba(255,0,0,0.5); z-index:10; }
         .pop-hdr { background:#f33; color:#000; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; font-size:12px; }
         .pop-body { padding:15px 10px; text-align:center; }
         .pop-close { cursor:pointer; font-weight:bold; background:#000; color:#f33; border:1px solid #f33; padding:0 5px; font-size:11px; }
         
-        /* Changed to subtle opacity/overlays so the chaos behind stays visible */
-        #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 120, 215, 0.95); color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10% ; box-sizing:border-box; z-index:100; }
-        
-        /* Rickroll Screen overlay */
+        #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 120, 215, 0.95); color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10%; box-sizing:border-box; z-index:100; }
         #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.9); color:#ff3399; font-size:40px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
         .dance { font-size:80px; animation: bounce 0.5s infinite alternate; margin-top:20px; }
         @keyframes bounce { from { transform: scale(0.8); } to { transform: scale(1.2); } }
@@ -53,24 +49,30 @@
 
     <script>
         let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false;
+        let lineX = 10, lineY = 10; // Coordinates for tracking line generation
+        
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
         function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.6; u.rate=0.95; window.speechSynthesis.speak(u); }}
         
-        function makePop() {
-            if (sec <= 0 || isFrozen) return; 
+        // Fast line window layout generator
+        function makeLinePop() {
+            if (isFrozen) return;
             let p = document.createElement('div');
             p.className = 'fake-pop';
-            p.style.top = Math.random() * 60 + 10 + '%';
-            p.style.left = Math.random() * 50 + 10 + '%';
-            p.innerHTML = `<div class="pop-hdr"><span>SYSTEM_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] OVERFLOW_WARN</div>`;
+            p.style.top = lineY + 'px';
+            p.style.left = lineX + 'px';
+            p.innerHTML = `<div class="pop-hdr"><span>CRITICAL_OVERFLOW</span><div class="pop-close">X</div></div><div class="pop-body">[!] RECOVERY_LOCK</div>`;
             
-            p.querySelector('.pop-close').addEventListener('click', (e) => {
-                e.stopPropagation(); 
-                if (isFrozen) return; 
-                p.remove();
-                if (sec > 0 && !isFrozen) { makePop(); makePop(); }
-            });
+            // Clicking X does absolutely nothing now
+            p.querySelector('.pop-close').addEventListener('click', (e) => { e.stopPropagation(); });
             document.getElementById('term').appendChild(p);
+
+            // Shift position downward diagonally to make a continuous solid line trail
+            lineX += 8;
+            lineY += 6;
+            // Bounce/wrap around coordinates if they hit edge thresholds
+            if (lineX > window.innerWidth - 350) lineX = 10;
+            if (lineY > window.innerHeight - 150) lineY = 10;
         }
 
         document.getElementById('btn').addEventListener('click', () => {
@@ -79,10 +81,17 @@
             spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
-            const popInterval = setInterval(() => { 
-                if (sec <= 40 && sec > 0 && !isFrozen) makePop(); 
-                if (isFrozen || sec <= 0) clearInterval(popInterval); 
-            }, 2000);
+            // Rapid line span sequence triggered at 20 seconds left
+            let cascadeInterval;
+            const checkCascade = setInterval(() => {
+                if (sec <= 20) {
+                    clearInterval(checkCascade);
+                    cascadeInterval = setInterval(() => {
+                        if (!isFrozen) makeLinePop();
+                        else clearInterval(cascadeInterval);
+                    }, 1); // Triggers every 0.001 seconds (1 millisecond)
+                }
+            }, 100);
 
             const timer = setInterval(() => { 
                 if (isFrozen) return;
@@ -106,14 +115,9 @@
             isFrozen = true;
             document.body.style.cursor = 'none';
 
-            document.querySelectorAll('.pop-close').forEach(btn => {
-                btn.style.cursor = 'none';
-                btn.style.opacity = '0.5';
-            });
-
-            // Phase 1: Freeze everything in place for 7 seconds (Nothing disappears)
+            // Phase 1: Freeze everything in place for 7 seconds
             setTimeout(() => {
-                // Phase 2: Blue Screen of Death pops up directly over the windows
+                // Phase 2: Blue Screen of Death pops up directly over the layout
                 document.getElementById('bsod').style.display = 'block';
                 
                 setTimeout(() => {
