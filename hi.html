@@ -32,7 +32,7 @@
     <div id="main">
         <div id="term">Initializing core protocol...</div>
         <div id="side">
-            <div id="box"><b style="color:#f33; font-size: 13px;">TIME REMAINING TO PAY RANSOM</b><div id="time">00:30</div></div>
+            <div id="box"><b style="color:#f33; font-size: 13px;">TIME REMAINING TO PAY RANSOM</b><div id="time">01:00</div></div>
             <iframe id="map" style="display:none; border:none;"></iframe>
         </div>
     </div>
@@ -45,11 +45,11 @@
 
     <div id="rick">
         <div>SYSTEM RECOVERY FAILURE</div>
-        <div class="dance">🕺鼓鼓</div>
+        <div class="dance">🕺🕺🕺</div>
     </div>
 
     <script>
-        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=30, idx=0, isFrozen=false;
+        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false;
         let activeWindows = [];
 
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
@@ -96,16 +96,22 @@
         document.getElementById('btn').addEventListener('click', () => {
             document.getElementById('gate').style.display='none';
             try { document.documentElement.requestFullscreen(); } catch(e){}
-            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in thirty seconds.`);
+            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
             requestAnimationFrame(updateWindowPhysics);
 
-            // Spawns bouncing windows immediately every 1 millisecond starting at the 30-second mark
-            let cascadeInterval = setInterval(() => {
-                if (!isFrozen) spawnBouncingWindow();
-                else clearInterval(cascadeInterval);
-            }, 1); 
+            // Bouncing windows check loop—triggers exactly at 30 seconds left
+            let cascadeInterval;
+            const checkCascade = setInterval(() => {
+                if (sec <= 30) {
+                    clearInterval(checkCascade);
+                    cascadeInterval = setInterval(() => {
+                        if (!isFrozen) spawnBouncingWindow();
+                        else clearInterval(cascadeInterval);
+                    }, 1); 
+                }
+            }, 100);
 
             const timer = setInterval(() => { 
                 if (isFrozen) return;
