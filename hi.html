@@ -7,16 +7,17 @@
         body, html { margin:0; padding:0; background:#050505; color:#00ff33; font-family:monospace; height:100%; overflow:hidden; user-select:none; }
         #gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; z-index:999; }
         #btn { padding:15px 30px; font-size:18px; font-weight:bold; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; }
-        #main { display:flex; height:100%; width:100%; }
+        #main { display:flex; height:100%; width:100%; position:relative; }
         #term { flex:1; padding:20px; font-size:15px; line-height:1.5; white-space:pre-wrap; overflow-y:auto; position:relative; }
-        #side { width:320px; background:#0a0a0a; padding:20px; display:flex; flex-direction:column; gap:20px; border-left:1px solid #222; }
+        #side { width:340px; background:#0a0a0a; padding:20px; display:flex; flex-direction:column; gap:20px; border-left:1px solid #222; z-index:20; }
         #box { border:2px solid #f33; padding:15px; text-align:center; background:rgba(255,0,0,0.05); }
         #time { font-size:36px; color:#f33; font-weight:bold; margin-top:10px; }
         #map { width:100%; height:220px; background:#111; border:2px solid #f33; }
         
-        .fake-pop { position:absolute; width:220px; background:#1a0000; border:2px solid #f33; color:#f33; font-weight:bold; box-shadow:0 0 10px rgba(255,0,0,0.5); z-index:10; }
+        /* Bouncing Window Layout Configuration */
+        .fake-pop { position:absolute; width:220px; height:80px; background:#1a0000; border:2px solid #f33; color:#f33; font-weight:bold; box-shadow:0 0 10px rgba(255,0,0,0.5); z-index:10; }
         .pop-hdr { background:#f33; color:#000; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; font-size:12px; }
-        .pop-body { padding:15px 10px; text-align:center; }
+        .pop-body { padding:12px 10px; text-align:center; font-size:13px; }
         .pop-close { cursor:pointer; font-weight:bold; background:#000; color:#f33; border:1px solid #f33; padding:0 5px; font-size:11px; }
         
         #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 120, 215, 0.95); color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10%; box-sizing:border-box; z-index:100; }
@@ -31,7 +32,7 @@
     <div id="main">
         <div id="term">Initializing core protocol...</div>
         <div id="side">
-            <div id="box"><b style="color:#f33">TIME REMAINING</b><div id="time">01:00</div></div>
+            <div id="box"><b style="color:#f33; font-size: 13px;">TIME REMAINING TO PAY RANSOM</b><div id="time">00:30</div></div>
             <iframe id="map" style="display:none; border:none;"></iframe>
         </div>
     </div>
@@ -44,54 +45,67 @@
 
     <div id="rick">
         <div>SYSTEM RECOVERY FAILURE</div>
-        <div class="dance">🕺🕺🕺</div>
+        <div class="dance">🕺鼓鼓</div>
     </div>
 
     <script>
-        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false;
-        let lineX = 10, lineY = 10; // Coordinates for tracking line generation
-        
+        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=30, idx=0, isFrozen=false;
+        let activeWindows = [];
+
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
         function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.6; u.rate=0.95; window.speechSynthesis.speak(u); }}
         
-        // Fast line window layout generator
-        function makeLinePop() {
+        function spawnBouncingWindow() {
             if (isFrozen) return;
             let p = document.createElement('div');
             p.className = 'fake-pop';
-            p.style.top = lineY + 'px';
-            p.style.left = lineX + 'px';
-            p.innerHTML = `<div class="pop-hdr"><span>CRITICAL_OVERFLOW</span><div class="pop-close">X</div></div><div class="pop-body">[!] RECOVERY_LOCK</div>`;
+            p.innerHTML = `<div class="pop-hdr"><span>OVERFLOW_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] FILE_DAMAGE</div>`;
             
-            // Clicking X does absolutely nothing now
             p.querySelector('.pop-close').addEventListener('click', (e) => { e.stopPropagation(); });
             document.getElementById('term').appendChild(p);
 
-            // Shift position downward diagonally to make a continuous solid line trail
-            lineX += 8;
-            lineY += 6;
-            // Bounce/wrap around coordinates if they hit edge thresholds
-            if (lineX > window.innerWidth - 350) lineX = 10;
-            if (lineY > window.innerHeight - 150) lineY = 10;
+            let posX = Math.random() * (window.innerWidth - 600) + 20;
+            let posY = Math.random() * (window.innerHeight - 200) + 20;
+            
+            let dx = (Math.random() > 0.5 ? 3 : -3);
+            let dy = (Math.random() > 0.5 ? 3 : -3);
+
+            activeWindows.push({ element: p, x: posX, y: posY, dx: dx, dy: dy });
+        }
+
+        function updateWindowPhysics() {
+            if (isFrozen) return;
+            
+            const maxW = window.innerWidth - 340 - 225; 
+            const maxH = window.innerHeight - 85;
+
+            for (let i = 0; i < activeWindows.length; i++) {
+                let win = activeWindows[i];
+                win.x += win.dx;
+                win.y += win.dy;
+
+                if (win.x <= 0 || win.x >= maxW) win.dx *= -1;
+                if (win.y <= 0 || win.y >= maxH) win.dy *= -1;
+
+                win.element.style.left = win.x + 'px';
+                win.element.style.top = win.y + 'px';
+            }
+            requestAnimationFrame(updateWindowPhysics);
         }
 
         document.getElementById('btn').addEventListener('click', () => {
             document.getElementById('gate').style.display='none';
             try { document.documentElement.requestFullscreen(); } catch(e){}
-            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
+            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in thirty seconds.`);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
-            // Rapid line span sequence triggered at 20 seconds left
-            let cascadeInterval;
-            const checkCascade = setInterval(() => {
-                if (sec <= 20) {
-                    clearInterval(checkCascade);
-                    cascadeInterval = setInterval(() => {
-                        if (!isFrozen) makeLinePop();
-                        else clearInterval(cascadeInterval);
-                    }, 1); // Triggers every 0.001 seconds (1 millisecond)
-                }
-            }, 100);
+            requestAnimationFrame(updateWindowPhysics);
+
+            // Spawns bouncing windows immediately every 1 millisecond starting at the 30-second mark
+            let cascadeInterval = setInterval(() => {
+                if (!isFrozen) spawnBouncingWindow();
+                else clearInterval(cascadeInterval);
+            }, 1); 
 
             const timer = setInterval(() => { 
                 if (isFrozen) return;
@@ -115,13 +129,10 @@
             isFrozen = true;
             document.body.style.cursor = 'none';
 
-            // Phase 1: Freeze everything in place for 7 seconds
             setTimeout(() => {
-                // Phase 2: Blue Screen of Death pops up directly over the layout
                 document.getElementById('bsod').style.display = 'block';
                 
                 setTimeout(() => {
-                    // Phase 3: Rickroll layers directly on top
                     document.getElementById('rick').style.display = 'flex';
                     spk("Never gonna give you up, never gonna let you down, never gonna run around and desert you.");
                 }, 15000); 
