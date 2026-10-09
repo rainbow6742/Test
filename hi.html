@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM BREACH DETECTED</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            color: #00ff33;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100%;
+            overflow: hidden;
+            user-select: none;
+        }
+        #terminal {
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            height: 85%;
+            overflow-y: auto;
+        }
+        .warning {
+            color: #ff3333;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .highlight {
+            color: #ffff33;
+        }
+        #prank-banner {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: #ff3333;
+            color: #fff;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 -5px 15px rgba(255,0,0,0.5);
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 49% { background: #ff3333; }
+            50%, 100% { background: #000; color: #ff3333; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="terminal">Initializing connection...</div>
+    <div id="prank-banner">⚠️ RELAX! YOU'RE BEING PRANKED! (Press F11 or Esc to close) ⚠️</div>
+
+    <script>
+        const terminal = document.getElementById('terminal');
+        const banner = document.getElementById('prank-banner');
+        
+        let ipAddress = "Fetching...";
+        let locationStr = "Fetching...";
+
+        // Trigger fullscreen on first interaction to lock out navigation bars
+        document.addEventListener('click', () => {
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        });
+
+        // 1. Fetch real public network data safely via a public API
+        async function fetchNetworkData() {
+            try {
+                const response = await fetch('https://ipapi.co');
+                const data = await response.json();
+                ipAddress = data.ip || "192.168.1.104";
+                locationStr = `${data.city || 'Unknown City'}, ${data.region || 'Unknown Region'}, ${data.country_name || 'Target'}`;
+            } catch (e) {
+                // Fallbacks if blocked or offline
+                ipAddress = "192.168.4.112";
+                locationStr = "Local Subnet Grid";
+            }
+            startSimulation();
+        }
+
+        // 2. Simulated terminal sequence
+        const logs = [
+            { text: "\n[!] WARNING: UNAUTHORIZED REMOTE ACCESS DETECTED", type: "warning", delay: 800 },
+            { text: "\nConnecting to central malicious proxy...", type: "normal", delay: 600 },
+            { text: "Bypassing local router firewall... [SUCCESS]", type: "normal", delay: 700 },
+            { text: "Injecting payload into system root processes...", type: "normal", delay: 500 },
+            { text: "\n--- TARGET NETWORK IDENTITY ---", type: "highlight", delay: 400 },
+            { text: `[+] TARGET IP ADDRESS : {IP}`, type: "warning", delay: 600 },
+            { text: `[+] PHYSICAL LOCATION : {LOC}`, type: "warning", delay: 600 },
+            { text: "-------------------------------", type: "highlight", delay: 300 },
+            { text: "\nExtracting browser session tokens...", type: "normal", delay: 500 },
+            { text: "Downloading system configuration logs...", type: "normal", delay: 400 },
+            { text: "Dumping desktop file directory architecture...", type: "normal", delay: 400 },
+            { text: "\n[!] COMPROMISE COMPLETE: Hard drive encrypted encryption key sent to remote server.", type: "warning", delay: 1000 },
+            { text: "\nDeleting system partition logs to cover tracks...", type: "normal", delay: 800 },
+            { text: "Disabling mouse tracking mechanisms...", type: "normal", delay: 500 }
+        ];
+
+        let index = 0;
+
+        function startSimulation() {
+            terminal.innerHTML = "Establishing root shell integration...\n";
+            runNextLog();
+        }
+
+        function runNextLog() {
+            if (index < logs.length) {
+                let current = logs[index];
+                
+                // Swap placeholders with the gathered live network details
+                let lineText = current.text.replace("{IP}", ipAddress).replace("{LOC}", locationStr);
+                
+                let span = document.createElement('span');
+                span.className = current.type;
+                span.innerText = lineText + "\n";
+                terminal.appendChild(span);
+                
+                // Keep scrolling terminal downward automatically
+                terminal.scrollTop = terminal.scrollHeight;
+                
+                index++;
+                setTimeout(runNextLog, current.delay);
+            } else {
+                // End of prank sequence: show the banner so they know they are completely safe
+                setTimeout(() => {
+                    banner.style.display = 'block';
+                    document.body.style.background = "#1a0000";
+                }, 1500);
+            }
+        }
+
+        // Initialize fetch
+        fetchNetworkData();
+    </script>
+</body>
+</html>
