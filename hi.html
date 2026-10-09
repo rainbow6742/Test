@@ -7,59 +7,65 @@
         body, html { margin:0; padding:0; background:#050505; color:#00ff33; font-family:monospace; height:100%; overflow:hidden; user-select:none; }
         #gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; z-index:99; }
         #btn { padding:15px 30px; font-size:18px; font-weight:bold; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; }
-        #main { display:none; height:100%; width:100%; position:relative; }
+        #main { display:flex; height:100%; width:100%; }
         #term { flex:1; padding:20px; font-size:15px; line-height:1.5; white-space:pre-wrap; overflow-y:auto; position:relative; }
         #side { width:320px; background:#0a0a0a; padding:20px; display:flex; flex-direction:column; gap:20px; border-left:1px solid #222; }
         #box { border:2px solid #f33; padding:15px; text-align:center; background:rgba(255,0,0,0.05); }
         #time { font-size:36px; color:#f33; font-weight:bold; margin-top:10px; }
         #map { width:100%; height:220px; background:#111; border:2px solid #f33; }
-        #banner { display:none; position:fixed; bottom:0; left:0; width:100%; background:#f33; color:#fff; text-align:center; padding:15px 0; font-size:20px; font-weight:bold; z-index:99; animation: b 1s infinite; }
         
-        /* Stylized fake window popups */
+        /* Popups & BSOD Styles */
         .fake-pop { position:absolute; width:220px; background:#1a0000; border:2px solid #f33; color:#f33; font-weight:bold; box-shadow:0 0 10px rgba(255,0,0,0.5); z-index:10; }
         .pop-hdr { background:#f33; color:#000; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; font-size:12px; }
         .pop-body { padding:15px 10px; text-align:center; }
         .pop-close { cursor:pointer; font-weight:bold; background:#000; color:#f33; border:1px solid #f33; padding:0 5px; font-size:11px; }
-        @keyframes b { 0%,49% { background:#f33; } 50%,100% { background:#000; color:#f33; } }
+        
+        #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0078d7; color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10% ; box-sizing:border-box; z-index:100; }
+        
+        /* Rickroll Screen */
+        #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; color:#ff3399; font-size:40px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
+        .dance { font-size:80px; animation: bounce 0.5s infinite alternate; margin-top:20px; }
+        @keyframes bounce { from { transform: scale(0.8); } to { transform: scale(1.2); } }
     </style>
 </head>
 <body>
     <div id="gate"><button id="btn">Click here to continue</button></div>
-    <div id="main" style="display:flex;">
+    
+    <div id="main">
         <div id="term">Initializing core protocol...</div>
         <div id="side">
             <div id="box"><b style="color:#f33">TIME REMAINING</b><div id="time">01:00</div></div>
             <iframe id="map" style="display:none; border:none;"></iframe>
         </div>
     </div>
-    <div id="banner">⚠️ RELAX! PRANKED! (Press Esc to exit) ⚠️</div>
+
+    <div id="bsod">
+        <div style="font-size:100px;">:(</div>
+        <h1 style="font-weight:300; font-size:30px; margin:30px 0;">Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.</h1>
+        <div style="font-size:20px;">0% complete</div>
+    </div>
+
+    <div id="rick">
+        <div>SYSTEM RECOVERY FAILURE</div>
+        <div class="dance">🕺🕺🕺</div>
+    </div>
+
     <script>
-        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0;
+        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false;
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
-        function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.5; u.rate=0.9; window.speechSynthesis.speak(u); }}
+        function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.6; u.rate=0.95; window.speechSynthesis.speak(u); }}
         
-        // Generates a window. If closed, it spawns 2 more unless time is under 20s.
         function makePop() {
-            if (sec <= 20) return; 
+            if (sec <= 0 || isFrozen) return; 
             let p = document.createElement('div');
             p.className = 'fake-pop';
             p.style.top = Math.random() * 60 + 10 + '%';
             p.style.left = Math.random() * 50 + 10 + '%';
-            
-            p.innerHTML = `
-                <div class="pop-hdr"><span>SYSTEM_ERR</span><div class="pop-close">X</div></div>
-                <div class="pop-body">[!] OVERFLOW_WARN</div>
-            `;
-            
+            p.innerHTML = `<div class="pop-hdr"><span>SYSTEM_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] OVERFLOW_WARN</div>`;
             p.querySelector('.pop-close').addEventListener('click', (e) => {
-                e.stopPropagation();
-                p.remove(); // Remove the current one
-                if (sec > 20) {
-                    makePop(); // Spawn first replacement
-                    makePop(); // Spawn second replacement
-                }
+                e.stopPropagation(); p.remove();
+                if (sec > 0 && !isFrozen) { makePop(); makePop(); }
             });
-            
             document.getElementById('term').appendChild(p);
         }
 
@@ -69,23 +75,16 @@
             spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
-            // Standard background loop (spawns an extra one every 2 seconds)
-            const popInterval = setInterval(() => {
-                if (sec > 20) { makePop(); } else { clearInterval(popInterval); }
-            }, 2000);
+            const popInterval = setInterval(() => { if (sec > 0 && !isFrozen) makePop(); else clearInterval(popInterval); }, 2000);
 
             const timer = setInterval(() => { 
+                if (isFrozen) return;
                 sec--; 
-                if(sec <= 0) { sec = 0; clearInterval(timer); }
-                document.getElementById('time').textContent=`00:${sec<10?'0':''}${sec}`; 
-                if(sec===20){ 
-                    document.getElementById('banner').style.display='block'; 
-                    document.body.style.background='#1a0000'; 
-                    document.getElementById('time').style.color='#0f3'; 
-                    // Instantly wipes out all open window popups
-                    document.querySelectorAll('.fake-pop').forEach(el => el.remove());
-                    spk("Relax, you are being pranked. Your files are completely safe."); 
+                if(sec <= 0) { 
+                    sec = 0; clearInterval(timer);
+                    triggerSequence(); 
                 }
+                document.getElementById('time').textContent=`00:${sec<10?'0':''}${sec}`; 
             }, 1000);
 
             const logs = [
@@ -93,8 +92,31 @@
                 "\n--- TARGET PROFILE ---", `[+] TARGET IP : ${ip}`, `[+] GPS GRID  : ${loc}`, "----------------------",
                 "\nTargeting folder: C:\\Users\\User\\Pictures...", "[!] COMPROMISE STATUS: Directories encrypted.", "[!] TARGET DELETION PROTOCOL ENGAGED."
             ];
-            !function run() { if(idx<logs.length){ let p=document.createElement('div'); p.innerText=logs[idx++]; document.getElementById('term').appendChild(p); setTimeout(run, 600); }}();
+            !function run() { if(idx<logs.length && !isFrozen){ let p=document.createElement('div'); p.innerText=logs[idx++]; document.getElementById('term').appendChild(p); setTimeout(run, 600); }}();
         });
+
+        function triggerSequence() {
+            isFrozen = true;
+            document.body.style.cursor = 'none';
+
+            // Phase 1: Freeze everything in place for 7 seconds
+            setTimeout(() => {
+                // Phase 2: Trigger Blue Screen of Death (BSOD) for 15 seconds
+                document.getElementById('main').style.display = 'none';
+                document.querySelectorAll('.fake-pop').forEach(el => el.remove());
+                document.getElementById('bsod').style.display = 'block';
+                
+                setTimeout(() => {
+                    // Phase 3: Rickroll with voice lyrics (Prank text removed)
+                    document.getElementById('bsod').style.display = 'none';
+                    document.getElementById('rick').style.display = 'flex';
+                    spk("Never gonna give you up, never gonna let you down, never gonna run around and desert you.");
+                }, 15000); // 15 seconds of BSOD
+                
+            }, 7000); // 7 seconds of freeze
+        }
+
+        window.addEventListener('beforeunload', (e) => { if(sec>0){ e.preventDefault(); e.returnValue=''; } });
     </script>
 </body>
 </html>
