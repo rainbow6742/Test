@@ -3,142 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Diagnostics Terminal</title>
+    <title>System Mainframe Override</title>
     <style>
-        body {
-            background-color: #050505;
-            color: #00ff33;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 20px;
+        * {
+            box-sizing: border-box;
+        }
+        body, html {
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            background: transparent;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            padding: 20px;
+            gap: 20px;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: rgba(0, 10, 0, 0.85);
+            border: 1px solid #00ff66;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+            border-radius: 4px;
+            padding: 15px;
+            color: #00ff66;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
 
-        #terminal {
-            max-width: 800px;
-            margin: 0 auto;
-            border: 1px solid #00ff33;
-            background-color: rgba(0, 20, 0, 0.9);
-            padding: 15px;
-            box-shadow: 0 0 15px rgba(0, 255, 51, 0.2);
-            height: 80vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .output-line {
-            margin: 5px 0;
-            white-space: pre-wrap;
-            line-height: 1.4;
-        }
-
-        .alert {
-            color: #ff3333;
+        .title {
             font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #00ff66;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            font-size: 14px;
         }
 
-        .success {
-            color: #33ccff;
+        #log-display {
+            flex-grow: 1;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: hidden;
         }
 
-        #input-container {
-            display: flex;
-            margin-top: auto;
-            padding-top: 10px;
-            border-top: 1px dashed #00ff33;
+        .progress-box {
+            margin-bottom: 15px;
         }
 
-        #prompt {
-            margin-right: 10px;
-            user-select: none;
-        }
-
-        #cmd-input {
-            background: none;
-            border: none;
-            color: #00ff33;
-            font-family: inherit;
-            font-size: inherit;
+        .bar-container {
             width: 100%;
-            outline: none;
+            border: 1px solid #00ff66;
+            height: 20px;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .bar {
+            width: 0%;
+            height: 100%;
+            background: #00ff66;
+            transition: width 0.4s ease;
+        }
+
+        #status-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 3;
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ff3333;
+            color: #ff3333;
+            padding: 30px 50px;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            box-shadow: 0 0 30px rgba(255, 51, 51, 0.5);
+            display: none;
+            text-align: center;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; box-shadow: 0 0 40px rgba(255, 51, 51, 0.8); }
+            100% { opacity: 0.8; }
         }
     </style>
 </head>
 <body>
 
-<div id="terminal">
-    <div id="log"></div>
-    <div id="input-container">
-        <span id="prompt">guest@sim_env:~#</span>
-        <input type="text" id="cmd-input" autofocus autocomplete="off" placeholder="Type 'help' or 'initialize'...">
+<canvas id="matrix"></canvas>
+
+<div id="ui-layer">
+    <div class="panel">
+        <div class="title">Override Status</div>
+        <div class="progress-box">
+            <span>Decryption Module:</span>
+            <div class="bar-container"><div id="bar1" class="bar"></div></div>
+        </div>
+        <div class="progress-box">
+            <span>Bypassing Firewalls:</span>
+            <div class="bar-container"><div id="bar2" class="bar"></div></div>
+        </div>
+        <div class="progress-box">
+            <span>Data Interception:</span>
+            <div class="bar-container"><div id="bar3" class="bar"></div></div>
+        </div>
+    </div>
+    
+    <div class="panel">
+        <div class="title">Live Mainframe Telemetry Stream</div>
+        <div id="log-display"></div>
     </div>
 </div>
 
-<script>
-    const logContainer = document.getElementById('log');
-    const cmdInput = document.getElementById('cmd-input');
-    const terminal = document.getElementById('terminal');
+<div id="status-overlay">ACCESS GRANTED</div>
 
-    const bootSequence = [
-        "Connecting to local host gateway...",
-        "Establishing isolated sandbox handshake... [OK]",
-        "Target network detected: " + window.location.hostname,
-        "Analyzing domain architecture details...",
-        "Scanning open ports (Virtual Sim Mode)...",
-        "Port 80/TCP - Simulated Filter Active",
-        "Port 443/TCP - Simulated TLS Session Observed",
-        "Injecting harmless educational script block...",
-        "Bypassing fictional firewall matrix...",
-        "ALERT: Access token simulated.",
-        "SYSTEM GRANTED PROTOCOL OVERRIDE."
+<script>
+    // Matrix Rain Effect
+    const canvas = document.getElementById('matrix');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const katakana = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\$#@%&*";
+    const alphabet = katakana.split("");
+
+    const fontSize = 16;
+    let columns = canvas.width / fontSize;
+
+    const rainDrops = Array.from({ length: columns }).fill(1);
+
+    function drawMatrix() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = '#0F0';
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < rainDrops.length; i++) {
+            const text = alphabet[Math.floor(Math.random() * alphabet.length)];
+            ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
+
+            if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                rainDrops[i] = 0;
+            }
+            rainDrops[i]++;
+        }
+    }
+
+    // Telemetry Logs Simulation
+    const logDisplay = document.getElementById('log-display');
+    const logPool = [
+        "Scanning target architecture...",
+        "Tracing network route node through local proxy...",
+        "Intercepting asynchronous data buffers...",
+        "Injecting visual matrix style blocks...",
+        "Simulating memory allocation stack check...",
+        "Analyzing security handshakes...",
+        "Mapping routing tables...",
+        "Executing localized system sandbox loop...",
+        "Reading environment variables [SAFEMODE=TRUE]..."
     ];
 
-    function printLine(text, type = '') {
-        const line = document.createElement('div');
-        line.className = 'output-line ' + type;
-        line.textContent = text;
-        logContainer.appendChild(line);
-        terminal.scrollTop = terminal.scrollHeight;
-    }
+    function addLog() {
+        const randomPhrase = logPool[Math.floor(Math.random() * logPool.length)];
+        const timestamp = new Date().toLocaleTimeString();
+        const newline = document.createElement('div');
+        newline.textContent = `[${timestamp}] ${randomPhrase}`;
+        logDisplay.appendChild(newline);
 
-    async function runSimulation() {
-        cmdInput.disabled = true;
-        for (let i = 0; i < bootSequence.length; i++) {
-            let type = '';
-            if (bootSequence[i].includes('ALERT')) type = 'alert';
-            if (bootSequence[i].includes('SYSTEM')) type = 'success';
-            
-            printLine(bootSequence[i], type);
-            // Dynamic typing delay simulation
-            await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 300));
+        if (logDisplay.childNodes.length > 25) {
+            logDisplay.removeChild(logDisplay.firstChild);
         }
-        cmdInput.disabled = false;
-        cmdInput.focus();
     }
 
-    cmdInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            const input = cmdInput.value.trim().toLowerCase();
-            printLine(`guest@sim_env:~# ${cmdInput.value}`);
-            cmdInput.value = '';
+    // Progress Bars Simulation
+    let p1 = 0, p2 = 0, p3 = 0;
+    const b1 = document.getElementById('bar1');
+    const b2 = document.getElementById('bar2');
+    const b3 = document.getElementById('bar3');
+    const overlay = document.getElementById('status-overlay');
 
-            if (input === 'initialize' || input === 'run') {
-                runSimulation();
-            } else if (input === 'help') {
-                printLine("Available options: 'initialize' (starts visual diagnostic scan), 'clear' (wipes terminal logs), 'help' (shows list).");
-            } else if (input === 'clear') {
-                logContainer.innerHTML = '';
-            } else if (input !== '') {
-                printLine(`Command not recognized: '${input}'. Type 'help' for instructions.`, 'alert');
-            }
+    function updateProgress() {
+        if (p1 < 100) p1 += Math.floor(Math.random() * 5);
+        if (p1 >= 60 && p2 < 100) p2 += Math.floor(Math.random() * 4);
+        if (p2 >= 40 && p3 < 100) p3 += Math.floor(Math.random() * 6);
+
+        b1.style.width = Math.min(p1, 100) + '%';
+        b2.style.width = Math.min(p2, 100) + '%';
+        b3.style.width = Math.min(p3, 100) + '%';
+
+        if (p1 >= 100 && p2 >= 100 && p3 >= 100) {
+            overlay.style.display = 'block';
+        }
+    }
+
+    // Intervals
+    setInterval(drawMatrix, 30);
+    setInterval(addLog, 400);
+    setInterval(updateProgress, 300);
+
+    // Click interactive reset
+    document.body.addEventListener('click', () => {
+        if (overlay.style.display === 'block') {
+            p1 = 0; p2 = 0; p3 = 0;
+            overlay.style.display = 'none';
         }
     });
-
-    // Welcome Message
-    printLine("===== SIMULATED SECURITY DIAGNOSTIC TERMINAL =====");
-    printLine("This interface evaluates structural frontend variables for testing purposes.");
-    printLine("Type 'initialize' and press Enter to begin the simulation script loop.");
 </script>
 
 </body>
