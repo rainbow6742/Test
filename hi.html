@@ -14,16 +14,16 @@
         #time { font-size:36px; color:#f33; font-weight:bold; margin-top:10px; }
         #map { width:100%; height:220px; background:#111; border:2px solid #f33; }
         
-        /* Bouncing Window Layout Configuration */
         .fake-pop { position:absolute; width:220px; height:80px; background:#1a0000; border:2px solid #f33; color:#f33; font-weight:bold; box-shadow:0 0 10px rgba(255,0,0,0.5); z-index:10; }
         .pop-hdr { background:#f33; color:#000; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; font-size:12px; }
         .pop-body { padding:12px 10px; text-align:center; font-size:13px; }
         .pop-close { cursor:pointer; font-weight:bold; background:#000; color:#f33; border:1px solid #f33; padding:0 5px; font-size:11px; }
         
         #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 120, 215, 0.95); color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10%; box-sizing:border-box; z-index:100; }
-        #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.9); color:#ff3399; font-size:40px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
-        .dance { font-size:80px; animation: bounce 0.5s infinite alternate; margin-top:20px; }
-        @keyframes bounce { from { transform: scale(0.8); } to { transform: scale(1.2); } }
+        
+        /* Rickroll Screen with authentic GIF layout */
+        #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.95); color:#ff3399; font-size:36px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
+        #rick img { width: 280px; height: auto; border: 4px solid #ff3399; border-radius: 8px; margin-top: 25px; box-shadow: 0 0 20px rgba(255,51,153,0.6); }
     </style>
 </head>
 <body>
@@ -45,48 +45,86 @@
 
     <div id="rick">
         <div>SYSTEM RECOVERY FAILURE</div>
-        <div class="dance">🕺🕺🕺</div>
+        <!-- Embedded Rick Astley Dancing GIF -->
+        <img src="https://tenor.com" alt="Rickroll">
     </div>
 
     <script>
         let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false;
         let activeWindows = [];
+        let lineX = 10, lineY = 10;
 
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
-        function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.6; u.rate=0.95; window.speechSynthesis.speak(u); }}
         
+        function spk(t, p=0.6, r=0.95) { 
+            if('speechSynthesis' in window){ 
+                let u=new SpeechSynthesisUtterance(t); u.pitch=p; u.rate=r; window.speechSynthesis.speak(u); 
+            }
+        }
+
+        // Programmatic Singing Engine to break speech into actual lyrical patterns
+        function singRickroll() {
+            if (!'speechSynthesis' in window) return;
+            window.speechSynthesis.cancel();
+            
+            // Phrase broken into rhythm notes: [Syllable, Pitch Level, Speed Scale]
+            const notes = [
+                ["Never gonna", 0.8, 1.1], [" give you up.", 0.6, 0.9],
+                ["Never gonna", 0.8, 1.1], [" let you down.", 0.5, 0.9],
+                ["Never gonna", 0.7, 1.1], [" run around", 0.8, 1.0], [" and desert you.", 0.5, 0.85]
+            ];
+            
+            let nIdx = 0;
+            function playNextNote() {
+                if (nIdx < notes.length) {
+                    let u = new SpeechSynthesisUtterance(notes[nIdx][0]);
+                    u.pitch = notes[nIdx][1];
+                    u.rate = notes[nIdx][2];
+                    u.onend = () => { nIdx++; setTimeout(playNextNote, 80); };
+                    window.speechSynthesis.speak(u);
+                }
+            }
+            playNextNote();
+        }
+        
+        function spawnStagnantWindow() {
+            if (isFrozen) return;
+            let p = document.createElement('div');
+            p.className = 'fake-pop';
+            p.style.top = '40%'; p.style.left = '35%';
+            p.innerHTML = `<div class="pop-hdr"><span>CRITICAL_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] ACCESS_VIOLATION</div>`;
+            p.querySelector('.pop-close').addEventListener('click', (e) => { e.stopPropagation(); });
+            document.getElementById('term').appendChild(p);
+        }
+
         function spawnBouncingWindow() {
             if (isFrozen) return;
             let p = document.createElement('div');
             p.className = 'fake-pop';
+            p.style.top = lineY + 'px'; p.style.left = lineX + 'px';
             p.innerHTML = `<div class="pop-hdr"><span>OVERFLOW_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] FILE_DAMAGE</div>`;
-            
             p.querySelector('.pop-close').addEventListener('click', (e) => { e.stopPropagation(); });
             document.getElementById('term').appendChild(p);
 
-            let posX = Math.random() * (window.innerWidth - 600) + 20;
-            let posY = Math.random() * (window.innerHeight - 200) + 20;
-            
             let dx = (Math.random() > 0.5 ? 3 : -3);
             let dy = (Math.random() > 0.5 ? 3 : -3);
+            activeWindows.push({ element: p, x: lineX, y: lineY, dx: dx, dy: dy });
 
-            activeWindows.push({ element: p, x: posX, y: posY, dx: dx, dy: dy });
+            lineX += 15; lineY += 10;
+            if (lineX > window.innerWidth - 600) lineX = 10;
+            if (lineY > window.innerHeight - 200) lineY = 10;
         }
 
         function updateWindowPhysics() {
             if (isFrozen) return;
-            
             const maxW = window.innerWidth - 340 - 225; 
             const maxH = window.innerHeight - 85;
 
             for (let i = 0; i < activeWindows.length; i++) {
                 let win = activeWindows[i];
-                win.x += win.dx;
-                win.y += win.dy;
-
+                win.x += win.dx; win.y += win.dy;
                 if (win.x <= 0 || win.x >= maxW) win.dx *= -1;
                 if (win.y <= 0 || win.y >= maxH) win.dy *= -1;
-
                 win.element.style.left = win.x + 'px';
                 win.element.style.top = win.y + 'px';
             }
@@ -96,16 +134,20 @@
         document.getElementById('btn').addEventListener('click', () => {
             document.getElementById('gate').style.display='none';
             try { document.documentElement.requestFullscreen(); } catch(e){}
-            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
+            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`, 0.5, 0.9);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
             requestAnimationFrame(updateWindowPhysics);
 
-            // Bouncing windows check loop—triggers exactly at 30 seconds left
+            let stagnantSpawned = false;
             let cascadeInterval;
-            const checkCascade = setInterval(() => {
+            const monitorSequence = setInterval(() => {
+                if (sec <= 40 && !stagnantSpawned) {
+                    stagnantSpawned = true;
+                    spawnStagnantWindow();
+                }
                 if (sec <= 30) {
-                    clearInterval(checkCascade);
+                    clearInterval(monitorSequence);
                     cascadeInterval = setInterval(() => {
                         if (!isFrozen) spawnBouncingWindow();
                         else clearInterval(cascadeInterval);
@@ -134,19 +176,14 @@
         function triggerSequence() {
             isFrozen = true;
             document.body.style.cursor = 'none';
-
             setTimeout(() => {
                 document.getElementById('bsod').style.display = 'block';
-                
                 setTimeout(() => {
-                    document.getElementById('rick').style.display = 'flex';
-                    spk("Never gonna give you up, never gonna let you down, never gonna run around and desert you.");
-                }, 15000); 
-                
-            }, 7000); 
-        }
-
-        window.addEventListener('beforeunload', (e) => { if(sec>0){ e.preventDefault(); e.returnValue=''; } });
-    </script>
-</body>
-</html>
+                    document.getElementById('bsod').style.display = 'none';
+document.getElementById('rick').style.display = 'flex';
+// Run the custom rhythmic singing script instead of flat reading
+singRickroll();
+}, 15000);
+}, 7000);
+}
+window.addEventListener('beforeunload', (e) => { if(sec>0){ e.preventDefault(); e.returnValue=''; } });
