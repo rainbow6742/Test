@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYSTEM BREACH DETECTED</title>
+    <title>CRITICAL SYSTEM COMPROMISE</title>
     <style>
         body, html {
             margin: 0;
@@ -15,22 +15,61 @@
             overflow: hidden;
             user-select: none;
         }
+        #layout {
+            display: flex;
+            height: 85%;
+            width: 100%;
+        }
         #terminal {
+            flex: 1;
             padding: 20px;
             font-size: 16px;
             line-height: 1.5;
             white-space: pre-wrap;
-            height: 85%;
             overflow-y: auto;
+            border-right: 1px solid #222;
         }
-        .warning {
+        #sidebar {
+            width: 350px;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            background: #0a0a0a;
+            gap: 20px;
+        }
+        #map-container {
+            width: 100%;
+            height: 250px;
+            background: #111;
+            border: 2px solid #ff3333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff3333;
+            position: relative;
+        }
+        #map-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        #timer-box {
+            border: 2px solid #ff3333;
+            padding: 15px;
+            text-align: center;
+            background: rgba(255, 0, 0, 0.05);
+        }
+        #countdown {
+            font-size: 36px;
             color: #ff3333;
             font-weight: bold;
-            text-transform: uppercase;
+            margin-top: 10px;
         }
-        .highlight {
-            color: #ffff33;
-        }
+        .warning { color: #ff3333; font-weight: bold; text-transform: uppercase; }
+        .highlight { color: #ffff33; }
+        
         #prank-banner {
             display: none;
             position: fixed;
@@ -43,6 +82,7 @@
             padding: 15px 0;
             font-size: 20px;
             font-weight: bold;
+            z-shadow: 9999;
             box-shadow: 0 -5px 15px rgba(255,0,0,0.5);
             animation: blink 1s infinite;
         }
@@ -54,20 +94,35 @@
 </head>
 <body>
 
-    <div id="terminal">Initializing connection...</div>
-    <div id="prank-banner">⚠️ RELAX! YOU'RE BEING PRANKED! (Press F11 or Esc to close) ⚠️</div>
+    <div id="layout">
+        <div id="terminal">Click anywhere on the terminal window to run diagnostics...</div>
+        
+        <div id="sidebar">
+            <div id="timer-box">
+                <div class="warning">RANSOM TIME REMAINING</div>
+                <div id="countdown">01:00</div>
+            </div>
+            <div id="map-container">
+                <div id="map-placeholder">GATHERING GPS GRID...</div>
+                <iframe id="map-frame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div id="prank-banner">⚠️ RELAX! YOU ARE BEING PRANKED! (Press F11 or Esc to exit) ⚠️</div>
 
     <script>
         const terminal = document.getElementById('terminal');
         const banner = document.getElementById('prank-banner');
+        const countdownEl = document.getElementById('countdown');
+        const mapFrame = document.getElementById('map-frame');
+        const mapPlaceholder = document.getElementById('map-placeholder');
         
         let ipAddress = "Fetching...";
         let locationStr = "Fetching...";
-
-        // Trigger fullscreen on first interaction to lock out navigation bars
-        document.addEventListener('click', () => {
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        });
+        let latitude = 0;
+        let longitude = 0;
+        let hasStarted = false;
 
         // 1. Fetch real public network data safely via a public API
         async function fetchNetworkData() {
@@ -75,45 +130,98 @@
                 const response = await fetch('https://ipapi.co');
                 const data = await response.json();
                 ipAddress = data.ip || "192.168.1.104";
-                locationStr = `${data.city || 'Unknown City'}, ${data.region || 'Unknown Region'}, ${data.country_name || 'Target'}`;
+                locationStr = `${data.city || 'Unknown City'}, ${data.region || 'Unknown Region'}, ${data.country_name || 'Target Area'}`;
+                latitude = data.latitude;
+                longitude = data.longitude;
             } catch (e) {
-                // Fallbacks if blocked or offline
                 ipAddress = "192.168.4.112";
                 locationStr = "Local Subnet Grid";
             }
-            startSimulation();
         }
 
-        // 2. Simulated terminal sequence
+        // 2. Text-to-speech engine
+        function speakRansom(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop any overlapping speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                // Try to find a deeper system voice or default to robot style
+                const voices = window.speechSynthesis.getVoices();
+                utterance.voice = voices.find(v => v.lang.includes('en')) || voices[0];
+                utterance.pitch = 0.5; // Lower pitch makes it sound more intimidating
+                utterance.rate = 0.9;  // Slightly slower pace
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // 3. User interaction handler (Required by modern browsers for audio/fullscreen)
+        document.addEventListener('click', () => {
+            if (hasStarted) return;
+            hasStarted = true;
+
+            // Go Fullscreen
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+
+            terminal.innerHTML = "Establishing root shell integration...\n";
+            
+            // Speak the initial voice alert immediately upon click
+            speakRansom(`Warning. Security breach detected. Your IP address is ${ipAddress}. We know you are located in ${locationStr}. You have sixty seconds to comply.`);
+            
+            startSimulation();
+            startCountdown();
+            loadMap();
+        });
+
+        // 4. Load Embed Google Maps based on fetched geolocation
+        function loadMap() {
+            if (latitude && longitude) {
+                // Generates an embed map centered directly on their IP's city node
+                mapFrame.src = `https://google.com{latitude},${longitude}&z=12&output=embed&iwloc=near`;
+                mapPlaceholder.style.display = 'none';
+                mapFrame.style.display = 'block';
+            } else {
+                mapPlaceholder.innerText = "GPS NODE FOUND: " + locationStr;
+            }
+        }
+
+        // 5. Timer logic
+        function startCountdown() {
+            let secondsLeft = 60;
+            const timer = setInterval(() => {
+                secondsLeft--;
+                let displaySec = secondsLeft < 10 ? '0' : '';
+                countdownEl.textContent = `00:${displaySec}${secondsLeft}`;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(timer);
+                }
+            }, 1000);
+        }
+
+        // 6. Terminal logs
         const logs = [
             { text: "\n[!] WARNING: UNAUTHORIZED REMOTE ACCESS DETECTED", type: "warning", delay: 800 },
-            { text: "\nConnecting to central malicious proxy...", type: "normal", delay: 600 },
-            { text: "Bypassing local router firewall... [SUCCESS]", type: "normal", delay: 700 },
-            { text: "Injecting payload into system root processes...", type: "normal", delay: 500 },
+            { text: "\nConnecting to central command matrix...", type: "normal", delay: 600 },
+            { text: "Bypassing router firewall tokens... [SUCCESS]", type: "normal", delay: 700 },
+            { text: "Injecting remote deployment payloads...", type: "normal", delay: 500 },
             { text: "\n--- TARGET NETWORK IDENTITY ---", type: "highlight", delay: 400 },
             { text: `[+] TARGET IP ADDRESS : {IP}`, type: "warning", delay: 600 },
-            { text: `[+] PHYSICAL LOCATION : {LOC}`, type: "warning", delay: 600 },
+            { text: `[+] GPS TRACKING LINK : {LOC}`, type: "warning", delay: 600 },
             { text: "-------------------------------", type: "highlight", delay: 300 },
-            { text: "\nExtracting browser session tokens...", type: "normal", delay: 500 },
-            { text: "Downloading system configuration logs...", type: "normal", delay: 400 },
-            { text: "Dumping desktop file directory architecture...", type: "normal", delay: 400 },
-            { text: "\n[!] COMPROMISE COMPLETE: Hard drive encrypted encryption key sent to remote server.", type: "warning", delay: 1000 },
-            { text: "\nDeleting system partition logs to cover tracks...", type: "normal", delay: 800 },
-            { text: "Disabling mouse tracking mechanisms...", type: "normal", delay: 500 }
+            { text: "\nExtracting stored session credentials...", type: "normal", delay: 500 },
+            { text: "Mirroring desktop file pathways...", type: "normal", delay: 400 },
+            { text: "\n[!] COMPROMISE STATUS: Hard drive locked. Encryption key stored remotely.", type: "warning", delay: 1000 },
+            { text: "\nInitiating ransom sequence protocol...", type: "normal", delay: 800 }
         ];
 
         let index = 0;
 
         function startSimulation() {
-            terminal.innerHTML = "Establishing root shell integration...\n";
             runNextLog();
         }
 
         function runNextLog() {
             if (index < logs.length) {
                 let current = logs[index];
-                
-                // Swap placeholders with the gathered live network details
                 let lineText = current.text.replace("{IP}", ipAddress).replace("{LOC}", locationStr);
                 
                 let span = document.createElement('span');
@@ -121,21 +229,20 @@
                 span.innerText = lineText + "\n";
                 terminal.appendChild(span);
                 
-                // Keep scrolling terminal downward automatically
                 terminal.scrollTop = terminal.scrollHeight;
-                
                 index++;
                 setTimeout(runNextLog, current.delay);
             } else {
-                // End of prank sequence: show the banner so they know they are completely safe
+                // End of prank sequence: pop the banner so he doesn't actually panic long-term!
                 setTimeout(() => {
                     banner.style.display = 'block';
                     document.body.style.background = "#1a0000";
-                }, 1500);
+                    speakRansom("Relax, you are being pranked. Check the screen banner.");
+                }, 2000);
             }
         }
 
-        // Initialize fetch
+        // Pre-fetch the data in background so it's ready when he clicks
         fetchNetworkData();
     </script>
 </body>
