@@ -3,41 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tab Controller</title>
+    <title>Tab Controller Pro</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f0f2f5;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            color: #ffffff;
             margin: 0;
+            padding: 20px;
         }
         .container {
             text-align: center;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: #2d2d2d;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
         }
-        .btn-group {
+        h2 {
+            margin-top: 0;
+            color: #e0e0e0;
+        }
+        p {
+            color: #aaaaaa;
+            margin-bottom: 30px;
+        }
+        .control-row {
             display: flex;
             gap: 15px;
             justify-content: center;
-            margin-top: 20px;
+            margin-bottom: 15px;
         }
         button {
-            padding: 12px 24px;
-            font-size: 16px;
+            flex: 1;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: bold;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: opacity 0.2s;
+            transition: transform 0.1s, filter 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         button:hover {
-            opacity: 0.9;
+            filter: brightness(1.2);
+        }
+        button:active {
+            transform: scale(0.98);
         }
         .btn-launch {
             background-color: #28a745;
@@ -45,60 +66,99 @@
         .btn-close {
             background-color: #dc3545;
         }
+        /* Styling specifically for the demon tier */
+        .btn-demon-launch {
+            background-color: #660000;
+            border: 1px solid #ff3333;
+        }
+        .btn-demon-close {
+            background-color: #330000;
+            border: 1px solid #ff3333;
+        }
+        .demon-icon {
+            width: 20px;
+            height: 20px;
+            fill: #ff3333;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Tab Controller</h2>
-    <p>Launch 10 tabs, then close them all simultaneously using the buttons below.</p>
+    <h2>Tab Controller Pro</h2>
+    <p>Select a tier to launch or terminate multiple browser tabs instantly.</p>
     
-    <div class="btn-group">
-        <button class="btn-launch" onclick="spawnTabs()">Launch 10 Tabs</button>
-        <button class="btn-close" onclick="closeTabs()">Close All Tabs</button>
+    <!-- 10 Tabs Row -->
+    <div class="control-row">
+        <button class="btn-launch" onclick="spawnTabs(10)">Launch 10 Tabs</button>
+        <button class="btn-close" onclick="closeTabs(10)">Close 10 Tabs</button>
+    </div>
+
+    <!-- 20 Tabs Row -->
+    <div class="control-row">
+        <button class="btn-launch" onclick="spawnTabs(20)">Launch 20 Tabs</button>
+        <button class="btn-close" onclick="closeTabs(20)">Delete 20 Tabs</button>
+    </div>
+
+    <!-- 30 Tabs Row (Demon Tier) -->
+    <div class="control-row">
+        <button class="btn-demon-launch" onclick="spawnTabs(30)">
+            <!-- Inline Demon SVG Icon -->
+            <svg class="demon-icon" viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M7,9E1,1 0 0,1 8,10A1,1 0 0,1 7,11A1,1 0 0,1 6,10A1,1 0 0,1 7,9M17,9A1,1 0 0,1 18,10A1,1 0 0,1 17,11A1,1 0 0,1 16,10A1,1 0 0,1 17,9M12,13C14.75,13 17,14.56 17,16.5C17,18.44 14.75,20 12,20C9.25,20 7,18.44 7,16.5C7,14.56 9.25,13 12,13Z"/>
+            </svg>
+            Launch 30 Tabs
+        </button>
+        <button class="btn-demon-close" onclick="closeTabs(30)">
+            <svg class="demon-icon" viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M7,9E1,1 0 0,1 8,10A1,1 0 0,1 7,11A1,1 0 0,1 6,10A1,1 0 0,1 7,9M17,9A1,1 0 0,1 18,10A1,1 0 0,1 17,11A1,1 0 0,1 16,10A1,1 0 0,1 17,9M12,13C14.75,13 17,14.56 17,16.5C17,18.44 14.75,20 12,20C9.25,20 7,18.44 7,16.5C7,14.56 9.25,13 12,13Z"/>
+            </svg>
+            Close 30 Tabs
+        </button>
     </div>
 </div>
 
 <script>
-// Array to store references to the opened window objects
-let openedTabs = [];
+// Object to store opened window references grouped by tier
+let tabRegistry = {
+    10: [],
+    20: [],
+    30: []
+};
 
-function spawnTabs() {
-    // Clear any existing references before opening new ones
-    openedTabs = [];
+// Example target URL to scale across multiple tabs
+const targetUrl = "https://google.com";
 
-    const urls = [
-        "https://google.com",
-        "https://wikipedia.org",
-        "https://github.com",
-        "https://reddit.com",
-        "https://youtube.com",
-        "https://apple.com",
-        "https://microsoft.com",
-        "https://bbc.com",
-        "https://nasa.gov",
-        "https://imdb.com"
-    ];
+function spawnTabs(count) {
+    // Prevent overriding without closing existing ones in that specific tier
+    if (tabRegistry[count].length > 0) {
+        alert(`Please close the existing ${count} tabs first!`);
+        return;
+    }
 
-    urls.forEach(url => {
-        // Save the window object reference into our array
-        const newTab = window.open(url, '_blank');
+    for (let i = 0; i < count; i++) {
+        const newTab = window.open(targetUrl, '_blank');
         if (newTab) {
-            openedTabs.push(newTab);
+            tabRegistry[count].push(newTab);
         }
-    });
+    }
 }
 
-function closeTabs() {
-    // Loop through the stored window objects and close each one
-    openedTabs.forEach(tab => {
+function closeTabs(count) {
+    if (tabRegistry[count].length === 0) {
+        alert(`No active tabs found for the ${count}-tab tier.`);
+        return;
+    }
+
+    // Loop through and close only the tabs belonging to the selected tier
+    tabRegistry[count].forEach(tab => {
         if (tab && !tab.closed) {
             tab.close();
         }
     });
-    
-    // Clear the array reference once all are closed
-    openedTabs = [];
+
+    // Reset registry tracking for this specific tier
+    tabRegistry[count] = [];
 }
 </script>
 
