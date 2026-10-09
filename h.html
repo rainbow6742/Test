@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Diagnostics Terminal</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #00ff33;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #terminal {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #00ff33;
+            background-color: rgba(0, 20, 0, 0.9);
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 255, 51, 0.2);
+            height: 80vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .output-line {
+            margin: 5px 0;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .alert {
+            color: #ff3333;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #33ccff;
+        }
+
+        #input-container {
+            display: flex;
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px dashed #00ff33;
+        }
+
+        #prompt {
+            margin-right: 10px;
+            user-select: none;
+        }
+
+        #cmd-input {
+            background: none;
+            border: none;
+            color: #00ff33;
+            font-family: inherit;
+            font-size: inherit;
+            width: 100%;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="terminal">
+    <div id="log"></div>
+    <div id="input-container">
+        <span id="prompt">guest@sim_env:~#</span>
+        <input type="text" id="cmd-input" autofocus autocomplete="off" placeholder="Type 'help' or 'initialize'...">
+    </div>
+</div>
+
+<script>
+    const logContainer = document.getElementById('log');
+    const cmdInput = document.getElementById('cmd-input');
+    const terminal = document.getElementById('terminal');
+
+    const bootSequence = [
+        "Connecting to local host gateway...",
+        "Establishing isolated sandbox handshake... [OK]",
+        "Target network detected: " + window.location.hostname,
+        "Analyzing domain architecture details...",
+        "Scanning open ports (Virtual Sim Mode)...",
+        "Port 80/TCP - Simulated Filter Active",
+        "Port 443/TCP - Simulated TLS Session Observed",
+        "Injecting harmless educational script block...",
+        "Bypassing fictional firewall matrix...",
+        "ALERT: Access token simulated.",
+        "SYSTEM GRANTED PROTOCOL OVERRIDE."
+    ];
+
+    function printLine(text, type = '') {
+        const line = document.createElement('div');
+        line.className = 'output-line ' + type;
+        line.textContent = text;
+        logContainer.appendChild(line);
+        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    async function runSimulation() {
+        cmdInput.disabled = true;
+        for (let i = 0; i < bootSequence.length; i++) {
+            let type = '';
+            if (bootSequence[i].includes('ALERT')) type = 'alert';
+            if (bootSequence[i].includes('SYSTEM')) type = 'success';
+            
+            printLine(bootSequence[i], type);
+            // Dynamic typing delay simulation
+            await new Promise(resolve => setTimeout(resolve, Math.random() * 400 + 300));
+        }
+        cmdInput.disabled = false;
+        cmdInput.focus();
+    }
+
+    cmdInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const input = cmdInput.value.trim().toLowerCase();
+            printLine(`guest@sim_env:~# ${cmdInput.value}`);
+            cmdInput.value = '';
+
+            if (input === 'initialize' || input === 'run') {
+                runSimulation();
+            } else if (input === 'help') {
+                printLine("Available options: 'initialize' (starts visual diagnostic scan), 'clear' (wipes terminal logs), 'help' (shows list).");
+            } else if (input === 'clear') {
+                logContainer.innerHTML = '';
+            } else if (input !== '') {
+                printLine(`Command not recognized: '${input}'. Type 'help' for instructions.`, 'alert');
+            }
+        }
+    });
+
+    // Welcome Message
+    printLine("===== SIMULATED SECURITY DIAGNOSTIC TERMINAL =====");
+    printLine("This interface evaluates structural frontend variables for testing purposes.");
+    printLine("Type 'initialize' and press Enter to begin the simulation script loop.");
+</script>
+
+</body>
+</html>
