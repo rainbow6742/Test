@@ -1,0 +1,63 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Crowd Runner</title><style>
+body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;overflow:hidden}
+#g{position:relative;width:380px;height:640px}canvas{background:#1e293b;border-radius:8px;display:block}
+#u,#o{position:absolute;pointer-events:none}#u{top:10px;left:10px;right:10px;display:flex;justify-content:space-between;font-weight:700}
+#o{inset:0;background:#000c;display:none;flex-direction:column;align-items:center;justify-content:center;pointer-events:auto}
+button{padding:8px 20px;font-weight:700;border-radius:20px;border:none;background:#06b6d4;color:#fff;cursor:pointer;margin-top:10px}
+</style></head><body>
+<div id="g"><canvas id="c" width="380" height="640"></canvas>
+<div id="u"><span id="tc">👥 10</span><span id="td">0%</span></div>
+<div id="o"><h2 id="ot"></h2><p id="os"></p><button onclick="init()">Play Again</button></div></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),tc=document.getElementById('tc'),td=document.getElementById('td'),o=document.getElementById('o'),ot=document.getElementById('ot'),os=document.getElementById('os');
+const L=16000,F=15000;let px,py,n,bh,over,boss,dr=0;
+const G=[[1200,'x',2,'+50',50],[2400,'-',25,'x3',3],[3600,'+70',70,'/2',2],[4800,'x1.5',1.5,'+100',100],
+[6000,'/3',3,'x2',2],[7200,'+75',75,'-40',40],[8400,'x4',4,'+50',50],[9600,'/2',2,'x2',2],
+[10800,'+100',100,'-50',50],[12000,'x3',3,'x1.5',1.5],[13200,'-60',60,'+120',120],[14400,'x2',2,'x3',3]];
+let gState=[];
+function init(){px=190;py=100;n=10;bh=850;over=boss=false;gState=G.map(v=>[...v,0]);o.style.display='none';loop();}
+c.onpointerdown=e=>{dr=1;mv(e)};window.onpointerup=()=>dr=0;window.onpointermove=e=>dr&&mv(e);
+function mv(e){const r=c.getBoundingClientRect();px=Math.max(40,Math.min(340,e.clientX-r.left));}
+window.onkeydown=e=>{if(e.key.includes('Left')||e.key==='a')px=Math.max(40,px-15);if(e.key.includes('Right')||e.key==='d')px=Math.min(340,px+15);};
+function app(t,v){if(t==='+')n+=v;if(t==='-')n=Math.max(0,n-v);if(t==='x')n=Math.round(n*v);if(t==='/')n=Math.floor(n/v);}
+function end(w,m){over=true;ot.innerText=w?'🎉 VICTORY!':'💀 DEFEAT';os.innerText=m;o.style.display='flex';}
+function loop(){
+  if(over)return;
+  if(!boss){
+    py+=8;td.innerText=Math.min(100,Math.floor(py/F*100))+'%';
+    gState.forEach(g=>{
+      if(!g[5]&&py>=g[0]&&py<=g[0]+40){
+        g[5]=1;const left=px<190;
+        app(left?g[1][0]:g[3][0],left?g[2]:g[4]);
+      }
+    });
+    if(n<=0)end(0,'Wiped out!');if(py>=F)boss=true;
+  }else{
+    if(n>0&&bh>0){n=Math.max(0,n-2);bh=Math.max(0,bh-5);}
+    else if(bh<=0)end(1,`Boss slain! Reward: ${n*15+500} Gems`);
+    else end(0,'Boss defeated you!');
+  }
+  tc.innerText='👥 '+n;
+  x.clearRect(0,0,380,640);const cy=500,cam=cy-py;
+  gState.forEach(g=>{
+    const gy=g[0]+cam;
+    if(gy>-40&&gy<680){
+      x.fillStyle=g[1][0]==='-'||g[1][0]==='/'?'#ef4444c0':'#3b82f6c0';x.fillRect(20,gy-15,165,30);
+      x.fillStyle=g[3][0]==='-'||g[3][0]==='/'?'#ef4444c0':'#3b82f6c0';x.fillRect(195,gy-15,165,30);
+      x.fillStyle='#fff';x.font='bold 14px sans-serif';x.textAlign='center';
+      x.fillText(g[1][0]+g[2],102,gy+5);x.fillText(g[3][0]+g[4],277,gy+5);
+    }
+  });
+  const by=F+cam;
+  if(by<640){
+    x.fillStyle='#f43f5e';x.beginPath();x.arc(190,by+100,40,0,7);x.fill();
+    x.fillStyle='#333';x.fillRect(90,by+40,200,8);
+    x.fillStyle='#22c55e';x.fillRect(90,by+40,200*(bh/850),8);
+  }
+  x.fillStyle='#38bdf8';const v=Math.min(n,35),r=Math.min(35,6+Math.sqrt(n)*2);
+  for(let i=0;i<v;i++){x.beginPath();x.arc(px+Math.cos(i*2.4)*(i/v*r),cy+Math.sin(i*2.4)*(i/v*r),4,0,7);x.fill();}
+  x.fillStyle='#fff';x.font='bold 14px sans-serif';x.textAlign='center';x.fillText(n,px,cy-r-6);
+  requestAnimationFrame(loop);
+}
+init();
+</script></body></html>
