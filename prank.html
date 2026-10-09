@@ -75,6 +75,14 @@
             background-color: #330000;
             border: 1px solid #ff3333;
         }
+        /* Master close button styling */
+        .btn-master-close {
+            background-color: #111111;
+            border: 2px dashed #dc3545;
+            margin-top: 15px;
+            width: 100%;
+            flex: none;
+        }
         .demon-icon {
             width: 20px;
             height: 20px;
@@ -103,7 +111,6 @@
     <!-- 30 Tabs Row (Demon Tier) -->
     <div class="control-row">
         <button class="btn-demon-launch" onclick="spawnTabs(30)">
-            <!-- Inline Demon SVG Icon -->
             <svg class="demon-icon" viewBox="0 0 24 24">
                 <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4M7,9E1,1 0 0,1 8,10A1,1 0 0,1 7,11A1,1 0 0,1 6,10A1,1 0 0,1 7,9M17,9A1,1 0 0,1 18,10A1,1 0 0,1 17,11A1,1 0 0,1 16,10A1,1 0 0,1 17,9M12,13C14.75,13 17,14.56 17,16.5C17,18.44 14.75,20 12,20C9.25,20 7,18.44 7,16.5C7,14.56 9.25,13 12,13Z"/>
             </svg>
@@ -116,25 +123,23 @@
             Close 30 Tabs
         </button>
     </div>
+
+    <!-- Master Close Action -->
+    <button class="btn-master-close" onclick="masterClose()">⚠️ MASTER CLOSE ALL TABS</button>
 </div>
 
 <script>
-// Object to store opened window references grouped by tier
+// Track references across all potential tiers
 let tabRegistry = {
     10: [],
     20: [],
     30: []
 };
 
-// Example target URL to scale across multiple tabs
 const targetUrl = "https://google.com";
 
 function spawnTabs(count) {
-    // Prevent overriding without closing existing ones in that specific tier
-    if (tabRegistry[count].length > 0) {
-        alert(`Please close the existing ${count} tabs first!`);
-        return;
-    }
+    closeTabs(count);
 
     for (let i = 0; i < count; i++) {
         const newTab = window.open(targetUrl, '_blank');
@@ -145,20 +150,19 @@ function spawnTabs(count) {
 }
 
 function closeTabs(count) {
-    if (tabRegistry[count].length === 0) {
-        alert(`No active tabs found for the ${count}-tab tier.`);
-        return;
-    }
-
-    // Loop through and close only the tabs belonging to the selected tier
     tabRegistry[count].forEach(tab => {
         if (tab && !tab.closed) {
             tab.close();
         }
     });
-
-    // Reset registry tracking for this specific tier
     tabRegistry[count] = [];
+}
+
+// Closes every tracked tab regardless of tier
+function masterClose() {
+    Object.keys(tabRegistry).forEach(tier => {
+        closeTabs(tier);
+    });
 }
 </script>
 
