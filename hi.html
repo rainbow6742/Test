@@ -2,285 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site Loading...</title>
+    <title>Loading...</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            background-color: #050505;
-            color: #00ff33;
-            font-family: 'Courier New', Courier, monospace;
-            height: 100%;
-            overflow: hidden;
-            user-select: none;
-        }
-
-        /* Plain, normal button screen to hide the prank initially */
-        #landing-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #ffffff; /* Normal white background */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-        #click-btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-            color: #ffffff;
-            background-color: #007bff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        #click-btn:hover {
-            background-color: #0056b3;
-        }
-
-        /* The actual prank layout (hidden at start) */
-        #layout {
-            display: flex;
-            height: 85%;
-            width: 100%;
-            visibility: hidden; /* Becomes visible after click */
-        }
-        #terminal {
-            flex: 1;
-            padding: 20px;
-            font-size: 16px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            overflow-y: auto;
-            border-right: 1px solid #222;
-        }
-        #sidebar {
-            width: 350px;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            background: #0a0a0a;
-            gap: 20px;
-        }
-        #timer-box {
-            border: 2px solid #ff3333;
-            padding: 15px;
-            text-align: center;
-            background: rgba(255, 0, 0, 0.05);
-        }
-        #countdown {
-            font-size: 36px;
-            color: #ff3333;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #map-container {
-            width: 100%;
-            height: 250px;
-            background: #111;
-            border: 2px solid #ff3333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ff3333;
-            position: relative;
-        }
-        #map-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            display: none;
-        }
-        .warning { color: #ff3333; font-weight: bold; text-transform: uppercase; }
-        .highlight { color: #ffff33; }
-        
-        #prank-banner {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: #ff3333;
-            color: #fff;
-            text-align: center;
-            padding: 15px 0;
-            font-size: 20px;
-            font-weight: bold;
-            z-index: 9999;
-            box-shadow: 0 -5px 15px rgba(255,0,0,0.5);
-            animation: blink 1s infinite;
-        }
-        @keyframes blink {
-            0%, 49% { background: #ff3333; }
-            50%, 100% { background: #000; color: #ff3333; }
-        }
+        body, html { margin:0; padding:0; background:#050505; color:#00ff33; font-family:monospace; height:100%; overflow:hidden; user-select:none; }
+        #gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; z-index:99; }
+        #btn { padding:15px 30px; font-size:18px; font-weight:bold; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; }
+        #main { display:none; height:100%; width:100%; }
+        #term { flex:1; padding:20px; font-size:15px; line-height:1.5; white-space:pre-wrap; overflow-y:auto; }
+        #side { width:320px; background:#0a0a0a; padding:20px; display:flex; flex-direction:column; gap:20px; border-left:1px solid #222; }
+        #box { border:2px solid #f33; padding:15px; text-align:center; background:rgba(255,0,0,0.05); }
+        #time { font-size:36px; color:#f33; font-weight:bold; margin-top:10px; }
+        #map { width:100%; height:220px; background:#111; border:2px solid #f33; }
+        #banner { display:none; position:fixed; bottom:0; left:0; width:100%; background:#f33; color:#fff; text-align:center; padding:15px 0; font-size:20px; font-weight:bold; z-index:99; animation: b 1s infinite; }
+        @keyframes b { 0%,49% { background:#f33; } 50%,100% { background:#000; color:#f33; } }
     </style>
 </head>
 <body>
-
-    <!-- This is all he will see at first -->
-    <div id="landing-screen">
-        <button id="click-btn">Click here to continue</button>
-    </div>
-
-    <!-- The trap interface -->
-    <div id="layout">
-        <div id="terminal">Initializing connection...</div>
-        
-        <div id="sidebar">
-            <div id="timer-box">
-                <div class="warning">RANSOM TIME REMAINING</div>
-                <div id="countdown">01:00</div>
-            </div>
-            <div id="map-container">
-                <div id="map-placeholder">GATHERING GPS GRID...</div>
-                <iframe id="map-frame"></iframe>
-            </div>
+    <div id="gate"><button id="btn">Click here to continue</button></div>
+    <div id="main" style="display:flex;">
+        <div id="term">Initializing core protocol...</div>
+        <div id="side">
+            <div id="box"><b style="color:#f33">TIME REMAINING</b><div id="time">01:00</div></div>
+            <iframe id="map" style="display:none; border:none;"></iframe>
         </div>
     </div>
-
-    <div id="prank-banner">⚠️ RELAX! YOU ARE BEING PRANKED! (Press F11 or Esc to exit) ⚠️</div>
-
+    <div id="banner">⚠️ RELAX! PRANKED! (Press Esc to exit) ⚠️</div>
     <script>
-        const landingScreen = document.getElementById('landing-screen');
-        const clickBtn = document.getElementById('click-btn');
-        const layout = document.getElementById('layout');
-        const terminal = document.getElementById('terminal');
-        const banner = document.getElementById('prank-banner');
-        const countdownEl = document.getElementById('countdown');
-        const mapFrame = document.getElementById('map-frame');
-        const mapPlaceholder = document.getElementById('map-placeholder');
-        
-        let ipAddress = "Fetching...";
-        let locationStr = "Fetching...";
-        let latitude = 0;
-        let longitude = 0;
-
-        // 1. Fetch network data quietly in the background
-        async function fetchNetworkData() {
-            try {
-                const response = await fetch('https://ipapi.co');
-                const data = await response.json();
-                ipAddress = data.ip || "192.168.1.104";
-                locationStr = `${data.city || 'Unknown City'}, ${data.region || 'Unknown Region'}, ${data.country_name || 'Target Area'}`;
-                latitude = data.latitude;
-                longitude = data.longitude;
-            } catch (e) {
-                ipAddress = "192.168.4.112";
-                locationStr = "Local Subnet Grid";
-            }
-        }
-
-        // 2. Text-to-speech engine
-        function speakRansom(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); 
-                const utterance = new SpeechSynthesisUtterance(text);
-                const voices = window.speechSynthesis.getVoices();
-                utterance.voice = voices.find(v => v.lang.includes('en')) || voices;
-                utterance.pitch = 0.5; 
-                utterance.rate = 0.9;  
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        // 3. Trigger everything only when the button is clicked
-        clickBtn.addEventListener('click', () => {
-            // Hide the bait screen and show the scare screen
-            landingScreen.style.display = 'none';
-            layout.style.visibility = 'visible';
-
-            // Snap browser into Fullscreen
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-
-            terminal.innerHTML = "Establishing root shell integration...\n";
-            
-            // Play threatening voice immediately upon click
-            speakRansom(`Warning. Security breach detected. Your IP address is ${ipAddress}. We know you are located in ${locationStr}. Your pictures are encrypted and will be deleted permanently if you do not comply. You have sixty seconds.`);
-            
-            startSimulation();
-            startCountdown();
-            loadMap();
+        let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0;
+        fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
+        function spk(t) { if('speechSynthesis' in window){ window.speechSynthesis.cancel(); let u=new SpeechSynthesisUtterance(t); u.pitch=0.5; u.rate=0.9; window.speechSynthesis.speak(u); }}
+        document.getElementById('btn').addEventListener('click', () => {
+            document.getElementById('gate').style.display='none';
+            try { document.documentElement.requestFullscreen(); } catch(e){}
+            spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
+            if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
+            setInterval(() => { sec--; document.getElementById('time').textContent=`00:${sec<10?'0':''}${sec}`; if(sec===20){ document.getElementById('banner').style.display='block'; document.body.style.background='#1a0000'; document.getElementById('time').style.color='#0f3'; spk("Relax, you are being pranked. Your files are completely safe."); }}, 1000);
+            const logs = [
+                "[!] UNAUTHORIZED REMOTE ACCESS DETECTED", "Connecting to central command matrix...", "Bypassing network architecture layers... [SUCCESS]", 
+                "\n--- TARGET PROFILE ---", `[+] TARGET IP : ${ip}`, `[+] GPS GRID  : ${loc}`, "----------------------",
+                "\nTargeting folder: C:\\Users\\User\\Pictures...", "[!] COMPROMISE STATUS: Directories encrypted.", "[!] TARGET DELETION PROTOCOL ENGAGED."
+            ];
+            !function run() { if(idx<logs.length){ let p=document.createElement('div'); p.innerText=logs[idx++]; document.getElementById('term').appendChild(p); setTimeout(run, 600); }}();
         });
-
-        // 4. Load Embedded Google Maps
-        function loadMap() {
-            if (latitude && longitude) {
-                mapFrame.src = `https://google.com{latitude},${longitude}&z=12&output=embed&iwloc=near`;
-                mapPlaceholder.style.display = 'none';
-                mapFrame.style.display = 'block';
-            } else {
-                mapPlaceholder.innerText = "GPS NODE FOUND: " + locationStr;
-            }
-        }
-
-        // 5. Timer logic with custom 20-second reveal trigger
-        function startCountdown() {
-            let secondsLeft = 60;
-            const timer = setInterval(() => {
-                secondsLeft--;
-                let displaySec = secondsLeft < 10 ? '0' : '';
-                countdownEl.textContent = `00:${displaySec}${secondsLeft}`;
-                
-                if (secondsLeft === 20) {
-                    revealPrank();
-                }
-
-                if (secondsLeft <= 0) {
-                    clearInterval(timer);
-                }
-            }, 1000);
-        }
-
-        // 6. Action to clear the scare and play the prank audio
-        function revealPrank() {
-            banner.style.display = 'block';
-            document.body.style.background = "#1a0000";
-            countdownEl.style.color = "#00ff33"; 
-            speakRansom("Relax, you are being pranked. Look at the bottom of the screen. Your files are completely safe.");
-        }
-
-        // 7. Terminal logs
-        const logs = [
-            { text: "\n[!] WARNING: UNAUTHORIZED REMOTE ACCESS DETECTED", type: "warning", delay: 800 },
-            { text: "\nConnecting to central command matrix...", type: "normal", delay: 600 },
-            { text: "Bypassing router firewall tokens... [SUCCESS]", type: "normal", delay: 700 },
-            { text: "Scanning local file architectures...", type: "normal", delay: 500 },
-            { text: "\n--- TARGET NETWORK IDENTITY ---", type: "highlight", delay: 400 },
-            { text: `[+] TARGET IP ADDRESS : {IP}`, type: "warning", delay: 600 },
-            { text: `[+] GPS TRACKING LINK : {LOC}`, type: "warning", delay: 600 },
-            { text: "-------------------------------", type: "highlight", delay: 300 },
-            { text: "\nLocating media vaults and user directories...", type: "normal", delay: 500 },
-            { text: "Targeting folder: C:\\Users\\User\\Pictures...", type: "highlight", delay: 400 },
-            { text: "\n[!] COMPROMISE STATUS: All picture directories encrypted.", type: "warning", delay: 1000 },
-            { text: "[!] WARNING: DELETION TIMEOUT ENGAGED. Files will be wiped permanently on timer expiration.", type: "warning", delay: 800 }
-        ];
-
-        let index = 0;
-
-        function startSimulation() {
-runNextLog();
-}
-function runNextLog() {
-if (index < logs.length) {
-let current = logs[index];
-let lineText = current.text.replace("{IP}", ipAddress).replace("{LOC}", locationStr);
-let span = document.createElement('span');
-span.className = current.type;
-span.innerText = lineText + "\n";
-terminal.appendChild(span);
-terminal.scrollTop = terminal.scrollHeight;
-index++;
-setTimeout(runNextLog, current.delay);
-}
-}
-// Pre-fetch network location data
-fetchNetworkData();
+    </script>
+</body>
+</html>
