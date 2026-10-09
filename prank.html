@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Controller</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .btn-launch {
+            background-color: #28a745;
+        }
+        .btn-close {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Tab Controller</h2>
+    <p>Launch 10 tabs, then close them all simultaneously using the buttons below.</p>
+    
+    <div class="btn-group">
+        <button class="btn-launch" onclick="spawnTabs()">Launch 10 Tabs</button>
+        <button class="btn-close" onclick="closeTabs()">Close All Tabs</button>
+    </div>
+</div>
+
+<script>
+// Array to store references to the opened window objects
+let openedTabs = [];
+
+function spawnTabs() {
+    // Clear any existing references before opening new ones
+    openedTabs = [];
+
+    const urls = [
+        "https://google.com",
+        "https://wikipedia.org",
+        "https://github.com",
+        "https://reddit.com",
+        "https://youtube.com",
+        "https://apple.com",
+        "https://microsoft.com",
+        "https://bbc.com",
+        "https://nasa.gov",
+        "https://imdb.com"
+    ];
+
+    urls.forEach(url => {
+        // Save the window object reference into our array
+        const newTab = window.open(url, '_blank');
+        if (newTab) {
+            openedTabs.push(newTab);
+        }
+    });
+}
+
+function closeTabs() {
+    // Loop through the stored window objects and close each one
+    openedTabs.forEach(tab => {
+        if (tab && !tab.closed) {
+            tab.close();
+        }
+    });
+    
+    // Clear the array reference once all are closed
+    openedTabs = [];
+}
+</script>
+
+</body>
+</html>
