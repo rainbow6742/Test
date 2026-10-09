@@ -5,7 +5,7 @@
     <title>Loading...</title>
     <style>
         body, html { margin:0; padding:0; background:#050505; color:#00ff33; font-family:monospace; height:100%; overflow:hidden; user-select:none; }
-        #gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; z-index:99; }
+        #gate { position:fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; align-items:center; justify-content:center; z-index:999; }
         #btn { padding:15px 30px; font-size:18px; font-weight:bold; color:#fff; background:#007bff; border:none; border-radius:5px; cursor:pointer; }
         #main { display:flex; height:100%; width:100%; }
         #term { flex:1; padding:20px; font-size:15px; line-height:1.5; white-space:pre-wrap; overflow-y:auto; position:relative; }
@@ -20,10 +20,11 @@
         .pop-body { padding:15px 10px; text-align:center; }
         .pop-close { cursor:pointer; font-weight:bold; background:#000; color:#f33; border:1px solid #f33; padding:0 5px; font-size:11px; }
         
-        #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0078d7; color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10% ; box-sizing:border-box; z-index:100; }
+        /* Changed to subtle opacity/overlays so the chaos behind stays visible */
+        #bsod { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 120, 215, 0.95); color:#fff; font-family:'Segoe UI',Arial,sans-serif; padding:10% ; box-sizing:border-box; z-index:100; }
         
-        /* Rickroll Screen */
-        #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#000; color:#ff3399; font-size:40px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
+        /* Rickroll Screen overlay */
+        #rick { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0, 0, 0, 0.9); color:#ff3399; font-size:40px; font-weight:bold; text-align:center; justify-content:center; align-items:center; flex-direction:column; z-index:101; }
         .dance { font-size:80px; animation: bounce 0.5s infinite alternate; margin-top:20px; }
         @keyframes bounce { from { transform: scale(0.8); } to { transform: scale(1.2); } }
     </style>
@@ -62,8 +63,11 @@
             p.style.top = Math.random() * 60 + 10 + '%';
             p.style.left = Math.random() * 50 + 10 + '%';
             p.innerHTML = `<div class="pop-hdr"><span>SYSTEM_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] OVERFLOW_WARN</div>`;
+            
             p.querySelector('.pop-close').addEventListener('click', (e) => {
-                e.stopPropagation(); p.remove();
+                e.stopPropagation(); 
+                if (isFrozen) return; 
+                p.remove();
                 if (sec > 0 && !isFrozen) { makePop(); makePop(); }
             });
             document.getElementById('term').appendChild(p);
@@ -75,7 +79,10 @@
             spk(`Warning. Security breach. IP ${ip}. Location ${loc}. Pictures encrypted and will be deleted permanently in sixty seconds.`);
             if(lat&&lon) { const m=document.getElementById('map'); m.src=`https://google.com{lat},${lon}&z=12&output=embed`; m.style.display='block'; }
             
-            const popInterval = setInterval(() => { if (sec > 0 && !isFrozen) makePop(); else clearInterval(popInterval); }, 2000);
+            const popInterval = setInterval(() => { 
+                if (sec <= 40 && sec > 0 && !isFrozen) makePop(); 
+                if (isFrozen || sec <= 0) clearInterval(popInterval); 
+            }, 2000);
 
             const timer = setInterval(() => { 
                 if (isFrozen) return;
@@ -99,21 +106,23 @@
             isFrozen = true;
             document.body.style.cursor = 'none';
 
-            // Phase 1: Freeze everything in place for 7 seconds
+            document.querySelectorAll('.pop-close').forEach(btn => {
+                btn.style.cursor = 'none';
+                btn.style.opacity = '0.5';
+            });
+
+            // Phase 1: Freeze everything in place for 7 seconds (Nothing disappears)
             setTimeout(() => {
-                // Phase 2: Trigger Blue Screen of Death (BSOD) for 15 seconds
-                document.getElementById('main').style.display = 'none';
-                document.querySelectorAll('.fake-pop').forEach(el => el.remove());
+                // Phase 2: Blue Screen of Death pops up directly over the windows
                 document.getElementById('bsod').style.display = 'block';
                 
                 setTimeout(() => {
-                    // Phase 3: Rickroll with voice lyrics (Prank text removed)
-                    document.getElementById('bsod').style.display = 'none';
+                    // Phase 3: Rickroll layers directly on top
                     document.getElementById('rick').style.display = 'flex';
                     spk("Never gonna give you up, never gonna let you down, never gonna run around and desert you.");
-                }, 15000); // 15 seconds of BSOD
+                }, 15000); 
                 
-            }, 7000); // 7 seconds of freeze
+            }, 7000); 
         }
 
         window.addEventListener('beforeunload', (e) => { if(sec>0){ e.preventDefault(); e.returnValue=''; } });
