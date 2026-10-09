@@ -37,23 +37,36 @@
     </div>
     <div id="rick">
         <div>SYSTEM RECOVERY FAILURE</div>
-        <img src="https://tenor.com" alt="Rickroll">
+        <!-- Repaired direct raw GIF link source asset -->
+        <img src="https://giphy.com" alt="Rickroll">
     </div>
     <script>
         let ip="192.168.1.104", loc="Local Subnet Grid", lat, lon, sec=60, idx=0, isFrozen=false, wins=[], lx=10, ly=10;
         fetch('https://ipapi.co').then(r=>r.json()).then(d=>{ ip=d.ip; loc=`${d.city}, ${d.region}`; lat=d.latitude; lon=d.longitude; }).catch(()=>{});
+        
         function spk(t, p=0.6, r=0.95) { if('speechSynthesis' in window){ let u=new SpeechSynthesisUtterance(t); u.pitch=p; u.rate=r; window.speechSynthesis.speak(u); }}
+        
+        // Repaired singing sequencer engine execution parameters
         function sing() {
-            if (!'speechSynthesis' in window) return; window.speechSynthesis.cancel();
-            const notes = [["Never gonna",0.8,1.1], [" give you up.",0.6,0.9], ["Never gonna",0.8,1.1], [" let you down.",0.5,0.9], ["Never gonna",0.7,1.1], [" run around",0.8,1.0], [" and desert you.",0.5,0.85]];
+            if (!('speechSynthesis' in window)) return; 
+            window.speechSynthesis.cancel();
+            const notes = [
+                {t:"Never gonna", p:0.8, r:1.1}, {t:" give you up.", p:0.6, r:0.9}, 
+                {t:"Never gonna", p:0.8, r:1.1}, {t:" let you down.", p:0.5, r:0.9}, 
+                {t:"Never gonna", p:0.7, r:1.1}, {t:" run around", p:0.8, r:1.0}, {t:" and desert you.", p:0.5, r:0.85}
+            ];
             let n = 0;
             function nxt() {
                 if (n < notes.length) {
-                    let u = new SpeechSynthesisUtterance(notes[n][0]); u.pitch = notes[n][1]; u.rate = notes[n][2];
-                    u.onend = () => { n++; setTimeout(nxt, 80); }; window.speechSynthesis.speak(u);
+                    let u = new SpeechSynthesisUtterance(notes[n].t); 
+                    u.pitch = notes[n].p; 
+                    u.rate = notes[n].r;
+                    u.onend = () => { n++; setTimeout(nxt, 50); }; 
+                    window.speechSynthesis.speak(u);
                 }
             } nxt();
         }
+        
         function pop(stagnant) {
             if (isFrozen) return; let p = document.createElement('div'); p.className = 'fake-pop';
             if(stagnant) { p.style.top = '40%'; p.style.left = '35%'; p.innerHTML = `<div class="pop-hdr"><span>CRITICAL_ERR</span><div class="pop-close">X</div></div><div class="pop-body">[!] ACCESS_VIOLATION</div>`; }
