@@ -1,0 +1,171 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>3D Minecraft 100-Block Chunk</title><style>
+body{margin:0;overflow:hidden;background:#1a1a2e;font-family:sans-serif;color:#fff;user-select:none}
+#ui{position:absolute;top:10px;left:10px;z-index:10;background:rgba(0,0,0,0.6);padding:10px;border-radius:5px;pointer-events:none}
+#hp{color:#ff4757;font-size:1.2em;margin-bottom:5px}#inv{color:#ffa502}#hint{font-size:0.8em;color:#ccc;margin-top:5px}
+#go{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.9);z-index:20;flex-direction:column;justify-content:center;align-items:center;color:#ff4757;font-size:2em}
+#rb{margin-top:15px;padding:10px 20px;background:#ff4757;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:bold}
+</style><script src="https://cloudflare.com"></script></head><body>
+<div id="ui"><div id="hp">HP: ❤️❤️❤️❤️❤️</div><div id="inv">Wood: 0</div><div id="hint">Click adjacent block to Mine/Place. WASD/Arrows to Move.</div></div>
+<div id="go"><h1>YOU DIED</h1><button id="rb" onclick="init()">Respawn</button></div>
+<script>
+let scene, camera, renderer, world=[], entities=[], player={x:1,z:1,hp:5,wood:0}, meshes={}, materials={};
+const SIZE=10, BC=0xff4757, COLORS={grass:0x2ecc71,dirt:0x8b5a2b,stone:0x7f8c8d,wood:0xd35400,leaves:0x27ae60};
+
+function init(){
+    document.getElementById('go').style.display='none';
+    if(renderer){while(scene.children.length>0){scene.remove(scene.children[0]);}entities=[];world=[];}else{
+        scene=new THREE.Scene();scene.background=new THREE.Color(0x1a1a2e);
+        camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+        renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(window.innerWidth,window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        window.addEventListener('resize',()=> {camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);});
+        
+        // Lighting
+        const ambient=new THREE.AmbientLight(0xffffff,0.6);scene.add(ambient);
+        const sun=new THREE.DirectionalLight(0xffffff,0.6);sun.position.set(5,15,5);scene.add(sun);
+        
+        // Materials cache
+        const geo=new THREE.BoxGeometry(1,1,1);
+        Object.keys(COLORS).forEach(k=>materials[k]=new THREE.MeshStandardMaterial({color:COLORS[k],roughness:0.8}));
+        materials.player=new THREE.MeshStandardMaterial({color:0x3498db,roughness:0.5});
+        materials.zombie=new THREE.MeshStandardMaterial({color:0x1abc9c,roughness:0.5});
+        materials.creeper=new THREE.MeshStandardMaterial({color:0x27ae60,roughness:0.5});
+        meshes.box=geo;
+    }
+
+    player={x:1,z:1,hp:5,wood:0};
+    
+    // Build 100-Block Chunk (10x10 Base Matrix)
+    for(let x=0;x<SIZE;x++){
+        world[x]=[];
+        for(let z=0;z<SIZE;z++){
+            let type='grass', height=1;
+            if(x===0||z===0||x===SIZE-1||z===SIZE-1){type='stone';height=2;}
+            else if((x===4&&z===4)||(x===7&&z===6)){type='wood';height=3;}
+            else if((Math.abs(x-4)<=1&&Math.abs(z-4)<=1)||(Math.abs(x-7)<=1&&Math.abs(z-6)<=1)){type='leaves';height=3;}
+            if(x===1&&z===1){type='grass';height=1;} // Spawn clear
+            
+            world[x][z]={type,height,blocks:[]};
+            for(let y=0;y<height;y++){
+                let bType=(y===height-1)?type:(y===0? 'stone':'dirt');
+                if(type==='wood'||type==='leaves') bType=(y===0?'grass':type);
+                createBlock(x,y,z,bType);
+            }
+        }
+    }
+
+    // World Border Indicators
+    const edgeGeo=new THREE.BoxGeometry(0.1,4,0.1);
+    const borderMat=new THREE.MeshBasicMaterial({color:BC});
+    for(let i=0;i<=SIZE;i++){
+        let p1=new THREE.Mesh(edgeGeo,borderMat);p1.position.set(i-0.5,2,-0.5);scene.add(p1);
+        let p2=new THREE.Mesh(edgeGeo,borderMat);p2.position.set(i-0.5,2,SIZE-0.5);scene.add(p2);
+        let p3=new THREE.Mesh(edgeGeo,borderMat);p3.position.set(-0.5,2,i-0.5);scene.add(p3);
+        let p4=new THREE.Mesh(edgeGeo,borderMat);p4.position.set(SIZE-0.5,2,i-0.5);scene.add(p4);
+    }
+
+    // Entities
+    spawnEntity('player',player.x,player.z);
+    spawnEntity('zombie',7,2);
+    spawnEntity('creeper',8,8);
+    
+    updateCam();updateUI();
+}
+
+function createBlock(x,y,z,type){
+    const m=new THREE.Mesh(meshes.box,materials[type]);
+    m.position.set(x,y,z);scene.add(m);
+    world[x][z].blocks[y]=m;
+}
+
+function spawnEntity(type,x,z){
+    const m=new THREE.Mesh(meshes.box,materials[type]);
+    m.scale.set(0.6,1.2,0.6);
+    let y=world[x][z].height;
+    m.position.set(x,y+0.1,z);
+    scene.add(m);
+    if(type==='player') player.mesh=m;
+    else entities.push({type,x,z,mesh:m});
+}
+
+function updateCam(){
+    camera.position.set(player.x-4,player.mesh.position.y+6,player.z+6);
+    camera.lookAt(player.mesh.position);
+}
+
+function updateUI(){
+    document.getElementById('hp').innerText='HP: '+'❤️'.repeat(Math.max(0,player.hp));
+    document.getElementById('inv').innerText=`Wood: ${player.wood}`;
+    if(player.hp<=0)document.getElementById('go').style.display='flex';
+}
+
+function handleInput(dx,dz){
+    if(player.hp<=0)return;
+    let nx=player.x+dx, nz=player.z+dz;
+    if(nx<0||nx>=SIZE||nz<0||nz>=SIZE)return; // Border lock
+
+    // Combat/Interaction Check
+    let mIdx=entities.findIndex(e=>e.x===nx&&e.z===nz);
+    if(mIdx!==-1){
+        scene.remove(entities[mIdx].mesh);
+        entities.splice(mIdx,1);
+        player.hp--;
+    }else{
+        let currentH=world[player.x][player.z].height;
+        let targetH=world[nx][nz].height;
+        if(targetH-currentH<=1){ // Walkable slope step validation
+            player.x=nx;player.z=nz;
+            player.mesh.position.set(nx,targetH+0.1,nz);
+        }
+    }
+    tickMonsters();updateCam();updateUI();
+}
+
+function tickMonsters(){
+    entities.forEach(e=>{
+        let dx=Math.sign(player.x-e.x), dz=Math.sign(player.z-e.z);
+        let nx=e.x+(Math.random()>0.5?dx:0), nz=e.z+(Math.random()>0.5?0:dz);
+        if(nx>=0&&nx<SIZE&&nz>=0&&nz<SIZE&&world[nx][nz].height-world[e.x][e.z].height<=1){
+            e.x=nx;e.z=nz;
+            e.mesh.position.set(nx,world[nx][nz].height+0.1,nz);
+        }
+        if(e.x===player.x&&e.z===player.z) player.hp--;
+    });
+}
+
+// Raycasting click mechanics to break / place blocks locally
+window.addEventListener('click',(e)=>{
+    if(player.hp<=0)return;
+    const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
+    mouse.x=(e.clientX/window.innerWidth)*2-1;mouse.y=-(e.clientY/window.innerHeight)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const intersects=raycaster.intersectObjects(scene.children);
+    
+    if(intersects.length>0){
+        let hit=intersects[0].object;
+        let pos=hit.position;
+        if(Math.abs(player.x-pos.x)<=1.5&&Math.abs(player.z-pos.z)<=1.5){
+            let cell=world[pos.x][pos.z];
+            if(cell && cell.blocks[pos.y]===hit && pos.y>0){
+                // Mine Block
+                if(cell.type==='wood')player.wood++;
+                scene.remove(hit);cell.blocks.pop();cell.height--;
+                updateUI();updateCam();
+            }
+        }
+    }
+});
+
+window.addEventListener('keydown',(e)=>{
+    switch(e.key.toLowerCase()){
+        case 'w':case 'arrowup':handleInput(0,-1);break;
+        case 's':case 'arrowdown':handleInput(0,1);break;
+        case 'a':case 'arrowleft':handleInput(-1,0);break;
+        case 'd':case 'arrowright':handleInput(1,0);break;
+    }
+});
+
+init();
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
+animate();
+</script></body></html>
