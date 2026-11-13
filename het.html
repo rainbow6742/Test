@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Popup Spawner</title>
+</head>
+<body>
+
+<button id="activateBtn">Activate Popups</button>
+
+<script>
+document.getElementById("activateBtn").addEventListener("click", () => {
+  for (let i = 1; i <= 50; i++) {
+    const left = i * 30;
+    const top = i * 30;
+    const win = window.open(
+      "", 
+      `window_${i}`, 
+      `width=300,height=200,left=${left},top=${top}`
+    );
+
+    if (win) {
+      win.document.write(`<h2>Window #${i}</h2><p>Successfully spawned.</p>`);
+    }
+  }
+});
+</script>
+
+</body>
+</html>
